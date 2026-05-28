@@ -1,0 +1,2864 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOb — Business Observer | Boss.Technology</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --accent:#00B4D0;--accent-bg:#E6F7FB;--red:#E05252;--green:#22C55E;
+  --black:#111;--gray-dark:#3A3A3A;--gray-mid:#6B6B6B;--gray-light:#9A9A9A;
+  --gray-border:#E4E4E4;--gray-bg:#F7F7F7;--white:#FFF;--pipe:#111;
+  --font:'DM Sans',sans-serif;
+}
+body{font-family:var(--font);background:var(--white);color:var(--black);font-size:13px;line-height:1.4;min-height:100vh;overflow-x:hidden}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s}
+.overlay.open{opacity:1;pointer-events:all}
+.sidebar{position:fixed;top:0;left:0;height:100vh;width:340px;background:var(--white);z-index:201;
+  box-shadow:4px 0 24px rgba(0,0,0,0.13);transform:translateX(-100%);
+  transition:transform .32s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
+.sidebar.open{transform:translateX(0)}
+.sb-head{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;
+  border-bottom:1px solid var(--gray-border);flex-shrink:0}
+.sb-head h2{font-size:14px;font-weight:800}
+.sb-close{width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  border:none;background:none;cursor:pointer;border-radius:6px;font-size:18px;color:var(--gray-mid);transition:background .2s}
+.sb-close:hover{background:var(--gray-bg)}
+.sb-body{flex:1;overflow-y:auto;padding:0}
+.sb-section{padding:14px 20px;border-bottom:1px solid var(--gray-border)}
+.sb-section:last-child{border-bottom:none}
+.sb-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-light);margin-bottom:11px}
+/* sb-apply — primary rule in AI SIMULATION LOADING STATE section below */
+#sbApplyBtn{color:#fff!important;background:#111!important;font-size:12px!important}
+/* Export / Import */
+.sb-input{width:100%;padding:8px 12px;border:1.5px solid var(--gray-border);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--black);background:var(--white);outline:none;transition:border-color .2s}
+.sb-input:focus{border-color:var(--accent)}
+.sb-input::placeholder{color:var(--gray-light)}
+.exp-imp-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.exp-btn,.imp-lbl{display:flex;align-items:center;justify-content:center;gap:5px;padding:9px 10px;border:1.5px solid var(--gray-border);border-radius:8px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;color:var(--gray-dark);background:var(--white);text-align:center;user-select:none}
+.exp-btn:hover,.imp-lbl:hover{border-color:var(--black);color:var(--black);background:var(--gray-bg)}
+.exp-btn{border-color:var(--black);color:var(--black)}
+.imp-lbl input[type="file"]{display:none}
+
+/* LOGO */
+.logo-mode-tabs{display:flex;gap:8px;margin-bottom:12px}
+.logo-tab{flex:1;padding:7px;border:1.5px solid var(--gray-border);border-radius:7px;
+  text-align:center;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;color:var(--gray-mid)}
+.logo-tab.active{border-color:var(--black);background:var(--black);color:var(--white)}
+.logo-upload-area{border:2px dashed var(--gray-border);border-radius:8px;padding:16px;
+  text-align:center;cursor:pointer;transition:all .2s;background:var(--gray-bg)}
+.logo-upload-area:hover{border-color:var(--accent);background:var(--accent-bg)}
+.logo-hint{font-size:11px;color:var(--gray-light);margin-top:5px}
+.logo-clear{font-size:11px;color:var(--red);cursor:pointer;margin-top:8px;display:inline-block}
+input[type="file"]{display:none}
+.icon-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.icon-opt{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;
+  border:1.5px solid var(--gray-border);border-radius:8px;cursor:pointer;transition:all .2s}
+.icon-opt:hover{border-color:var(--accent);background:var(--accent-bg)}
+.icon-opt.selected{border-color:var(--black);background:var(--black);color:var(--white)}
+.icon-opt svg{width:22px;height:22px}
+.icon-opt span{font-size:9px;font-weight:600;text-align:center;line-height:1.2}
+
+/* FORM ELEMENTS */
+.sb-select{width:100%;padding:8px 12px;border:1.5px solid var(--gray-border);border-radius:8px;
+  font-family:var(--font);font-size:13px;color:var(--black);background:var(--white);
+  outline:none;cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:32px;transition:border-color .2s}
+.sb-select:focus{border-color:var(--accent)}
+.sb-label{font-size:11px;font-weight:600;color:var(--gray-dark);margin-bottom:5px;margin-top:10px;display:block}
+.sb-label:first-of-type{margin-top:0}
+.sb-textarea{width:100%;padding:9px 12px;border:1.5px solid var(--gray-border);border-radius:8px;
+  font-family:var(--font);font-size:12px;color:var(--black);background:var(--white);
+  outline:none;resize:vertical;min-height:80px;line-height:1.5;transition:border-color .2s}
+.sb-textarea:focus{border-color:var(--accent)}
+.sb-textarea::placeholder{color:var(--gray-light)}
+.context-preview{margin-top:10px;padding:10px;background:var(--accent-bg);border-radius:8px;
+  border:1px solid var(--accent);font-size:11px;color:var(--gray-dark);line-height:1.5;display:none}
+.context-preview.show{display:block}
+.context-preview strong{color:var(--black);font-weight:700}
+
+/* CHANNELS */
+.ch-add-row{display:flex;gap:8px;margin-bottom:10px}
+.ch-add-select{flex:1;padding:7px 10px;border:1.5px solid var(--gray-border);border-radius:7px;
+  font-family:var(--font);font-size:12px;color:var(--black);background:var(--white);
+  outline:none;cursor:pointer;appearance:none}
+.ch-add-btn{padding:7px 14px;background:var(--black);color:var(--white);border:none;
+  border-radius:7px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;
+  white-space:nowrap;transition:background .2s}
+.ch-add-btn:hover{background:#333}
+.ch-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
+.ch-item{display:flex;align-items:center;gap:10px;padding:8px 10px;
+  border:1px solid var(--gray-border);border-radius:7px;background:var(--gray-bg)}
+.ch-item-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:var(--black);flex-shrink:0}
+.ch-item-icon svg{width:18px;height:18px}
+.ch-item-name{flex:1;font-size:12px;font-weight:600;color:var(--black)}
+.ch-remove{width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+  border:none;background:none;cursor:pointer;color:var(--gray-light);font-size:16px;
+  border-radius:4px;transition:all .2s;flex-shrink:0}
+.ch-remove:hover{color:var(--red);background:#FEE}
+.ch-empty{font-size:12px;color:var(--gray-light);text-align:center;padding:12px 0}
+
+/* SLIDERS */
+.slider-wrap{margin-top:4px}
+.slider-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--gray-light);margin-bottom:5px}
+.sb-slider{width:100%;accent-color:var(--black);cursor:pointer;height:4px}
+.slider-val{font-size:12px;font-weight:700;color:var(--black);margin-top:6px}
+
+/* HEADER */
+header{display:flex;align-items:center;padding:0 22px;height:52px;
+  border-bottom:1px solid var(--gray-border);background:var(--white);
+  position:sticky;top:0;z-index:100;gap:12px}
+.hamburger{width:34px;height:34px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:5px;cursor:pointer;border-radius:6px;border:none;
+  background:none;padding:0;transition:background .2s;flex-shrink:0}
+.hamburger:hover{background:var(--gray-bg)}
+.hamburger span{display:block;width:18px;height:1.5px;background:var(--black);border-radius:2px}
+.header-logo{display:flex;align-items:center;height:36px;min-width:36px;cursor:pointer;
+  padding:0 2px;border-radius:6px;transition:background .2s}
+.header-logo:hover{background:var(--gray-bg)}
+.header-logo img{max-height:32px;max-width:140px;object-fit:contain;display:none}
+.header-logo-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  background:var(--gray-bg);border-radius:6px;color:var(--gray-mid)}
+.header-logo-icon svg{width:20px;height:20px}
+.time-wrap{position:relative}
+.time-wrap select{appearance:none;border:1px solid var(--gray-border);border-radius:20px;
+  padding:5px 28px 5px 14px;font-family:var(--font);font-size:13px;font-weight:500;
+  color:var(--black);background:var(--white);cursor:pointer;outline:none;transition:border-color .2s}
+.time-wrap select:hover{border-color:var(--accent)}
+.time-wrap::after{content:'▾';position:absolute;right:10px;top:50%;transform:translateY(-58%);
+  pointer-events:none;font-size:11px;color:var(--gray-mid)}
+.date-range-wrap{display:none;align-items:center;gap:6px;background:var(--gray-bg);
+  border:1px solid var(--gray-border);border-radius:8px;padding:5px 10px}
+.date-range-wrap.show{display:flex}
+.date-range-wrap input[type="date"]{border:none;background:none;font-family:var(--font);
+  font-size:12px;color:var(--black);outline:none;cursor:pointer}
+.date-sep{font-size:11px;color:var(--gray-light)}
+.date-apply{padding:3px 10px;background:var(--black);color:var(--white);border:none;
+  border-radius:5px;font-family:var(--font);font-size:11px;font-weight:600;cursor:pointer}
+.header-spacer{flex:1}
+.bobee-btn{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;
+  color:var(--black);cursor:pointer;padding:4px 10px 4px 6px;border-radius:8px;transition:background .2s}
+.bobee-btn:hover{background:var(--gray-bg)}
+
+/* MAIN */
+main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
+.left-col{padding:22px 22px 32px;border-right:1px solid var(--gray-border);display:flex;flex-direction:column;gap:18px}
+.right-col{padding:22px 20px 32px;display:flex;flex-direction:column;gap:14px}
+.section-label{font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--gray-light);margin-bottom:10px}
+.metric-header{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--black)}
+.metric-header::before{content:'';display:block;width:3px;height:15px;background:var(--pipe);border-radius:2px;flex-shrink:0}
+.int-card{border:1px solid var(--gray-border);border-radius:8px;display:grid;grid-template-columns:148px 1fr 172px;overflow:hidden}
+.card-panel{padding:15px 18px 14px}
+.card-panel+.card-panel{border-left:1px solid var(--gray-border)}
+.card-panel.click{cursor:pointer;transition:background .15s}
+.card-panel.click:hover{background:var(--gray-bg)}
+.ses-num{font-size:60px;font-weight:800;letter-spacing:-3px;line-height:1;color:var(--black);margin-top:6px;transition:color .3s}
+.ses-num.compact{font-size:48px;letter-spacing:-2px}
+.ch-display-wrap{position:relative;margin-top:8px}
+.ch-display{display:flex;align-items:stretch;overflow:hidden}
+.ch-cell{flex:0 0 calc(100%/5);display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 5px;transition:opacity .3s}
+.ch-cell.unchecked{opacity:.32}
+.ch-cell+.ch-cell{border-left:1px solid var(--gray-border)}
+.ch-cell-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center}
+.ch-cell-icon svg{width:20px;height:20px}
+.ch-cell-count{font-size:20px;font-weight:800;color:var(--black);letter-spacing:-.5px;transition:color .3s}
+.ch-cell-cb{margin-top:3px;width:11px;height:11px;accent-color:var(--black);cursor:pointer}
+.ch-scroll-btn{position:absolute;top:50%;transform:translateY(-50%);width:20px;height:20px;
+  display:none;align-items:center;justify-content:center;background:var(--white);
+  border:1px solid var(--gray-border);border-radius:50%;cursor:pointer;font-size:10px;
+  color:var(--gray-mid);z-index:2;transition:all .2s}
+.ch-scroll-btn:hover{background:var(--gray-bg);color:var(--black)}
+.ch-scroll-left{left:-10px}
+.ch-scroll-right{right:-10px}
+.ch-scroll-btn.visible{display:flex}
+.avg-disp{font-size:38px;font-weight:800;letter-spacing:-1.5px;color:var(--black);margin-top:6px;display:flex;align-items:center;gap:6px}
+.trend{font-size:18px;transition:color .3s}
+.trend.up{color:var(--red)}
+.trend.down{color:var(--green)}
+.cal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.nps-badge{background:var(--black);color:var(--white);font-size:12px;font-weight:700;padding:4px 13px;border-radius:4px;cursor:pointer;transition:background .2s}
+.nps-badge:hover{background:#333}
+.lp-outer{border:1px solid var(--gray-border);border-radius:8px;padding:14px 8px 0;margin-bottom:14px;cursor:pointer;transition:background .15s}
+.lp-outer:hover{background:var(--gray-bg)}
+.lp-chart{display:flex;height:138px;position:relative;align-items:flex-end}
+.lp-bg{position:absolute;inset:0;display:flex;justify-content:space-evenly;pointer-events:none}
+.lp-bg-line{width:0;border-left:1px dashed #EAEAEA;height:100%}
+.lp-item{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;padding-bottom:22px;height:100%;justify-content:flex-end}
+.lp-group{display:flex;flex-direction:column;align-items:center}
+.lp-pct{font-size:10px;font-weight:700;color:var(--gray-dark);margin-bottom:3px}
+.lp-dot{width:11px;height:11px;border-radius:50%;background:var(--accent);flex-shrink:0;transition:background .5s,transform .3s;z-index:2}
+.lp-dot.bad{background:var(--red);transform:scale(1.2)}
+.lp-stem{width:1.5px;background:#CCC;border-radius:1px;transition:height .6s cubic-bezier(.34,1.2,.64,1);flex-shrink:0}
+.lp-lbl{position:absolute;bottom:4px;font-size:9.5px;color:var(--gray-mid);white-space:nowrap;left:50%;transform:translateX(-50%)}
+.at-grid{display:grid;grid-template-columns:1fr 1px 1fr;border:1px solid var(--gray-border);border-radius:8px;overflow:hidden}
+.at-col{padding:14px;cursor:pointer;transition:background .15s}
+.at-col:hover{background:var(--gray-bg)}
+.at-col .metric-header{margin-bottom:10px}
+.at-div{background:var(--gray-border)}
+.at-list{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:5px 12px}
+.at-list li{font-size:11px;color:var(--gray-dark);line-height:1.35}
+.at-n{color:var(--gray-light);margin-right:3px}
+.actor-row{display:flex;align-items:center}
+.actor-icons{margin-left:auto;display:flex;gap:4px}
+.actor-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px;color:var(--gray-light)}
+.actor-btn svg{width:17px;height:17px}
+.actor-btn.active{background:var(--accent-bg);color:var(--accent)}
+.stats-box{overflow:hidden}
+.stats-head{display:grid;grid-template-columns:1fr 52px 58px 52px;padding:10px 12px 8px;border-bottom:1px solid var(--gray-border);align-items:center;gap:4px}
+.actor-icon-cell{display:flex;align-items:center;justify-content:center;height:36px;border-radius:7px;color:var(--gray-light)}
+.actor-icon-cell svg{width:22px;height:22px}
+.actor-icon-cell.active{background:var(--accent-bg);color:var(--accent)}
+.avg-unit{font-size:20px;font-weight:400;color:var(--gray-mid);letter-spacing:0}
+.stat-row{display:grid;grid-template-columns:1fr 52px 58px 52px;padding:8px 12px;align-items:center;border-bottom:1px solid var(--gray-border);gap:4px}
+.stat-row:last-child{border-bottom:none}
+.stat-lbl{font-size:12px;color:var(--black)}
+.stat-lbl strong{font-weight:700}
+.stat-val{font-size:11px;color:var(--gray-mid);text-align:center;font-weight:500;padding:2px 4px;border-radius:4px}
+.stat-val.ai{background:var(--accent-bg);color:var(--accent);font-weight:700}
+.metrics-box{overflow:hidden}
+.m-row{display:grid;grid-template-columns:28px 1fr 40px 52px 58px 52px;padding:9px 12px;gap:4px;align-items:center;border-bottom:1px solid var(--gray-border);cursor:pointer;transition:background .15s}
+.m-row:last-child{border-bottom:none}
+.m-row:hover{background:var(--gray-bg)}
+.m-icon{width:26px;height:26px;display:flex;align-items:center;justify-content:center}
+.m-icon svg{width:20px;height:20px}
+.m-name{font-size:11.5px;color:var(--gray-dark)}
+.m-total{font-size:13px;font-weight:800;color:var(--black);text-align:right}
+.m-pct{font-size:11px;color:var(--gray-mid);text-align:center;font-weight:500;transition:color .3s;padding:2px 4px;border-radius:4px}
+.m-pct.ai{background:var(--accent-bg);color:var(--accent);font-weight:700}
+.m-pct.alert{color:var(--red);font-weight:700}
+.faq-box{border:1px solid var(--gray-border);border-radius:8px;overflow:hidden}
+.faq-head{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--gray-border);background:var(--white)}
+.faq-tabs{display:flex;align-items:center;gap:0;flex:1}
+.faq-tab{font-size:11.5px;font-weight:600;color:var(--gray-light);cursor:pointer;padding:0;transition:color .2s}
+.faq-tab.active{color:var(--black)}
+.faq-tab+.faq-tab{margin-left:10px;padding-left:10px;border-left:1px solid var(--gray-border)}
+.faq-chev{font-size:13px;color:var(--gray-mid);transition:transform .25s;cursor:pointer;padding:2px 4px}
+.faq-item{display:flex;align-items:flex-start;justify-content:space-between;padding:7px 12px;border-bottom:1px solid var(--gray-border);gap:10px}
+.faq-item:last-child{border-bottom:none}
+.faq-q{font-size:11px;color:var(--gray-dark);flex:1;line-height:1.3}
+.faq-n{font-size:11px;font-weight:700;color:var(--gray-mid);min-width:28px;text-align:right;transition:all .3s}
+/* Popular Words */
+.words-cloud{display:flex;flex-wrap:wrap;gap:6px;padding:12px}
+.word-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:20px;font-size:11px;color:var(--gray-dark)}
+.word-count{font-size:9px;font-weight:700;color:var(--gray-light)}
+/* NPS Activity */
+.nps-summary{display:flex;align-items:center;gap:14px;padding:11px 12px;background:var(--gray-bg);border-radius:8px;border:1px solid var(--gray-border);margin-bottom:4px}
+.nps-ws{font-size:40px;font-weight:800;color:var(--black);letter-spacing:-2px;flex-shrink:0}
+.nps-legend{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--gray-dark);margin-bottom:5px}
+.nps-legend:last-child{margin-bottom:0}
+.nps-badge-h{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;background:var(--black);color:#fff;border-radius:3px;font-size:9px;font-weight:700;flex-shrink:0}
+.nps-badge-b{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;background:#F5C400;color:#111;border-radius:3px;font-size:9px;font-weight:700;flex-shrink:0}
+.nps-score-list{display:flex;flex-direction:column;gap:5px}
+.nps-score-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--gray-bg);border-radius:7px;border:1px solid var(--gray-border)}
+.nps-score-time{font-size:10px;color:var(--gray-light);white-space:nowrap;flex-shrink:0;width:34px}
+.nps-type-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:800;flex-shrink:0}
+.nps-type-chip.human{background:var(--black);color:#fff}
+.nps-type-chip.bob{background:#F5C400;color:#111}
+.nps-type-wt{font-size:8px;font-weight:500;opacity:.65}
+.nps-sv{font-size:16px;font-weight:800;width:20px;text-align:center;flex-shrink:0}
+.nps-sv.promoter{color:#15803D}
+.nps-sv.passive{color:#92400E}
+.nps-sv.detractor{color:var(--red)}
+.nps-cat{font-size:10px;color:var(--gray-light);flex:1}
+/* Actionables BObee Tab */
+.act-bobee-msgs{height:210px;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth;background:var(--gray-bg);border-radius:8px;border:1px solid var(--gray-border);margin-bottom:8px}
+.act-bobee-msgs .bmsg{font-size:11px}
+.act-bobee-row{display:flex;gap:7px}
+.act-bobee-row .bobee-input{font-size:11.5px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);
+  background:#111;color:#fff;padding:9px 18px;border-radius:8px;font-size:12px;
+  font-weight:500;z-index:9999;pointer-events:none;opacity:0;transition:all .3s;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── AI SIMULATION LOADING STATE ─────────────────── */
+.sb-apply-wrap{position:relative;margin:14px 20px 16px}
+.sb-apply{width:100%;padding:9px;background:var(--black);color:#fff!important;border:none;
+  border-radius:8px;font-family:var(--font);font-size:12px;font-weight:700;
+  cursor:pointer;transition:background .2s}
+.sb-apply:hover:not(:disabled){background:#333}
+.sb-apply:disabled{background:#888;cursor:not-allowed}
+.sb-ai-loader{display:none;position:absolute;inset:0;background:rgba(17,17,17,.93);
+  border-radius:8px;align-items:center;justify-content:center;gap:9px;
+  color:#fff;font-size:11.5px;font-weight:600;letter-spacing:.3px}
+.sb-ai-loader.show{display:flex}
+.ai-dots{display:flex;gap:4px}
+.ai-dots span{width:5px;height:5px;background:#fff;border-radius:50%;animation:aiDot 1.2s infinite}
+.ai-dots span:nth-child(2){animation-delay:.2s}
+.ai-dots span:nth-child(3){animation-delay:.4s}
+@keyframes aiDot{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+/* AI badge */
+.ai-badge{display:inline-flex;align-items:center;gap:4px;background:#F0FFF4;
+  border:1px solid #86EFAC;border-radius:4px;padding:2px 8px;
+  font-size:9.5px;font-weight:700;color:#15803D;margin-bottom:10px}
+.ai-badge svg{width:10px;height:10px}
+
+/* ── ACTIONABLES PANEL ────────────────────────────── */
+.act-panel{position:fixed;right:0;top:52px;height:calc(100vh - 52px);width:360px;
+  background:var(--white);border-left:1px solid var(--gray-border);z-index:210;
+  transform:translateX(100%);transition:transform .32s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;overflow:hidden;box-shadow:-6px 0 20px rgba(0,0,0,.07)}
+.act-panel.open{transform:translateX(0)}
+.act-head{display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid var(--gray-border);gap:10px;flex-shrink:0}
+.act-meta{flex:1;min-width:0}
+.act-meta-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-light);margin-bottom:2px}
+.act-metric-name{font-size:14px;font-weight:800;color:var(--black);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act-metric-val{font-size:20px;font-weight:800;color:var(--black);flex-shrink:0;padding:0 6px}
+.act-close{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;border-radius:6px;color:var(--gray-mid);font-size:18px;transition:background .2s;flex-shrink:0}
+.act-close:hover{background:var(--gray-bg)}
+.act-tabs{display:flex;border-bottom:1px solid var(--gray-border);padding:0 16px;flex-shrink:0}
+.act-tab{padding:10px 12px;font-size:12px;font-weight:600;color:var(--gray-mid);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.act-tab.active{color:var(--black);border-bottom-color:var(--black)}
+.act-tab:hover:not(.active){color:var(--gray-dark)}
+.act-alerts-badge{background:var(--red);color:#fff;font-size:9px;font-weight:700;border-radius:10px;padding:1px 5px;min-width:16px;text-align:center;display:none}
+.act-alerts-badge.show{display:inline-block}
+.act-body{flex:1;overflow-y:auto}
+.act-content{display:none;padding:16px}
+.act-content.active{display:block}
+.act-section-hd{font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-light);margin-bottom:10px}
+.act-section-hd.mt{margin-top:18px}
+/* Feed */
+.act-feed{display:flex;flex-direction:column;gap:6px}
+.feed-item{display:flex;align-items:flex-start;gap:9px;padding:9px 10px;background:var(--gray-bg);border-radius:7px;border:1px solid var(--gray-border)}
+.feed-time{font-size:10px;color:var(--gray-light);font-weight:500;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.feed-ch{width:17px;height:17px;flex-shrink:0;color:var(--gray-mid);display:flex;align-items:center;justify-content:center}
+.feed-ch svg{width:15px;height:15px}
+.feed-desc{flex:1;font-size:11px;color:var(--gray-dark);line-height:1.4}
+.feed-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.feed-badge.res{background:#DCFCE7;color:#15803D}
+.feed-badge.aba{background:#FEE2E2;color:#B91C1C}
+.feed-badge.esc{background:#FEF3C7;color:#92400E}
+.feed-badge.dis{background:var(--accent-bg);color:var(--accent)}
+.feed-badge.hal{background:#FAF5FF;color:#6D28D9}
+.pattern-box{padding:11px 12px;background:var(--gray-bg);border-radius:7px;border:1px solid var(--gray-border);font-size:11.5px;color:var(--gray-dark);line-height:1.55}
+.pattern-box strong{color:var(--black)}
+/* Alerts */
+.alert-item{padding:11px 12px;border:1px solid var(--gray-border);border-radius:8px;margin-bottom:8px}
+.alert-item:last-child{margin-bottom:0}
+.alert-item.critical{border-color:rgba(224,82,82,.45);background:#FFF8F8}
+.alert-item.warning{border-color:rgba(245,158,11,.35);background:#FFFCF0}
+.alert-item-top{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.alert-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.alert-dot.critical{background:var(--red)}
+.alert-dot.warning{background:#F59E0B}
+.alert-title{font-size:12px;font-weight:700;color:var(--black);flex:1}
+.alert-time{font-size:10px;color:var(--gray-light);white-space:nowrap}
+.alert-body{font-size:11px;color:var(--gray-dark);line-height:1.5}
+.alert-body .hl{font-weight:700;color:var(--red)}
+.alert-ch-tag{display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:10px;color:var(--gray-mid);background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:4px;padding:2px 7px}
+.alert-empty{text-align:center;padding:36px 16px}
+.alert-empty-ico{margin:0 auto 12px;color:var(--gray-border)}
+.alert-empty-ico svg{width:36px;height:36px}
+.alert-empty p{font-size:12px;color:var(--gray-mid)}
+.alert-empty p.sub{font-size:10px;color:var(--gray-light);margin-top:4px;line-height:1.5}
+/* Config */
+.cfg-group{margin-bottom:14px}
+.cfg-lbl{font-size:11px;font-weight:700;color:var(--gray-dark);display:block;margin-bottom:7px}
+.cfg-thresh-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.cfg-toggle{display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;color:var(--gray-dark)}
+.cfg-toggle input{accent-color:var(--black);cursor:pointer;width:13px;height:13px}
+.cfg-num{padding:6px 10px;border:1.5px solid var(--gray-border);border-radius:7px;font-family:var(--font);font-size:13px;font-weight:700;color:var(--black);width:70px;text-align:center;outline:none}
+.cfg-num:focus{border-color:var(--accent)}
+.cfg-num:disabled{background:var(--gray-bg);color:var(--gray-light);cursor:not-allowed}
+.cfg-num-hint{font-size:10px;color:var(--gray-light)}
+.cfg-divider{height:1px;background:var(--gray-border);margin:16px 0}
+.notif-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.notif-chip{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1.5px solid var(--gray-border);border-radius:7px;cursor:pointer;transition:all .2s}
+.notif-chip:hover{border-color:var(--gray-dark)}
+.notif-chip.on{border-color:var(--black);background:var(--black);color:#fff}
+.notif-chip svg{width:13px;height:13px;flex-shrink:0}
+.notif-chip span{font-size:11.5px;font-weight:600}
+.peak-row{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;border:1px solid var(--gray-border);border-radius:7px}
+.peak-info{flex:1}
+.peak-lbl{font-size:12px;color:var(--gray-dark);font-weight:500}
+.peak-sub{font-size:10px;color:var(--gray-light);margin-top:1px}
+.tog-sw{position:relative;width:36px;height:20px;flex-shrink:0}
+.tog-sw input{opacity:0;width:0;height:0}
+.tog-sw .sl{position:absolute;inset:0;background:#CCC;border-radius:20px;cursor:pointer;transition:.3s}
+.tog-sw .sl:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s}
+.tog-sw input:checked+.sl{background:var(--black)}
+.tog-sw input:checked+.sl:before{transform:translateX(16px)}
+.cfg-textarea{width:100%;padding:8px 10px;border:1.5px solid var(--gray-border);border-radius:7px;font-family:var(--font);font-size:11px;color:var(--black);resize:vertical;min-height:60px;outline:none;line-height:1.5}
+.cfg-textarea:focus{border-color:var(--accent)}
+.cfg-textarea::placeholder{color:var(--gray-light)}
+.cfg-save{width:100%;padding:10px;background:var(--black);color:#fff;border:none;border-radius:8px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;margin-top:16px;transition:background .2s}
+.cfg-save:hover{background:#333}
+
+/* ── BOBEE MODAL ──────────────────────────────────── */
+.bobee-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;
+  display:none;align-items:center;justify-content:center;padding:20px;
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.bobee-bg.open{display:flex}
+.bobee-modal{background:var(--white);border-radius:14px;width:540px;max-width:100%;
+  max-height:88vh;display:flex;flex-direction:column;
+  box-shadow:0 24px 64px rgba(0,0,0,.22);overflow:hidden}
+/* Head */
+.bobee-mhead{display:flex;align-items:center;gap:12px;padding:16px 20px;
+  border-bottom:1px solid var(--gray-border);flex-shrink:0}
+.bobee-bee-wrap{flex-shrink:0}
+.bobee-minfo{flex:1}
+.bobee-minfo h3{font-size:15px;font-weight:800;color:var(--black)}
+.bobee-minfo p{font-size:11px;color:var(--gray-light);margin-top:1px}
+.bobee-mclose{width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  border:none;background:none;cursor:pointer;border-radius:6px;font-size:18px;
+  color:var(--gray-mid);transition:background .2s;flex-shrink:0}
+.bobee-mclose:hover{background:var(--gray-bg)}
+/* Scrollable body */
+.bobee-mbody{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+/* Insight blocks */
+.bobee-block{border:1px solid var(--gray-border);border-radius:9px;overflow:hidden}
+.bobee-block-hd{display:flex;align-items:center;gap:7px;padding:8px 12px;
+  background:var(--gray-bg);border-bottom:1px solid var(--gray-border)}
+.bobee-block-hd svg{width:13px;height:13px;color:var(--gray-mid);flex-shrink:0}
+.bobee-block-hd span{font-size:9.5px;font-weight:700;letter-spacing:1.3px;
+  text-transform:uppercase;color:var(--gray-mid)}
+.bobee-block-body{padding:13px 14px;font-size:12.5px;color:var(--gray-dark);
+  line-height:1.58;min-height:46px}
+.bobee-block-loading{display:flex;align-items:center;gap:9px;
+  padding:13px 14px;min-height:46px}
+.bobee-dots{display:flex;gap:4px}
+.bobee-dots span{width:5px;height:5px;background:var(--gray-border);border-radius:50%;
+  animation:aiDot 1.2s infinite}
+.bobee-dots span:nth-child(2){animation-delay:.2s}
+.bobee-dots span:nth-child(3){animation-delay:.4s}
+.bobee-dot-lbl{font-size:11px;color:var(--gray-light)}
+/* Chat */
+.bobee-chat{border:1px solid var(--gray-border);border-radius:9px;overflow:hidden}
+.bobee-chat-hd{display:flex;align-items:center;gap:7px;padding:8px 12px;
+  background:var(--gray-bg);border-bottom:1px solid var(--gray-border)}
+.bobee-chat-hd svg{width:13px;height:13px;color:var(--gray-mid)}
+.bobee-chat-hd span{font-size:9.5px;font-weight:700;letter-spacing:1.3px;
+  text-transform:uppercase;color:var(--gray-mid)}
+.bobee-msgs{height:240px;overflow-y:auto;padding:12px;display:flex;
+  flex-direction:column;gap:7px;scroll-behavior:smooth}
+.bmsg{max-width:86%;padding:8px 11px;border-radius:8px;font-size:11.5px;line-height:1.45}
+.bmsg.user{align-self:flex-end;background:var(--black);color:#fff;border-bottom-right-radius:2px}
+.bmsg.bobby{align-self:flex-start;background:var(--gray-bg);color:var(--gray-dark);
+  border:1px solid var(--gray-border);border-bottom-left-radius:2px}
+.bmsg.typing{display:flex;align-items:center;gap:6px;padding:10px 11px}
+.bobee-voice{width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+  border:1.5px solid var(--gray-border);border-radius:7px;background:var(--white);
+  cursor:pointer;transition:all .2s;flex-shrink:0;color:var(--gray-mid)}
+.bobee-voice:hover{border-color:var(--black);color:var(--black)}
+.bobee-voice.listening{border-color:var(--red);background:#FFF5F5;color:var(--red)}
+.bobee-voice svg{width:14px;height:14px}
+@keyframes voicePulse{0%,100%{opacity:1}50%{opacity:.4}}
+.bobee-voice.listening{animation:voicePulse 1s infinite}
+
+/* BObee insight tabs */
+.bobee-insight-tabs{display:flex;border-bottom:1px solid var(--gray-border);flex-shrink:0;padding:0 20px}
+.bobee-itab{padding:10px 14px;font-size:12px;font-weight:600;color:var(--gray-mid);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.bobee-itab.active{color:var(--black);border-bottom-color:var(--black)}
+.bobee-itab:hover:not(.active){color:var(--gray-dark)}
+.bobee-insight-area{padding:14px 20px;border-bottom:1px solid var(--gray-border);min-height:68px;flex-shrink:0}
+.bobee-insight-text{font-size:12.5px;color:var(--gray-dark);line-height:1.58}
+.bobee-chat-section{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+/* Conversational mode */
+.bobee-conv{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--gray-border);border-radius:7px;background:var(--white);cursor:pointer;transition:all .2s;flex-shrink:0;color:var(--gray-mid)}
+.bobee-conv:hover{border-color:var(--black);color:var(--black)}
+.bobee-conv.active{border-color:var(--red);background:#FFF5F5;color:var(--red)}
+.bobee-conv svg{width:14px;height:14px}
+.conv-status{display:none;align-items:center;gap:7px;padding:6px 12px;background:#FFF5F5;border-top:1px solid rgba(224,82,82,.2);font-size:11px;color:var(--red);flex-shrink:0}
+.conv-status.show{display:flex}
+.conv-status svg{width:12px;height:12px;animation:voicePulse 1s infinite}
+/* Activity enrichment */
+.act-trend-row{display:flex;align-items:baseline;gap:8px;padding:10px 12px;background:var(--gray-bg);border-radius:7px;border:1px solid var(--gray-border);margin-bottom:8px;flex-wrap:wrap}
+.act-trend-val{font-size:32px;font-weight:800;color:var(--black);letter-spacing:-1.5px;line-height:1}
+.act-trend-unit{font-size:14px;color:var(--gray-mid)}
+.act-trend-delta{font-size:12px;font-weight:700;margin-left:auto}
+.act-trend-up{color:var(--red)}
+.act-trend-down{color:var(--green)}
+.act-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.act-mini-card{padding:9px 10px;background:var(--gray-bg);border-radius:7px;border:1px solid var(--gray-border)}
+.act-mini-label{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--gray-light);margin-bottom:3px}
+.act-mini-val{font-size:20px;font-weight:800;color:var(--black);letter-spacing:-.5px;line-height:1.2}
+.act-mini-sub{font-size:10px;color:var(--gray-light);margin-top:3px}
+.act-bar-list{display:flex;flex-direction:column;gap:5px;margin-bottom:4px}
+.act-bar-item{display:flex;align-items:center;gap:8px}
+.act-bar-label{font-size:11px;color:var(--gray-dark);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.act-bar-track{flex:0 0 70px;height:5px;background:var(--gray-border);border-radius:3px;overflow:hidden}
+.act-bar-fill{height:100%;background:var(--black);border-radius:3px;transition:width .6s ease}
+.act-bar-count{font-size:11px;font-weight:700;color:var(--black);width:32px;text-align:right;flex-shrink:0}
+.act-sentiment-driver{padding:9px 11px;background:var(--gray-bg);border-radius:7px;border:1px solid var(--gray-border);font-size:11.5px;color:var(--gray-dark);line-height:1.6}
+
+/* ── CHANNEL FILTER NOTE ─────────────────────────── */
+.ch-filter-note{display:none;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:1px 7px;margin-top:6px;text-align:center}
+.ch-filter-note.show{display:block}
+.ch-count-badge{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:3px;padding:0 5px;margin-left:5px;float:right;line-height:1.6}
+
+/* ── CONFIG: ACTION / THEME CARDS ────────────────── */
+.cfg-item-card{border:1px solid var(--gray-border);border-radius:8px;padding:11px 12px;margin-bottom:8px}
+.cfg-item-card:last-child{margin-bottom:0}
+.cfg-item-name{font-size:12px;font-weight:700;color:var(--black);margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid var(--gray-border)}
+.cfg-kw-input{width:100%;padding:6px 10px;border:1.5px solid var(--gray-border);border-radius:7px;font-family:var(--font);font-size:11.5px;color:var(--black);outline:none;box-sizing:border-box;margin-bottom:8px}
+.cfg-kw-input:focus{border-color:var(--accent)}
+.cfg-kw-input::placeholder{color:var(--gray-light)}
+.cfg-item-thresh{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.cfg-thresh-hint{font-size:10px;color:var(--gray-light)}
+
+/* ── CONFIG: SENTIMENT STATE ROWS ────────────────── */
+.cfg-sent-row{border:1px solid var(--gray-border);border-radius:8px;padding:10px 12px;margin-bottom:7px}
+.cfg-sent-row:last-child{margin-bottom:0}
+.cfg-sent-hd{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;margin-bottom:8px}
+.cfg-sent-pct{margin-left:auto;font-size:11px;font-weight:400;color:var(--gray-light)}
+.cfg-sent-thresh{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+
+/* ── CONFIG: PER-CHANNEL TIME ROWS ───────────────── */
+.cfg-ch-time-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--gray-border)}
+.cfg-ch-time-row:last-child{border-bottom:none}
+.cfg-ch-icon{width:16px;height:16px;color:var(--gray-mid);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cfg-ch-icon svg{width:14px;height:14px}
+.cfg-ch-name{font-size:11px;color:var(--gray-dark);flex:1}
+
+/* ── CONFIG: METRIC COLUMN ROWS ──────────────────── */
+.cfg-col-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--gray-border)}
+.cfg-col-row:last-child{border-bottom:none}
+.cfg-col-name{font-size:11px;font-weight:700;flex:1;color:var(--black)}
+.bobee-input-row{display:flex;gap:7px;padding:9px 12px;
+  border-top:1px solid var(--gray-border);background:var(--white)}
+.bobee-input{flex:1;border:1.5px solid var(--gray-border);border-radius:7px;
+  padding:7px 10px;font-family:var(--font);font-size:12px;color:var(--black);
+  outline:none;background:var(--white)}
+.bobee-input:focus{border-color:var(--black)}
+.bobee-input::placeholder{color:var(--gray-light)}
+.bobee-send{padding:7px 14px;background:var(--black);color:#fff;border:none;
+  border-radius:7px;font-family:var(--font);font-size:12px;font-weight:700;
+  cursor:pointer;transition:background .2s;white-space:nowrap;flex-shrink:0}
+.bobee-send:hover:not(:disabled){background:#333}
+.bobee-send:disabled{background:#888;cursor:not-allowed}
+/* Footer */
+.bobee-mfoot{padding:14px 20px;border-top:1px solid var(--gray-border);flex-shrink:0}
+.bobee-dive{width:100%;padding:10px;border:1.5px solid var(--gray-border);
+  background:var(--white);color:var(--gray-dark);border-radius:8px;
+  font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;
+  transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px}
+.bobee-dive:hover{border-color:var(--black);color:var(--black);background:var(--gray-bg)}
+.bobee-dive svg{width:13px;height:13px}
+
+/* ── THRESHOLD BREACH VISUAL STATES ──────────────── */
+@keyframes breachFlash{
+  0%,100%{background:transparent}
+  25%{background:rgba(224,82,82,.11)}
+  55%{background:transparent}
+  80%{background:rgba(224,82,82,.06)}
+}
+.breach-pulse{animation:breachFlash 1.1s ease}
+.val-breach{color:var(--red)!important}
+</style>
+</head>
+<body>
+<div class="overlay" id="overlay" onclick="overlayClick()"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sb-head">
+    <h2>BOb Configuration</h2>
+    <button class="sb-close" onclick="closeSidebar()">&#x2715;</button>
+  </div>
+  <div class="sb-body">
+
+    <!-- BUSINESS CONTEXT -->
+    <div class="sb-section">
+      <div class="sb-title">Business Context</div>
+      <div class="ai-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        AI-Powered Simulation
+      </div>
+      <label class="sb-label">Industry Type</label>
+      <select class="sb-select" id="industrySelect" onchange="onIndustryChange()">
+        <option value="">-- Select industry --</option>
+        <option value="education">&#x1F393; Education &amp; University</option>
+        <option value="retail">&#x1F6CD; Fashion &amp; Retail</option>
+        <option value="banking">&#x1F3E6; Banking &amp; Financial Services</option>
+        <option value="healthcare">&#x2695; Healthcare</option>
+        <option value="hospitality">&#x1F3E8; Hospitality &amp; Hotels</option>
+        <option value="telecom">&#x1F4F1; Telecommunications</option>
+        <option value="fnb">&#x1F374; Food &amp; Beverage</option>
+        <option value="ecommerce">&#x1F6D2; E-Commerce</option>
+        <option value="tech">&#x1F4BB; Technology &amp; SaaS</option>
+        <option value="insurance">&#x1F6E1; Insurance</option>
+      </select>
+      <label class="sb-label">Primary Service Activity</label>
+      <select class="sb-select" id="activitySelect">
+        <option value="support">Customer Support</option>
+        <option value="sales">Sales &amp; Lead Generation</option>
+        <option value="technical">Technical Support</option>
+        <option value="admissions">Admissions &amp; Enrollment</option>
+        <option value="reservations">Reservations &amp; Bookings</option>
+        <option value="inquiries">General Inquiries</option>
+        <option value="claims">Claims &amp; Complaints</option>
+      </select>
+      <label class="sb-label">Additional Context</label>
+      <textarea class="sb-textarea" id="contextText" placeholder="Describe your business, target customers, key products or services, geographic focus... The more context you add, the more realistic BOb's AI-generated data will be."></textarea>
+      <div class="context-preview" id="contextPreview"></div>
+    </div>
+
+    <!-- CLIENT IDENTITY -->
+    <div class="sb-section">
+      <div class="sb-title">Client Identity</div>
+      <div class="logo-mode-tabs">
+        <div class="logo-tab active" id="tab-upload" onclick="setLogoMode('upload')">Upload Logo</div>
+        <div class="logo-tab" id="tab-icon" onclick="setLogoMode('icon')">Choose Icon</div>
+      </div>
+      <div id="upload-panel">
+        <div class="logo-upload-area" onclick="document.getElementById('logoFile').click()">
+          <div id="logoPreview">
+            <div style="font-size:26px;color:var(--gray-light)">&#x2191;</div>
+            <div style="font-size:12px;font-weight:600;color:var(--gray-mid);margin-top:4px">Click to upload logo</div>
+            <div class="logo-hint">PNG, JPG, SVG &#x2014; max 2MB</div>
+          </div>
+        </div>
+        <input type="file" id="logoFile" accept="image/*" onchange="handleLogo(this)">
+        <div id="logoClearWrap" style="display:none;text-align:center;margin-top:8px">
+          <span class="logo-clear" onclick="clearLogo()">Remove logo</span>
+        </div>
+      </div>
+      <div id="icon-panel" style="display:none">
+        <div class="icon-grid" id="iconGrid"></div>
+      </div>
+    </div>
+
+    <!-- LANGUAGE -->
+    <div class="sb-section">
+      <div class="sb-title">Language</div>
+      <select class="sb-select" id="langSelect">
+        <option value="es">&#x1F1EA;&#x1F1F8; Espa&#x00F1;ol</option>
+        <option value="en">&#x1F1EC;&#x1F1E7; English</option>
+        <option value="fr">&#x1F1EB;&#x1F1F7; Fran&#x00E7;ais</option>
+        <option value="pt">&#x1F1F5;&#x1F1F9; Portugu&#x00EA;s</option>
+      </select>
+    </div>
+
+    <!-- ACTIVE CHANNELS -->
+    <div class="sb-section">
+      <div class="sb-title">Active Channels</div>
+      <div class="ch-add-row">
+        <select class="ch-add-select" id="chAddSelect"></select>
+        <button class="ch-add-btn" onclick="addChannel()">+ Add</button>
+      </div>
+      <div class="ch-list" id="sbChList"></div>
+    </div>
+
+    <!-- ACTIVITY VOLUME -->
+    <div class="sb-section">
+      <div class="sb-title">Activity Volume</div>
+      <div class="slider-wrap">
+        <div class="slider-labels"><span>Very Low</span><span>Low</span><span>Normal</span><span>High</span><span>Very High</span></div>
+        <input type="range" class="sb-slider" id="volSlider" min="1" max="5" value="3" oninput="updateVol(this.value)">
+        <div class="slider-val" id="volLabel">Normal</div>
+      </div>
+    </div>
+
+    <!-- UPDATE SPEED -->
+    <div class="sb-section">
+      <div class="sb-title">Update Speed</div>
+      <div class="slider-wrap">
+        <div class="slider-labels"><span>Very Slow</span><span>Slow</span><span>Normal</span><span>Fast</span><span>Very Fast</span></div>
+        <input type="range" class="sb-slider" id="speedSlider" min="1" max="5" value="3" oninput="updateSpeed(this.value)">
+        <div class="slider-val" id="speedLabel">Normal</div>
+      </div>
+    </div>
+
+    <!-- SAVE & LOAD CONFIGURATION -->
+    <div class="sb-section">
+      <div class="sb-title">Save &amp; Load Configuration</div>
+      <label class="sb-label">Client / Project Name</label>
+      <input type="text" class="sb-input" id="configClientName" placeholder="e.g. NAF NAF — Fashion Retail">
+      <div class="exp-imp-row">
+        <button class="exp-btn" onclick="exportConfig()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export Config
+        </button>
+        <label class="imp-lbl">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Import Config
+          <input type="file" accept=".json" onchange="handleImport(this)">
+        </label>
+      </div>
+    </div>
+
+  </div>
+  <div class="sb-apply-wrap">
+    <button class="sb-apply" id="sbApplyBtn" onclick="applyConfig()">Apply Config</button>
+    <div class="sb-ai-loader" id="sbAiLoader">
+      <div class="ai-dots"><span></span><span></span><span></span></div>
+      <span>BOb is thinking&hellip;</span>
+    </div>
+  </div>
+</div>
+
+<!-- ACTIONABLES PANEL -->
+<div class="act-panel" id="actPanel">
+  <div class="act-head">
+    <div class="act-meta">
+      <div class="act-meta-label">Actionables</div>
+      <div class="act-metric-name" id="actMetricName">—</div>
+    </div>
+    <div class="act-metric-val" id="actMetricVal"></div>
+    <button class="act-close" onclick="closeActionables()">&#x2715;</button>
+  </div>
+  <div class="act-tabs">
+    <div class="act-tab active" id="aTab-activity" onclick="switchActTab('activity')">Activity</div>
+    <div class="act-tab" id="aTab-alerts" onclick="switchActTab('alerts')">Alerts <span class="act-alerts-badge" id="actAlertsBadge"></span></div>
+    <div class="act-tab" id="aTab-config" onclick="switchActTab('config')">Configuration</div>
+    <div class="act-tab" id="aTab-bobee" onclick="switchActTab('bobee')" title="Ask BOBee" style="padding-left:10px;padding-right:10px">
+      <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
+        <rect x="12" y="1" width="2" height="2"/><rect x="11" y="0" width="2" height="1"/>
+        <rect x="18" y="1" width="2" height="2"/><rect x="19" y="0" width="2" height="1"/>
+        <rect x="13" y="3" width="2" height="4"/>
+        <rect x="17" y="3" width="2" height="4"/>
+        <rect x="0" y="8" width="9" height="8" rx="3"/>
+        <rect x="23" y="8" width="9" height="8" rx="3"/>
+        <rect x="9" y="6" width="14" height="20" rx="6"/>
+        <rect x="12" y="12" width="2" height="7" fill="white"/>
+        <rect x="12" y="12" width="5" height="1.5" fill="white"/>
+        <rect x="12" y="15.5" width="5" height="1.5" fill="white"/>
+        <rect x="12" y="18.5" width="5" height="1.5" fill="white"/>
+        <rect x="16.5" y="13.5" width="1" height="2" fill="white"/>
+        <rect x="16.5" y="16.5" width="1" height="2" fill="white"/>
+      </svg>
+    </div>
+  </div>
+  <div class="act-body">
+    <div class="act-content active" id="actContent-activity"></div>
+    <div class="act-content" id="actContent-alerts"></div>
+    <div class="act-content" id="actContent-config"></div>
+    <div class="act-content" id="actContent-bobee"></div>
+  </div>
+</div>
+
+<!-- BOBEE MODAL -->
+<div class="bobee-bg" id="bobeeBg" onclick="bobeeBgClick(event)">
+  <div class="bobee-modal">
+    <div class="bobee-mhead">
+      <div class="bobee-bee-wrap">
+        <svg width="38" height="38" viewBox="0 0 32 32">
+          <rect x="11" y="3" width="10" height="2" fill="#111"/><rect x="9" y="5" width="14" height="2" fill="#111"/>
+          <rect x="7" y="7" width="18" height="3" fill="#F5C400"/><rect x="5" y="10" width="22" height="3" fill="#111"/>
+          <rect x="5" y="13" width="22" height="3" fill="#F5C400"/><rect x="5" y="16" width="22" height="3" fill="#111"/>
+          <rect x="7" y="19" width="18" height="2" fill="#F5C400"/><rect x="9" y="21" width="14" height="2" fill="#111"/>
+          <rect x="11" y="23" width="10" height="2" fill="#111"/>
+          <rect x="1" y="8" width="6" height="9" rx="2" fill="#00B4D0" opacity="0.75"/>
+          <rect x="25" y="8" width="6" height="9" rx="2" fill="#00B4D0" opacity="0.75"/>
+          <rect x="13" y="11" width="2" height="7" fill="#fff"/>
+          <rect x="15" y="11" width="4" height="1.5" fill="#fff"/><rect x="15" y="14" width="4" height="1.5" fill="#fff"/>
+          <rect x="15" y="17" width="4" height="1.5" fill="#fff"/>
+          <rect x="19" y="12.5" width="1.5" height="2" fill="#fff"/><rect x="19" y="15.5" width="1.5" height="2" fill="#fff"/>
+        </svg>
+      </div>
+      <div class="bobee-minfo">
+        <h3>BOBee Intelligence</h3>
+        <p id="bobeeSubtitle">Analyzing your dashboard&hellip;</p>
+      </div>
+      <button class="bobee-mclose" onclick="closeBobee()">&#x2715;</button>
+    </div>
+    <!-- Insight tabs -->
+    <div class="bobee-insight-tabs">
+      <div class="bobee-itab active" id="bitab-exp" onclick="switchBobeeInsightTab('exp')">Explanation</div>
+      <div class="bobee-itab" id="bitab-rec" onclick="switchBobeeInsightTab('rec')">Recommendation</div>
+      <div class="bobee-itab" id="bitab-pre" onclick="switchBobeeInsightTab('pre')">Prediction</div>
+    </div>
+    <!-- Active insight content -->
+    <div class="bobee-insight-area">
+      <div class="bobee-block-loading" id="bobee-exp-loading"><div class="bobee-dots"><span></span><span></span><span></span></div><span class="bobee-dot-lbl">Generating&hellip;</span></div>
+      <div class="bobee-insight-text" id="bobee-exp-text" style="display:none"></div>
+      <div class="bobee-block-loading" id="bobee-rec-loading" style="display:none"><div class="bobee-dots"><span></span><span></span><span></span></div><span class="bobee-dot-lbl">Generating&hellip;</span></div>
+      <div class="bobee-insight-text" id="bobee-rec-text" style="display:none"></div>
+      <div class="bobee-block-loading" id="bobee-pre-loading" style="display:none"><div class="bobee-dots"><span></span><span></span><span></span></div><span class="bobee-dot-lbl">Generating&hellip;</span></div>
+      <div class="bobee-insight-text" id="bobee-pre-text" style="display:none"></div>
+    </div>
+    <!-- Chat section -->
+    <div class="bobee-chat-section">
+      <div class="bobee-chat-hd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <span>Chat with BOBee</span>
+      </div>
+      <div class="bobee-msgs" id="bobeeMsgs">
+        <div class="bmsg bobby">Hi! I&rsquo;m BOBee &#x1F41D; Ask me anything about your dashboard.</div>
+      </div>
+      <div class="conv-status" id="bobeeConvStatus">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="5" fill="currentColor"/></svg>
+        Listening&hellip; speak now
+      </div>
+      <div class="bobee-input-row">
+        <button class="bobee-voice" id="bobeeVoiceBtn" onclick="startVoiceInput('bobeeInput',this)" title="Voice input">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0014 0M12 21v-4M8 21h8"/></svg>
+        </button>
+        <button class="bobee-conv" id="bobeeConvBtn" onclick="toggleConversation('bobeeInput',sendBobeeChat,'bobeeConvBtn','bobeeConvStatus')" title="Conversation mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 18v-6a9 9 0 0118 0v6"/><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"/></svg>
+        </button>
+        <input class="bobee-input" id="bobeeInput" type="text" placeholder="Ask BOBee anything&hellip;" onkeydown="if(event.key==='Enter')sendBobeeChat()">
+        <button class="bobee-send" id="bobeeSendBtn" onclick="sendBobeeChat()">Send</button>
+      </div>
+    </div>
+
+    <!-- 5. Learn More → Actionables -->
+    <div class="bobee-mfoot">
+      <button class="bobee-dive" onclick="bobeeLearnMore()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Deep Dive in Actionables
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <button class="hamburger" onclick="openSidebar()"><span></span><span></span><span></span></button>
+  <div class="header-logo" id="headerLogo" onclick="openSidebar()" title="Click to configure">
+    <img id="hLogoImg" src="" alt="Logo">
+    <div class="header-logo-icon" id="hLogoIcon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
+    </div>
+  </div>
+  <div class="time-wrap">
+    <select id="timeSel" onchange="onTimeChange(this.value)">
+      <option value="ahora">Ahora</option><option value="hoy">Hoy</option>
+      <option value="semana">Esta Semana</option><option value="mes">Este Mes</option>
+      <option value="custom">Personalizado</option>
+    </select>
+  </div>
+  <div class="date-range-wrap" id="drWrap">
+    <input type="date" id="dateFrom"><span class="date-sep">&#x2192;</span>
+    <input type="date" id="dateTo">
+    <button class="date-apply" onclick="applyDate()">Apply</button>
+  </div>
+  <div class="header-spacer"></div>
+  <div class="bobee-btn" onclick="openBobee()">
+    <svg width="26" height="26" viewBox="0 0 32 34">
+      <rect x="9" y="0" width="2" height="2" fill="#111"/><rect x="8" y="1" width="2" height="1" fill="#111"/>
+      <rect x="21" y="0" width="2" height="2" fill="#111"/><rect x="22" y="1" width="2" height="1" fill="#111"/>
+      <rect x="11" y="2" width="2" height="4" fill="#111"/>
+      <rect x="19" y="2" width="2" height="4" fill="#111"/>
+      <rect x="9" y="5" width="14" height="9" rx="3" fill="#111"/>
+      <rect x="11" y="7" width="3" height="5" fill="white"/>
+      <rect x="18" y="7" width="3" height="5" fill="white"/>
+      <rect x="0" y="7" width="10" height="9" rx="4" fill="#111"/>
+      <rect x="22" y="7" width="10" height="9" rx="4" fill="#111"/>
+      <rect x="10" y="12" width="12" height="16" rx="5" fill="#111"/>
+      <rect x="13" y="15" width="2" height="9" fill="white"/>
+      <rect x="13" y="15" width="5" height="2" fill="white"/>
+      <rect x="13" y="19" width="5" height="2" fill="white"/>
+      <rect x="13" y="22" width="5" height="2" fill="white"/>
+      <rect x="17" y="17" width="1" height="2" fill="white"/>
+      <rect x="17" y="20" width="1" height="2" fill="white"/>
+      <rect x="13" y="27" width="6" height="5" rx="3" fill="#111"/>
+      <rect x="14" y="31" width="4" height="3" rx="2" fill="#111"/>
+    </svg>
+    <span>BOb</span>
+  </div>
+</header>
+
+<main>
+  <div class="left-col">
+    <section>
+      <div class="section-label" id="lbl-int">INTERACCIONES</div>
+      <div class="int-card">
+        <div class="card-panel click" onclick="openActionables('sessions',getT('ses'),document.getElementById('sesCount').textContent)">
+          <div class="metric-header" id="lbl-ses">Sesiones</div>
+          <div class="ses-num" id="sesCount">771</div>
+        </div>
+        <div class="card-panel">
+          <div class="metric-header" id="lbl-can">Canales</div>
+          <div class="ch-display-wrap">
+            <button class="ch-scroll-btn ch-scroll-left" id="scrollLeft" onclick="scrollChannels(-1)">&#x2039;</button>
+            <div class="ch-display" id="chDisplay"></div>
+            <button class="ch-scroll-btn ch-scroll-right" id="scrollRight" onclick="scrollChannels(1)">&#x203A;</button>
+          </div>
+          <div id="chFilterNote" class="ch-filter-note"></div>
+        </div>
+        <div class="card-panel click" onclick="openActionables('avgtime',getT('avg'),document.getElementById('avgTimeNum').textContent+' min')">
+          <div class="metric-header" id="lbl-avg">Tiempo Prom.</div>
+          <div class="avg-disp"><span id="avgTimeNum">10</span><span class="avg-unit" id="avgTimeUnit"> min</span><span class="trend up" id="trendArr">&#x2191;</span></div>
+        </div>
+      </div>
+    </section>
+    <section>
+      <div class="cal-top">
+        <div class="section-label" id="lbl-cal">CALIDAD Y EXPERIENCIA</div>
+        <div class="nps-badge" onclick="openActionables('nps','NPS','07')">NPS: 07</div>
+      </div>
+      <div class="lp-outer" onclick="openActionables('sentiment',getT('animo'),'')">
+        <div class="metric-header" id="lbl-animo" style="margin-bottom:10px">Ánimo &amp; Sentimiento</div>
+        <div class="lp-chart" id="lpChart">
+          <div class="lp-bg">
+            <div class="lp-bg-line"></div><div class="lp-bg-line"></div>
+            <div class="lp-bg-line"></div><div class="lp-bg-line"></div>
+            <div class="lp-bg-line"></div><div class="lp-bg-line"></div>
+          </div>
+        </div>
+      </div>
+      <div class="at-grid">
+        <div class="at-col" onclick="openActionables('acciones',getT('acc'),'')">
+          <div class="metric-header" id="lbl-acc">Acciones</div>
+          <ul class="at-list" id="accList"></ul>
+        </div>
+        <div class="at-div"></div>
+        <div class="at-col" onclick="openActionables('temas',getT('tem'),'')">
+          <div class="metric-header" id="lbl-tem">Temas</div>
+          <ul class="at-list" id="temList"></ul>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="right-col">
+    <div class="section-label" id="lbl-rend">RENDIMIENTO</div>
+    <div class="stats-box">
+      <div class="stats-head">
+        <div class="metric-header" id="lbl-stats">Stats</div>
+        <div class="actor-icon-cell" id="act-0" title="Customer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </div>
+        <div class="actor-icon-cell active" id="act-1" title="AI Agent">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M9 7V4M12 7V4M15 7V4M9 17v3M12 17v3M15 17v3M7 9H4M7 12H4M7 15H4M17 9h3M17 12h3M17 15h3"/></svg>
+        </div>
+        <div class="actor-icon-cell" id="act-2" title="Human Agent">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 10c0-4.4-3.6-8-8-8s-8 3.6-8 8"/><path d="M4 10.5v3a1 1 0 001 1h1.5a1 1 0 001-1v-3a1 1 0 00-1-1H5a1 1 0 00-1 1z"/><path d="M20 10.5v3a1 1 0 01-1 1h-1.5a1 1 0 01-1-1v-3a1 1 0 011-1H19a1 1 0 011 1z"/><path d="M20 14.5v1a4 4 0 01-4 4h-2"/></svg>
+        </div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-lbl"><strong id="lbl-tr">Tiempo</strong> de respuesta</div>
+        <div class="stat-val">2 Min</div><div class="stat-val ai">1 Min</div><div class="stat-val">1 Min</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-lbl"><strong id="lbl-qr">Calidad</strong> de respuesta</div>
+        <div class="stat-val">Low</div><div class="stat-val ai">Med</div><div class="stat-val">Med</div>
+      </div>
+    </div>
+    <div class="metrics-box" id="metricsBox"></div>
+    <div class="faq-box">
+      <div class="faq-head">
+        <div class="faq-tabs">
+          <span class="faq-tab active" id="ftab-faq" onclick="switchFaqTab('faq')" id="lbl-faq">Preguntas Frecuentes</span>
+          <span class="faq-tab" id="ftab-words" onclick="switchFaqTab('words')">Popular Words</span>
+        </div>
+        <span class="faq-chev" id="faqChev" onclick="toggleFaq()">▾</span>
+      </div>
+      <div id="faqBody"></div>
+      <div id="wordsBody" style="display:none;padding-bottom:4px"></div>
+    </div>
+  </div>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══ CONFIG ══════════════════════════════════════
+const CFG={lang:'es',vol:3,speed:3,logoMode:'upload',selectedIcon:null,industry:'',activity:'support'};
+const VOL_LABELS=['Very Low','Low','Normal','High','Very High'];
+const SPD_LABELS=['Very Slow','Slow','Normal','Fast','Very Fast'];
+const SPD_MS=[4000,2500,1500,800,280];
+let simTimer=null;
+
+// ═══ i18n ════════════════════════════════════════
+const T={
+  es:{int:'INTERACCIONES',cal:'CALIDAD Y EXPERIENCIA',rend:'RENDIMIENTO',ses:'Sesiones',can:'Canales',avg:'Tiempo Prom.',animo:'\u00c1nimo &amp; Sentimiento',acc:'Acciones',tem:'Temas',stats:'Stats',tr:'Tiempo',qr:'Calidad',faq:'Preguntas Frecuentes',now:'Ahora',today:'Hoy',week:'Esta Semana',month:'Este Mes',custom:'Personalizado',sent:['Enojado','Insatisfecho','Satisfecho','Contento','Feliz']},
+  en:{int:'INTERACTIONS',cal:'QUALITY & EXPERIENCE',rend:'PERFORMANCE',ses:'Sessions',can:'Channels',avg:'Avg. Time',animo:'Mood &amp; Sentiment',acc:'Actions',tem:'Themes',stats:'Stats',tr:'Response',qr:'Quality',faq:'Frequent Questions',now:'Now',today:'Today',week:'This Week',month:'This Month',custom:'Custom',sent:['Angry','Unsatisfied','Satisfied','Content','Happy']},
+  fr:{int:'INTERACTIONS',cal:'QUALIT\u00c9 & EXP\u00c9RIENCE',rend:'PERFORMANCE',ses:'Sessions',can:'Canaux',avg:'Temps Moy.',animo:'Humeur &amp; Sentiment',acc:'Actions',tem:'Th\u00e8mes',stats:'Stats',tr:'R\u00e9ponse',qr:'Qualit\u00e9',faq:'Questions Fr\u00e9quentes',now:'Maintenant',today:"Aujourd'hui",week:'Cette Semaine',month:'Ce Mois',custom:'Personnalis\u00e9',sent:['Col\u00e8re','Insatisfait','Satisfait','Content','Heureux']},
+  pt:{int:'INTERA\u00c7\u00d5ES',cal:'QUALIDADE & EXPERI\u00caNCIA',rend:'DESEMPENHO',ses:'Sess\u00f5es',can:'Canais',avg:'Tempo M\u00e9d.',animo:'Humor &amp; Sentimento',acc:'A\u00e7\u00f5es',tem:'Temas',stats:'Stats',tr:'Resposta',qr:'Qualidade',faq:'Perguntas Frequentes',now:'Agora',today:'Hoje',week:'Esta Semana',month:'Este M\u00eas',custom:'Personalizado',sent:['Irritado','Insatisfeito','Satisfeito','Contente','Feliz']},
+};
+
+// ═══ INDUSTRY CONTENT ════════════════════════════
+const INDUSTRY={
+  education:{
+    acciones:{es:['Solicita info sobre programa espec\u00edfico','Completa formulario de contacto','Inicia conversaci\u00f3n por WhatsApp','Atiende llamada con asesor','Solicita detalles de financiamiento','Comparte documentos requeridos','Agenda llamada o seguimiento','Realiza proceso de matr\u00edcula'],en:['Requests info on specific program','Completes contact form','Initiates WhatsApp conversation','Attends advisor call','Requests financing details','Shares required documents','Schedules follow-up call','Completes enrollment process']},
+    temas:{es:['Informaci\u00f3n sobre programas acad\u00e9micos','Costos y opciones de financiamiento','Duraci\u00f3n y modalidad virtual','Requisitos de inscripci\u00f3n','Validez del t\u00edtulo','Salidas laborales del programa','Inicio de clases y calendario','Proceso de matr\u00edcula paso a paso'],en:['Information about academic programs','Costs and financing options','Duration and virtual format','Enrollment requirements','Degree validity and accreditation','Career opportunities','Class start dates','Step-by-step enrollment']},
+    faqs:{es:['\u00bfEl programa es 100% virtual?','\u00bfQu\u00e9 opciones de financiamiento tienen?','\u00bfEl t\u00edtulo es v\u00e1lido internacionalmente?','\u00bfCu\u00e1ndo puedo comenzar clases?'],en:['Is the program 100% virtual?','What financing options do you offer?','Is the degree internationally valid?','When can I start classes?']},
+  },
+  retail:{
+    acciones:{es:['Consulta disponibilidad de talla','Realiza una compra en l\u00ednea','Solicita cambio o devoluci\u00f3n','Consulta estado de su pedido','Solicita asistencia de estilista','Aplica c\u00f3digo de descuento','Guarda art\u00edculo en lista de deseos','Consulta pol\u00edtica de env\u00edos'],en:['Checks size availability','Makes online purchase','Requests exchange or return','Checks order status','Requests stylist assistance','Applies discount code','Saves item to wishlist','Checks shipping policy']},
+    temas:{es:['Nuevas colecciones y tendencias','Pol\u00edticas de cambio y devoluci\u00f3n','Tiempos y costos de env\u00edo','Descuentos y promociones activas','Gu\u00eda de tallas y medidas','Disponibilidad en tienda f\u00edsica','Programa de lealtad y puntos','Sostenibilidad y materiales'],en:['New collections and trends','Return and exchange policies','Shipping times and costs','Active discounts and promotions','Size and fit guide','In-store availability','Loyalty program and points','Sustainability and materials']},
+    faqs:{es:['\u00bfCu\u00e1les son los tiempos de entrega?','\u00bfC\u00f3mo hago una devoluci\u00f3n?','\u00bfTienen env\u00edo gratuito?','\u00bfPuedo cambiar mi talla?'],en:['What are the delivery times?','How do I make a return?','Do you offer free shipping?','Can I exchange my size?']},
+  },
+  banking:{
+    acciones:{es:['Consulta saldo y movimientos','Solicita tarjeta de cr\u00e9dito','Reporta cargo no reconocido','Solicita pr\u00e9stamo personal','Actualiza datos de contacto','Bloquea tarjeta por robo','Solicita certificado bancario','Consulta tasa de inter\u00e9s'],en:['Checks balance and transactions','Requests credit card','Reports unrecognized charge','Requests personal loan','Updates contact information','Blocks card due to theft','Requests bank certificate','Checks interest rate']},
+    temas:{es:['Tasas de inter\u00e9s y comisiones','Productos de ahorro e inversi\u00f3n','Seguridad y fraude digital','Requisitos para cr\u00e9ditos','Transferencias internacionales','Banca m\u00f3vil y digital','Seguros vinculados a productos','Cr\u00e9dito hipotecario'],en:['Interest rates and fees','Savings and investment products','Digital security and fraud','Credit requirements','International transfers','Mobile and digital banking','Product-linked insurance','Mortgage credit']},
+    faqs:{es:['\u00bfC\u00f3mo bloqueo mi tarjeta?','\u00bfCu\u00e1l es el l\u00edmite de transferencia?','\u00bfQu\u00e9 documentos necesito para un cr\u00e9dito?','\u00bfC\u00f3mo activo la banca en l\u00ednea?'],en:['How do I block my card?','What is the transfer limit?','What documents do I need for a loan?','How do I activate online banking?']},
+  },
+  healthcare:{
+    acciones:{es:['Agenda cita m\u00e9dica','Solicita resultados de laboratorio','Consulta cobertura de seguro','Renueva prescripci\u00f3n m\u00e9dica','Solicita referencia a especialista','Consulta horarios de atenci\u00f3n','Cancela o reprograma cita','Solicita certificado m\u00e9dico'],en:['Schedules medical appointment','Requests lab results','Checks insurance coverage','Renews medical prescription','Requests specialist referral','Checks office hours','Cancels or reschedules appointment','Requests medical certificate']},
+    temas:{es:['Disponibilidad de especialistas','Cobertura y autorizaciones de seguro','Tiempos de espera para citas','Resultados y seguimiento m\u00e9dico','Servicios de telemedicina','Preparaci\u00f3n para procedimientos','Medicamentos y prescripciones','Programas de salud preventiva'],en:['Specialist availability','Insurance coverage and authorizations','Appointment waiting times','Results and medical follow-up','Telemedicine services','Procedure preparation','Medications and prescriptions','Preventive health programs']},
+    faqs:{es:['\u00bfC\u00f3mo agendo una cita en l\u00ednea?','\u00bfAceptan mi seguro m\u00e9dico?','\u00bfEst\u00e1 disponible la telemedicina?','\u00bfCu\u00e1nto tarda el resultado del laboratorio?'],en:['How do I book an appointment online?','Do you accept my insurance?','Is telemedicine available?','How long do lab results take?']},
+  },
+  hospitality:{
+    acciones:{es:['Realiza reserva de habitaci\u00f3n','Solicita informaci\u00f3n de tarifas','Cancela o modifica reserva','Consulta servicios del hotel','Solicita transfer aeropuerto','Reserva mesa en restaurante','Consulta pol\u00edtica de mascotas','Solicita upgrade de habitaci\u00f3n'],en:['Makes room reservation','Requests rate information','Cancels or modifies booking','Inquires about hotel services','Requests airport transfer','Reserves restaurant table','Checks pet policy','Requests room upgrade']},
+    temas:{es:['Tarifas y disponibilidad por fechas','Servicios e instalaciones del hotel','Pol\u00edticas de cancelaci\u00f3n','Experiencias y actividades locales','Paquetes y ofertas especiales','Servicios de spa y bienestar','Restaurantes y gastronom\u00eda','Fidelidad y puntos acumulados'],en:['Rates and date availability','Hotel services and facilities','Cancellation policies','Local experiences and activities','Special packages and offers','Spa and wellness services','Restaurants and gastronomy','Loyalty and points']},
+    faqs:{es:['\u00bfCu\u00e1l es el horario de check-in?','\u00bfAdmiten mascotas?','\u00bfIncluye desayuno la tarifa?','\u00bfHay estacionamiento disponible?'],en:['What is the check-in time?','Are pets allowed?','Is breakfast included?','Is parking available?']},
+  },
+  telecom:{
+    acciones:{es:['Consulta consumo de datos','Solicita cambio de plan','Reporta falla en el servicio','Solicita portabilidad de n\u00famero','Contrata nuevo servicio','Consulta factura y pagos','Solicita reparaci\u00f3n de equipo','Agrega l\u00ednea al plan familiar'],en:['Checks data usage','Requests plan change','Reports service outage','Requests number portability','Contracts new service','Checks invoice and payments','Requests device repair','Adds line to family plan']},
+    temas:{es:['Cobertura y calidad de red','Planes y precios actualizados','Roaming internacional','Velocidad y rendimiento de datos','Facturaci\u00f3n y pagos autom\u00e1ticos','Equipos y dispositivos nuevos','Portabilidad y migraci\u00f3n','Soporte t\u00e9cnico a distancia'],en:['Network coverage and quality','Updated plans and pricing','International roaming','Data speed and performance','Billing and automatic payments','New devices and equipment','Portability and migration','Remote technical support']},
+    faqs:{es:['\u00bfC\u00f3mo consulto mi consumo de datos?','\u00bfPuedo conservar mi n\u00famero al cambiar?','\u00bfHay cobertura en mi zona?','\u00bfC\u00f3mo activo el roaming?'],en:['How do I check my data usage?','Can I keep my number when switching?','Is there coverage in my area?','How do I activate roaming?']},
+  },
+  fnb:{
+    acciones:{es:['Realiza pedido en l\u00ednea','Consulta men\u00fa del d\u00eda','Reserva mesa para grupo','Solicita informaci\u00f3n nutricional','Reporta problema con pedido','Aplica c\u00f3digo de descuento','Consulta opciones veganas','Solicita servicio a domicilio'],en:['Places online order','Checks daily menu','Reserves table for group','Requests nutritional info','Reports order issue','Applies discount code','Checks vegan options','Requests home delivery']},
+    temas:{es:['Men\u00fa y opciones del d\u00eda','Tiempos de entrega a domicilio','Opciones para dietas especiales','Promociones y combos activos','Ingredientes y alérgenos','Servicio de catering','Programas de fidelidad','Reservas para eventos'],en:['Daily menu and options','Home delivery times','Special diet options','Active promotions and combos','Ingredients and allergens','Catering service','Loyalty programs','Event reservations']},
+    faqs:{es:['\u00bfCu\u00e1nto tarda la entrega a domicilio?','\u00bfTienen opciones sin gluten?','\u00bfPuedo reservar para grupo grande?','\u00bfC\u00f3mo aplico mi cupon de descuento?'],en:['How long does home delivery take?','Do you have gluten-free options?','Can I book for a large group?','How do I apply my discount coupon?']},
+  },
+  ecommerce:{
+    acciones:{es:['Rastrea su pedido','Inicia proceso de devoluci\u00f3n','Consulta disponibilidad de producto','Aplica cupon de descuento','Solicita asistencia de compra','Actualiza direcci\u00f3n de env\u00edo','Revisa historial de compras','Cancela pedido en proceso'],en:['Tracks their order','Initiates return process','Checks product availability','Applies discount coupon','Requests purchase assistance','Updates shipping address','Reviews purchase history','Cancels order in process']},
+    temas:{es:['Estado y seguimiento de pedidos','Pol\u00edticas de devoluci\u00f3n','Env\u00edo express y tiempos de entrega','Comparaci\u00f3n de productos','Medios de pago aceptados','Garant\u00eda y soporte post-venta','Ofertas flash y descuentos','Seguridad en compras online'],en:['Order status and tracking','Return policies','Express shipping and delivery times','Product comparison','Accepted payment methods','Warranty and post-sale support','Flash offers and discounts','Online shopping security']},
+    faqs:{es:['\u00bfC\u00f3mo rastro mi pedido?','\u00bfCu\u00e1nto tiempo tengo para devolver?','\u00bfQu\u00e9 m\u00e9todos de pago aceptan?','\u00bfOfrecen env\u00edo express?'],en:['How do I track my order?','How long do I have to return?','What payment methods do you accept?','Do you offer express shipping?']},
+  },
+  tech:{
+    acciones:{es:['Reporta bug o error t\u00e9cnico','Solicita demostraci\u00f3n del producto','Consulta sobre integraciones','Solicita acceso a prueba gratuita','Gestiona licencias de usuario','Solicita soporte t\u00e9cnico','Consulta documentaci\u00f3n de API','Solicita upgrade de plan'],en:['Reports bug or technical error','Requests product demo','Inquires about integrations','Requests free trial access','Manages user licenses','Requests technical support','Checks API documentation','Requests plan upgrade']},
+    temas:{es:['Funcionalidades y casos de uso','Integraciones con otras plataformas','Seguridad y cumplimiento normativo','Planes y precios empresariales','Migraci\u00f3n de datos','Soporte t\u00e9cnico y SLA','Actualizaciones y nuevas funciones','Capacitaci\u00f3n y onboarding'],en:['Features and use cases','Integrations with other platforms','Security and compliance','Enterprise plans and pricing','Data migration','Technical support and SLA','Updates and new features','Training and onboarding']},
+    faqs:{es:['\u00bfOfrecen prueba gratuita?','\u00bfSe integra con nuestro CRM?','\u00bfQu\u00e9 tan segura es la plataforma?','\u00bfTienen soporte 24/7?'],en:['Do you offer a free trial?','Does it integrate with our CRM?','How secure is the platform?','Do you have 24/7 support?']},
+  },
+  insurance:{
+    acciones:{es:['Solicita cotizaci\u00f3n de seguro','Reporta un siniestro','Consulta estado de reclamaci\u00f3n','Renueva p\u00f3liza vigente','Solicita certificado de seguro','Actualiza beneficiarios','Consulta coberturas de p\u00f3liza','Solicita reembolso de gastos'],en:['Requests insurance quote','Reports a claim','Checks claim status','Renews current policy','Requests insurance certificate','Updates beneficiaries','Checks policy coverages','Requests expense reimbursement']},
+    temas:{es:['Coberturas y exclusiones de p\u00f3liza','Proceso de reclamaci\u00f3n paso a paso','Primas y opciones de pago','Tiempos de respuesta a siniestros','Documentos requeridos para cobros','Renovaci\u00f3n y cambios de plan','Red de prestadores y cl\u00ednicas','Seguros complementarios'],en:['Policy coverage and exclusions','Step-by-step claims process','Premiums and payment options','Claim response times','Documents required for claims','Renewal and plan changes','Provider and clinic network','Supplementary insurance']},
+    faqs:{es:['\u00bfC\u00f3mo reporto un siniestro?','\u00bfCu\u00e1nto tarda el pago de un reclamo?','\u00bfQu\u00e9 est\u00e1 cubierto en mi p\u00f3liza?','\u00bfPuedo pagar mi prima en cuotas?'],en:['How do I report a claim?','How long does claim payment take?','What is covered in my policy?','Can I pay my premium in installments?']},
+  },
+};
+
+// ═══ CHANNEL LIBRARY ══════════════════════════════
+const CH_LIBRARY=[
+  {id:'bot',name:'BOT / AI Chat',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="8" width="18" height="12" rx="2.5"/><circle cx="9" cy="14" r="1.5" fill="currentColor" stroke="none"/><circle cx="15" cy="14" r="1.5" fill="currentColor" stroke="none"/><path d="M9 8V5M15 8V5M9 5h6"/></svg>'},
+  {id:'whatsapp',name:'WhatsApp',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>'},
+  {id:'voice',name:'Voice / Phone',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 18v-6a9 9 0 0118 0v6"/><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"/></svg>'},
+  {id:'app',name:'Mobile App',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>'},
+  {id:'forms',name:'Web Forms',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>'},
+  {id:'email',name:'Email',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>'},
+  {id:'social',name:'Social Media',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>'},
+  {id:'retail',name:'Physical Retail',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'},
+  {id:'google',name:'Google Business',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>'},
+  {id:'tickets',name:'Support Tickets',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 5v2M15 11v2M15 17v2M5 5h14a2 2 0 012 2v3a2 2 0 000 4v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-3a2 2 0 000-4V7a2 2 0 012-2z"/></svg>'},
+  {id:'chat',name:'Live Chat',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>'},
+  {id:'reddit',name:'Reddit / Forums',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M9 12a1 1 0 110 2 1 1 0 010-2zM15 12a1 1 0 110 2 1 1 0 010-2M9.5 15.5s.8 1 2.5 1 2.5-1 2.5-1"/></svg>'},
+];
+
+const PRESET_ICONS=[
+  {id:'building',label:'Corp',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="18" rx="1"/><path d="M8 21V9M16 21V9M3 9h18"/></svg>'},
+  {id:'edu',label:'Edu',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>'},
+  {id:'retail2',label:'Retail',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>'},
+  {id:'health',label:'Health',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'},
+  {id:'bank',label:'Bank',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>'},
+  {id:'hotel',label:'Hotel',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'},
+  {id:'telecom',label:'Telco',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/></svg>'},
+  {id:'fnb',label:'F&B',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>'},
+  {id:'star',label:'Star',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'},
+  {id:'globe',label:'Global',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>'},
+];
+
+// ═══ DASHBOARD DATA ═══════════════════════════════
+let activeChannels=[
+  {...CH_LIBRARY[0],live:120,on:true},{...CH_LIBRARY[1],live:155,on:true},
+  {...CH_LIBRARY[2],live:175,on:true},{...CH_LIBRARY[3],live:135,on:true},
+  {...CH_LIBRARY[4],live:186,on:true},
+];
+const sentiment=[
+  {id:'s0',pct:2,threshold:12},{id:'s1',pct:14,threshold:28},
+  {id:'s2',pct:58,threshold:0},{id:'s3',pct:21,threshold:0},{id:'s4',pct:5,threshold:0},
+];
+const metrics=[
+  {id:'res',es:'Resueltos',en:'Resolved',fr:'R\u00e9solus',pt:'Resolvidos',total:100,pcts:[15,65,20],icon:'check'},
+  {id:'aba',es:'Abandonados',en:'Abandoned',fr:'Abandonn\u00e9s',pt:'Abandonados',total:100,pcts:[80,15,5],icon:'abandon'},
+  {id:'des',es:'Desambiguaci\u00f3n',en:'Disambiguation',fr:'D\u00e9sambiguation',pt:'Desambigua\u00e7\u00e3o',total:92,pcts:[23,59,18],icon:'disambig'},
+  {id:'der',es:'Derivaciones',en:'Escalations',fr:'Escalades',pt:'Deriva\u00e7\u00f5es',total:100,pcts:[34,20,46],icon:'escalate'},
+  {id:'alu',es:'Alucinaciones',en:'Hallucinations',fr:'Hallucinations',pt:'Alucina\u00e7\u00f5es',total:53,pcts:[12,23,65],icon:'halluc'},
+];
+const mIcons={
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M7.5 12l3 3 6-6" stroke-linecap="round"/></svg>',
+  abandon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12a9 9 0 109-9M3 3v9h9" stroke-linecap="round"/></svg>',
+  disambig:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>',
+  escalate:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>',
+  halluc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+};
+
+// ═══ CONTEXT PREVIEW ═════════════════════════════
+function onIndustryChange(){
+  const ind=document.getElementById('industrySelect').value;
+  const prev=document.getElementById('contextPreview');
+  if(!ind){prev.classList.remove('show');return;}
+  const labels={education:'Education & University',retail:'Fashion & Retail',banking:'Banking & Financial Services',healthcare:'Healthcare',hospitality:'Hospitality & Hotels',telecom:'Telecommunications',fnb:'Food & Beverage',ecommerce:'E-Commerce',tech:'Technology & SaaS',insurance:'Insurance'};
+  prev.classList.add('show');
+  prev.innerHTML=`<strong>Industry detected:</strong> ${labels[ind]}<br>When you click Apply, BOb will call the Anthropic API to generate contextually accurate Actions, Themes, FAQs, sentiment distribution, and session volume — all calibrated to this industry. Add free text above for even more specific results.`;
+}
+
+// ═══ SIDEBAR ══════════════════════════════════════
+// ─ Overlay ────────────────────────────────────────
+let overlayMode='sidebar';
+function overlayClick(){
+  if(overlayMode==='sidebar')closeSidebar();
+  else if(overlayMode==='actionables')closeActionables();
+}
+function openSidebar(){
+  overlayMode='sidebar';
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+  renderSbChannels(); renderIconGrid(); populateChAddSelect();
+  document.getElementById('langSelect').value=CFG.lang;
+  document.getElementById('industrySelect').value=CFG.industry;
+  document.getElementById('volSlider').value=CFG.vol;
+  document.getElementById('speedSlider').value=CFG.speed;
+  document.getElementById('volLabel').textContent=VOL_LABELS[CFG.vol-1];
+  document.getElementById('speedLabel').textContent=SPD_LABELS[CFG.speed-1];
+  if(CFG.industry) onIndustryChange();
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+function setLogoMode(m){
+  CFG.logoMode=m;
+  document.getElementById('tab-upload').classList.toggle('active',m==='upload');
+  document.getElementById('tab-icon').classList.toggle('active',m==='icon');
+  document.getElementById('upload-panel').style.display=m==='upload'?'':'none';
+  document.getElementById('icon-panel').style.display=m==='icon'?'':'none';
+}
+function renderIconGrid(){
+  document.getElementById('iconGrid').innerHTML=PRESET_ICONS.map(ic=>`<div class="icon-opt ${CFG.selectedIcon===ic.id?'selected':''}" onclick="selectIcon('${ic.id}')">${ic.svg}<span>${ic.label}</span></div>`).join('');
+}
+function selectIcon(id){CFG.selectedIcon=id;renderIconGrid();}
+function handleLogo(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const src=e.target.result;
+    document.getElementById('logoPreview').innerHTML=`<img src="${src}" style="max-height:40px;max-width:180px;object-fit:contain">`;
+    document.getElementById('logoClearWrap').style.display='block';
+    CFG.logoSrc=src;
+  };
+  reader.readAsDataURL(file);
+}
+function clearLogo(){
+  document.getElementById('logoPreview').innerHTML='<div style="font-size:26px;color:var(--gray-light)">\u2191</div><div style="font-size:12px;font-weight:600;color:var(--gray-mid);margin-top:4px">Click to upload logo</div><div class="logo-hint">PNG, JPG, SVG \u2014 max 2MB</div>';
+  document.getElementById('logoClearWrap').style.display='none';
+  document.getElementById('logoFile').value='';
+  CFG.logoSrc=null;
+  document.getElementById('hLogoImg').style.display='none';
+  document.getElementById('hLogoIcon').style.display='none';
+}
+function updateVol(v){CFG.vol=parseInt(v);document.getElementById('volLabel').textContent=VOL_LABELS[v-1];}
+function updateSpeed(v){CFG.speed=parseInt(v);document.getElementById('speedLabel').textContent=SPD_LABELS[v-1];}
+function populateChAddSelect(){
+  const sel=document.getElementById('chAddSelect');
+  const ids=activeChannels.map(c=>c.id);
+  const avail=CH_LIBRARY.filter(c=>!ids.includes(c.id));
+  sel.innerHTML=avail.length?avail.map(c=>`<option value="${c.id}">${c.name}</option>`).join(''):'<option disabled>All channels added</option>';
+}
+function addChannel(){
+  const sel=document.getElementById('chAddSelect');const id=sel.value;if(!id)return;
+  const def=CH_LIBRARY.find(c=>c.id===id);if(!def||activeChannels.find(c=>c.id===id))return;
+  activeChannels.push({...def,live:Math.floor(50+Math.random()*150),on:true});
+  renderSbChannels();populateChAddSelect();
+}
+function removeChannel(id){
+  activeChannels=activeChannels.filter(c=>c.id!==id);
+  if(chOffset>0&&chOffset>=activeChannels.length-CH_VISIBLE+1)chOffset=Math.max(0,chOffset-1);
+  renderSbChannels();populateChAddSelect();
+}
+function renderSbChannels(){
+  const list=document.getElementById('sbChList');
+  if(!activeChannels.length){list.innerHTML='<div class="ch-empty">No channels added yet</div>';return;}
+  list.innerHTML=activeChannels.map(c=>{const def=CH_LIBRARY.find(x=>x.id===c.id);
+    return`<div class="ch-item"><div class="ch-item-icon">${def?.svg||''}</div><div class="ch-item-name">${def?.name||c.id}</div><button class="ch-remove" onclick="removeChannel('${c.id}')">&times;</button></div>`;}).join('');
+}
+
+// ═══ AI SIMULATION ENGINE ════════════════════════
+async function generateAISimulationData(industry, activity, context, lang) {
+  const langNames = {es:'Spanish',en:'English',fr:'French',pt:'Portuguese'};
+  const langName = langNames[lang] || 'Spanish';
+
+  const prompt = `Generate realistic business dashboard simulation data for BOb (Business Observer platform).
+
+Industry: ${industry || 'general business'}
+Primary Service Activity: ${activity || 'customer support'}
+Additional Context: ${context || 'none provided'}
+Output language: ${langName}
+
+Return ONLY valid JSON with exactly this structure — no markdown, no explanation, nothing else:
+{
+  "actions": ["action1","action2","action3","action4","action5","action6","action7","action8"],
+  "themes": ["theme1","theme2","theme3","theme4","theme5","theme6","theme7","theme8"],
+  "faqs": [
+    {"question":"Question 1?","count":280},
+    {"question":"Question 2?","count":145},
+    {"question":"Question 3?","count":87},
+    {"question":"Question 4?","count":34}
+  ],
+  "sentimentProfile":{"angry":4,"unsatisfied":14,"satisfied":52,"content":24,"happy":6},
+  "sessionBase":650
+}
+
+Rules:
+- actions: specific things customers DO in interactions, customer perspective, in ${langName}
+- themes: real conversation topics that come up most, in ${langName}
+- faqs: most common customer questions, counts descending 30–400, in ${langName}
+- sentimentProfile: the 5 integer values MUST sum to exactly 100; calibrate for this industry and activity (e.g. healthcare → more satisfied/content; complaints → more angry/unsatisfied)
+- sessionBase: realistic concurrent active interactions for this business type, integer, range 50–3000`;
+
+  const response = await fetch('/api/ai', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: 'You are a business intelligence data generator for the BOb platform by Boss.Technology. Return ONLY valid JSON. No markdown code fences. No preamble. No explanation.',
+      messages: [{role:'user', content:prompt}]
+    })
+  });
+
+  if (!response.ok) throw new Error(`API ${response.status}`);
+  const data = await response.json();
+  const raw = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+  const clean = raw.replace(/```json|```/g, '').trim();
+  return JSON.parse(clean);
+}
+
+function applyAIData(data) {
+  // Sentiment — normalise to exactly 100
+  if (data.sentimentProfile) {
+    const keys = ['angry','unsatisfied','satisfied','content','happy'];
+    const vals = keys.map(k => Math.max(0, parseInt(data.sentimentProfile[k]) || 0));
+    const sum = vals.reduce((a, b) => a + b, 0);
+    if (sum > 0) {
+      vals.forEach((v, i) => { sentiment[i].pct = Math.round(v * 100 / sum); });
+      const drift = sentiment.reduce((a, s) => a + s.pct, 0) - 100;
+      sentiment[2].pct -= drift; // correct rounding on Satisfecho/Satisfied
+    }
+    renderLollipops();
+  }
+  // Session base — distribute proportionally across active channels
+  if (data.sessionBase) {
+    const base = Math.max(50, parseInt(data.sessionBase) || 500);
+    const on = activeChannels.filter(c => c.on);
+    if (on.length) {
+      on.forEach(c => { c.live = Math.round(base * (0.5 + Math.random() * 0.7) / on.length); });
+      renderChannelDisplay();
+      updateSesDisplay(activeChannels.filter(c=>c.on).reduce((s,c)=>s+c.live,0));
+      window._mBase=null; window._baseAvgTime=null; // reset channel filter baselines
+    }
+  }
+  // Actions
+  if (Array.isArray(data.actions) && data.actions.length) {
+    document.getElementById('accList').innerHTML =
+      data.actions.slice(0,8).map((a,i) =>
+        `<li><span class="at-n">${i+1}.</span>${a}</li>`).join('');
+  }
+  // Themes
+  if (Array.isArray(data.themes) && data.themes.length) {
+    document.getElementById('temList').innerHTML =
+      data.themes.slice(0,8).map((t,i) =>
+        `<li><span class="at-n">${i+1}.</span>${t}</li>`).join('');
+  }
+  // FAQs
+  if (Array.isArray(data.faqs) && data.faqs.length) {
+    document.getElementById('faqBody').innerHTML =
+      data.faqs.slice(0,4).map((f,i) =>
+        `<div class="faq-item">
+           <div class="faq-q">${f.question}</div>
+           <div class="faq-n" id="faq-n-${i}">${f.count}</div>
+         </div>`).join('');
+  }
+}
+
+async function applyConfig(){
+  const l=document.getElementById('langSelect').value;
+  const ind=document.getElementById('industrySelect').value;
+  CFG.lang=l; CFG.industry=ind; CFG.activity=document.getElementById('activitySelect').value;
+  CFG.vol=parseInt(document.getElementById('volSlider').value);
+  CFG.speed=parseInt(document.getElementById('speedSlider').value);
+  // Logo
+  if(CFG.logoMode==='upload'&&CFG.logoSrc){
+    const img=document.getElementById('hLogoImg');img.src=CFG.logoSrc;img.style.display='block';
+    document.getElementById('hLogoIcon').style.display='none';
+  } else if(CFG.logoMode==='icon'&&CFG.selectedIcon){
+    const ic=PRESET_ICONS.find(x=>x.id===CFG.selectedIcon);
+    const iconEl=document.getElementById('hLogoIcon');
+    if(ic){iconEl.innerHTML=ic.svg;iconEl.style.display='flex';}
+    document.getElementById('hLogoImg').style.display='none';
+  }
+  applyLang(l);
+
+  const contextText = document.getElementById('contextText').value.trim();
+
+  if (contextText || ind) {
+    // AI-powered path — show loader
+    const btn = document.getElementById('sbApplyBtn');
+    const loader = document.getElementById('sbAiLoader');
+    btn.disabled = true;
+    loader.classList.add('show');
+    try {
+      const aiData = await generateAISimulationData(ind, CFG.activity, contextText, l);
+      applyAIData(aiData);
+      renderChannelDisplay();
+      restartSim();
+      closeSidebar();
+      toast('✦ AI-generated simulation applied');
+    } catch(err) {
+      console.warn('AI generation failed, falling back to presets:', err);
+      if(ind) applyIndustryContent(ind, l);
+      else { renderFAQ(); renderAccTemas(); }
+      renderChannelDisplay();
+      restartSim();
+      closeSidebar();
+      toast('Configuration applied \u2014 dashboard updated');
+    } finally {
+      btn.disabled = false;
+      loader.classList.remove('show');
+    }
+  } else {
+    // No context provided — use defaults
+    renderFAQ(); renderAccTemas();
+    renderChannelDisplay();
+    restartSim();
+    closeSidebar();
+    toast('Configuration applied \u2014 dashboard updated');
+  }
+}
+
+function applyIndustryContent(ind,l){
+  const data=INDUSTRY[ind];if(!data)return;
+  const lang=l==='fr'||l==='pt'?'es':l; // fallback es for fr/pt
+  // Update acciones
+  const aData=(data.acciones[l]||data.acciones.es||data.acciones.en);
+  const tData=(data.temas[l]||data.temas.es||data.temas.en);
+  const fData=data.faqs;
+  document.getElementById('accList').innerHTML=aData.map((a,i)=>`<li><span class="at-n">${i+1}.</span>${a}</li>`).join('');
+  document.getElementById('temList').innerHTML=tData.map((t,i)=>`<li><span class="at-n">${i+1}.</span>${t}</li>`).join('');
+  const fLang=l==='fr'||l==='pt'?'es':l;
+  const fqs=(fData[fLang]||fData.es||fData.en);
+  const counts=[Math.floor(200+Math.random()*200),Math.floor(80+Math.random()*120),Math.floor(30+Math.random()*80),Math.floor(10+Math.random()*40)];
+  document.getElementById('faqBody').innerHTML=fqs.map((q,i)=>`<div class="faq-item"><div class="faq-q">${q}</div><div class="faq-n" id="faq-n-${i}">${counts[i]}</div></div>`).join('');
+}
+
+function applyLang(l){
+  const t=T[l];
+  const ids={int:'lbl-int',cal:'lbl-cal',rend:'lbl-rend',ses:'lbl-ses',can:'lbl-can',avg:'lbl-avg',animo:'lbl-animo',acc:'lbl-acc',tem:'lbl-tem',stats:'lbl-stats',tr:'lbl-tr',qr:'lbl-qr',faq:'lbl-faq'};
+  Object.entries(ids).forEach(([k,id])=>{const el=document.getElementById(id);if(el)el.innerHTML=t[k];});
+  const optMap={ahora:t.now,hoy:t.today,semana:t.week,mes:t.month,custom:t.custom};
+  const sel=document.getElementById('timeSel');
+  Object.entries(optMap).forEach(([v,txt])=>{const o=sel.querySelector(`option[value="${v}"]`);if(o)o.textContent=txt;});
+  renderLollipops(); renderMetrics();
+  if(!CFG.industry){ renderFAQ(); renderAccTemas(); }
+}
+
+// ═══ CHANNEL DISPLAY ═════════════════════════════
+let chOffset=0; const CH_VISIBLE=5;
+function renderChannelDisplay(){
+  const display=document.getElementById('chDisplay');
+  // Sort: enabled channels by live count desc, then disabled channels
+  const sorted=[...activeChannels].sort((a,b)=>{
+    if(a.on!==b.on)return a.on?-1:1;
+    return b.live-a.live;
+  });
+  display.innerHTML=sorted.map((c,i)=>{
+    const def=CH_LIBRARY.find(x=>x.id===c.id);
+    return`<div class="ch-cell ${c.on?'':'unchecked'}" id="chcell-${c.id}">
+      <div class="ch-cell-icon" style="color:#111">${def?.svg||''}</div>
+      <div class="ch-cell-count" id="chcount-${c.id}">${c.live}</div>
+      <input type="checkbox" class="ch-cell-cb" ${c.on?'checked':''} onchange="toggleDashCh('${c.id}',this.checked)">
+    </div>`;}).join('');
+  updateScrollBtns(); applyChOffset();
+}
+function applyChOffset(){
+  const cells=document.querySelectorAll('.ch-cell');
+  cells.forEach((el,i)=>{ el.style.display=(i>=chOffset&&i<chOffset+CH_VISIBLE)?'flex':'none'; });
+}
+function scrollChannels(dir){
+  const max=Math.max(0,activeChannels.length-CH_VISIBLE);
+  chOffset=Math.min(max,Math.max(0,chOffset+dir));
+  applyChOffset(); updateScrollBtns();
+}
+function updateScrollBtns(){
+  const max=Math.max(0,activeChannels.length-CH_VISIBLE);
+  const l=document.getElementById('scrollLeft'),r=document.getElementById('scrollRight');
+  if(activeChannels.length<=CH_VISIBLE){l.classList.remove('visible');r.classList.remove('visible');return;}
+  l.classList.toggle('visible',chOffset>0); r.classList.toggle('visible',chOffset<max);
+}
+function toggleDashCh(id,on){
+  const ch=activeChannels.find(c=>c.id===id);if(ch)ch.on=on;
+  const el=document.getElementById(`chcell-${id}`);if(el)el.classList.toggle('unchecked',!on);
+  const total=activeChannels.filter(c=>c.on).reduce((s,c)=>s+c.live,0);
+  updateSesDisplay(total);
+  document.getElementById('sesCount').style.color='var(--accent)';
+  setTimeout(()=>document.getElementById('sesCount').style.color='',600);
+  onChannelsChanged();
+}
+
+// ─ Channel-aware cascade ──────────────────────────
+function onChannelsChanged(){
+  const onChs=activeChannels.filter(c=>c.on);
+  if(!onChs.length)return;
+
+  const totalVol=activeChannels.reduce((s,c)=>s+(c.live||0),0)||1;
+  const activeVol=onChs.reduce((s,c)=>s+(c.live||0),0);
+  const fraction=Math.min(1,activeVol/totalVol);
+
+  // ── 1. Sentiment: weighted average of active channel profiles ──────────
+  let totals=[0,0,0,0,0], totalW=0;
+  onChs.forEach(c=>{
+    const p=CHANNEL_PROFILES[c.id]; if(!p)return;
+    const w=c.live||1;
+    p.sent.forEach((v,i)=>totals[i]+=v*w); totalW+=w;
+  });
+  if(totalW>0){
+    let sum=0;
+    totals.forEach((t,i)=>{sentiment[i].pct=Math.round(t/totalW);sum+=sentiment[i].pct;});
+    sentiment[2].pct-=(sum-100); // fix rounding drift on neutral state
+  }
+  // Animate existing lollipop stems in-place (no full re-render needed)
+  sentiment.forEach(s=>updateLollipop(s));
+
+  // ── 2. Metric modifiers: weighted average across active channels ────────
+  let resMod=0,abaMod=0,escMod=0,aluMod=0,timeMod=0,modW=0;
+  onChs.forEach(c=>{
+    const p=CHANNEL_PROFILES[c.id]; if(!p)return;
+    const w=c.live||1;
+    resMod+=p.resMod*w; abaMod+=p.abaMod*w;
+    escMod+=p.escMod*w; aluMod+=p.aluMod*w;
+    timeMod+=p.timeMod*w; modW+=w;
+  });
+  if(modW>0){ resMod/=modW; abaMod/=modW; escMod/=modW; aluMod/=modW; timeMod/=modW; }
+  else{ resMod=abaMod=escMod=aluMod=timeMod=1; }
+
+  // Store metric baseline once (reset if AI regenerates data)
+  if(!window._mBase){
+    window._mBase={};
+    metrics.forEach(m=>{ window._mBase[m.id]={total:m.total,pcts:[...m.pcts]}; });
+  }
+
+  // Apply modifiers to display values and re-render metrics box
+  const modMap={res:resMod,aba:abaMod,der:escMod,alu:aluMod,des:1,nps:1};
+  const metricsBox=document.getElementById('metricsBox');
+  if(metricsBox){
+    metricsBox.innerHTML=metrics.map(m=>{
+      const base=window._mBase[m.id]||{total:m.total,pcts:m.pcts};
+      const mod=modMap[m.id]||1;
+      const displayTotal=Math.max(0,Math.round(base.total*mod*fraction));
+      const isAlert=m.id==='aba'&&base.pcts[0]>70;
+      return`<div class="m-row" onclick="openActionables('${m.id}',getT('${m.id}')||'${m.es}',${displayTotal})">
+        <div class="m-icon" style="color:#111">${mIcons[m.icon]}</div>
+        <div class="m-name">${m[CFG.lang]||m.es}</div>
+        <div class="m-total">${displayTotal}</div>
+        <div class="m-pct ${isAlert?'alert':''}">${base.pcts[0]}%</div>
+        <div class="m-pct ai">${base.pcts[1]}%</div>
+        <div class="m-pct">${base.pcts[2]}%</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── 3. Avg time: scale by channel timeMod ──────────────────────────────
+  const baseTime=window._baseAvgTime||(window._baseAvgTime=avgTimeVal);
+  avgTimeVal=Math.max(2,Math.round(baseTime*timeMod));
+  const tNum=document.getElementById('avgTimeNum');
+  if(tNum){ tNum.textContent=avgTimeVal; tNum.style.color='var(--accent)'; setTimeout(()=>tNum.style.color='',600); }
+
+  // ── 4. Actions/Themes: show channel-scaled frequency badges ───────────
+  const weights=[.18,.15,.13,.11,.10,.09,.08,.07,.05,.04];
+  ['#accList li','#temList li'].forEach(sel=>{
+    document.querySelectorAll(sel).forEach((li,i)=>{
+      let badge=li.querySelector('.ch-count-badge');
+      if(!badge){ badge=document.createElement('span'); badge.className='ch-count-badge'; li.appendChild(badge); }
+      const count=Math.max(1,Math.round(activeVol*(weights[i]||.04)));
+      badge.textContent=count;
+    });
+  });
+
+  // ── 5. FAQ counts: scale to active volume fraction ─────────────────────
+  document.querySelectorAll('.faq-n').forEach(el=>{
+    if(!el.dataset.base) el.dataset.base=el.textContent||'0';
+    el.textContent=Math.max(1,Math.round(parseInt(el.dataset.base)*fraction));
+  });
+
+  // ── 6. Channel filter note ─────────────────────────────────────────────
+  const note=document.getElementById('chFilterNote');
+  const on=onChs.length, total=activeChannels.length;
+  if(note){
+    note.textContent=on<total?`${on} of ${total} channels active`:'';
+    note.classList.toggle('show',on<total);
+  }
+
+  // ── 7. Refresh open Actionables activity tab ───────────────────────────
+  if(actMetricId) renderActivityTab(actMetricId);
+}
+
+// ═══ LOLLIPOPS ════════════════════════════════════
+function renderLollipops(){
+  const chart=document.getElementById('lpChart');
+  chart.querySelectorAll('.lp-item').forEach(e=>e.remove());
+  const labels=T[CFG.lang].sent;
+  const maxPct=Math.max(...sentiment.map(s=>s.pct),60);
+  sentiment.forEach((s,i)=>{
+    const h=Math.max(3,Math.round((s.pct/maxPct)*88));
+    const bad=s.threshold>0&&s.pct>=s.threshold;
+    const item=document.createElement('div'); item.className='lp-item';
+    item.innerHTML=`<div class="lp-group"><div class="lp-pct" id="lp-pct-${s.id}">${s.pct}%</div>
+      <div class="lp-dot ${bad?'bad':''}" id="lp-dot-${s.id}"></div>
+      <div class="lp-stem" id="lp-stem-${s.id}" style="height:${h}px"></div></div>
+      <div class="lp-lbl">${labels[i]}</div>`;
+    chart.appendChild(item);
+  });
+}
+function updateLollipop(s){
+  const maxPct=Math.max(...sentiment.map(x=>x.pct),60);
+  const h=Math.max(3,Math.round((s.pct/maxPct)*88));
+  const bad=s.threshold>0&&s.pct>=s.threshold;
+  const stem=document.getElementById(`lp-stem-${s.id}`);
+  const dot=document.getElementById(`lp-dot-${s.id}`);
+  const pct=document.getElementById(`lp-pct-${s.id}`);
+  if(stem)stem.style.height=h+'px'; if(dot)dot.classList.toggle('bad',bad); if(pct)pct.textContent=s.pct+'%';
+}
+
+// ═══ METRICS / FAQ / ACCTEMAS ════════════════════
+function renderMetrics(){
+  const l=CFG.lang;
+  document.getElementById('metricsBox').innerHTML=metrics.map(m=>`<div class="m-row" id="mrow-${m.id}" onclick="openActionables('${m.id}','${m[l]||m.es}','${m.total}')">
+    <div class="m-icon" style="color:#111">${mIcons[m.icon]}</div>
+    <div class="m-name">${m[l]||m.es}</div><div class="m-total" id="mtotal-${m.id}">${m.total}</div>
+    <div class="m-pct ${m.id==='aba'&&m.pcts[0]>70?'alert':''}">${m.pcts[0]}%</div>
+    <div class="m-pct ai">${m.pcts[1]}%</div><div class="m-pct">${m.pcts[2]}%</div></div>`).join('');
+}
+
+const DEFAULT_FAQS={
+  es:['\u00bfEl programa es 100% virtual?','\u00bfQu\u00e9 opciones de pago tienen?','\u00bfEl t\u00edtulo es v\u00e1lido internacionalmente?','\u00bfCu\u00e1ndo puedo comenzar clases?'],
+  en:['Is the program 100% virtual?','What payment options do you have?','Is the degree internationally valid?','When can I start classes?'],
+  fr:['Le programme est-il 100% virtuel?','Quelles options de paiement avez-vous?','Le dipl\u00f4me est-il valide internationalement?','Quand puis-je commencer les cours?'],
+  pt:['O programa \u00e9 100% virtual?','Quais op\u00e7\u00f5es de pagamento?','O t\u00edtulo \u00e9 v\u00e1lido internacionalmente?','Quando posso come\u00e7ar as aulas?'],
+};
+const DEFAULT_COUNTS=[300,150,90,30];
+function renderFAQ(){
+  const l=CFG.lang; const qs=DEFAULT_FAQS[l]||DEFAULT_FAQS.es;
+  document.getElementById('faqBody').innerHTML=qs.map((q,i)=>`<div class="faq-item"><div class="faq-q">${q}</div><div class="faq-n" id="faq-n-${i}">${DEFAULT_COUNTS[i]}</div></div>`).join('');
+}
+
+const DEFAULT_ACC={es:['Solicita informaci\u00f3n sobre programa espec\u00edfico','Completa formulario de contacto','Inicia conversaci\u00f3n por WhatsApp','Atiende llamada con asesor','Solicita detalles de financiamiento','Comparte documentos requeridos','Agenda llamada o seguimiento','Realiza proceso de matr\u00edcula'],en:['Requests info on specific program','Completes contact form','Initiates WhatsApp conversation','Attends advisor call','Requests financing details','Shares required documents','Schedules follow-up call','Completes enrollment process'],fr:['Demande des infos sur un programme','Remplit le formulaire','Initie une conversation WhatsApp','Participe \u00e0 un appel conseiller','Demande des d\u00e9tails financement','Partage les documents requis','Planifie un suivi','Finalise le processus d\'inscription'],pt:['Solicita informa\u00e7\u00f5es sobre programa','Preenche formul\u00e1rio de contato','Inicia conversa no WhatsApp','Atende chamada com assessor','Solicita detalhes de financiamento','Compartilha documentos','Agenda chamada de acompanhamento','Realiza processo de matr\u00edcula']};
+const DEFAULT_TEM={es:['Informaci\u00f3n sobre programas acad\u00e9micos','Costos y opciones de financiamiento','Duraci\u00f3n y modalidad virtual','Requisitos de inscripci\u00f3n','Validez del t\u00edtulo','Salidas laborales','Inicio de clases y calendario','Proceso de matr\u00edcula paso a paso'],en:['Information about academic programs','Costs and financing options','Duration and virtual format','Enrollment requirements','Degree validity','Career opportunities','Class start dates','Step-by-step enrollment'],fr:['Informations sur les programmes','Co\u00fbts et financement','Dur\u00e9e et modalit\u00e9','Conditions d\'inscription','Validit\u00e9 du dipl\u00f4me','D\u00e9bouch\u00e9s professionnels','Calendrier acad\u00e9mique','Processus d\'inscription'],pt:['Programas acad\u00eamicos','Custos e financiamento','Dura\u00e7\u00e3o e modalidade','Requisitos de inscri\u00e7\u00e3o','Validade do t\u00edtulo','Sa\u00eddas profissionais','In\u00edcio das aulas','Processo de matr\u00edcula']};
+function renderAccTemas(){
+  const l=CFG.lang;
+  const aData=DEFAULT_ACC[l]||DEFAULT_ACC.es; const tData=DEFAULT_TEM[l]||DEFAULT_TEM.es;
+  document.getElementById('accList').innerHTML=aData.map((a,i)=>`<li><span class="at-n">${i+1}.</span>${a}</li>`).join('');
+  document.getElementById('temList').innerHTML=tData.map((t,i)=>`<li><span class="at-n">${i+1}.</span>${t}</li>`).join('');
+}
+
+// ═══ ACTIONABLES PANEL ═══════════════════════════
+
+// ─ i18n helper ───────────────────────────────────
+function getT(k){return(T[CFG.lang]||T.es)[k]||k;}
+
+// ─ Per-metric threshold + notification config ────
+const metricCfg={
+  sessions: {upper:null,lower:650, notifs:['email'],        peak:false,msg:'',trendAlert:false},
+  avgtime:  {upper:13,  lower:null,notifs:['slack'],        peak:true, msg:'',channels:{}},
+  sentiment:{upper:null,lower:null,notifs:[],               peak:false,msg:'',
+    thresholds:{
+      s0:{type:'upper',val:10,notifs:['email']},
+      s1:{type:'upper',val:25,notifs:['email']},
+      s2:{type:'lower',val:40,notifs:[]},
+      s3:{type:'lower',val:15,notifs:[]},
+      s4:{type:'lower',val:5, notifs:[]},
+    }},
+  acciones: {upper:null,lower:null,notifs:[],               peak:false,msg:'',items:{}},
+  temas:    {upper:null,lower:null,notifs:[],               peak:false,msg:'',items:{}},
+  nps:      {upper:null,lower:5,   notifs:['email'],        peak:false,msg:''},
+  res:      {upper:null,lower:70,  notifs:['slack'],        peak:false,msg:''},
+  aba:      {upper:110, lower:null,notifs:['email','sms'],  peak:false,msg:''},
+  des:      {upper:null,lower:null,notifs:[],               peak:false,msg:''},
+  der:      {upper:110, lower:null,notifs:['email'],        peak:false,msg:''},
+  alu:      {upper:60,  lower:null,notifs:['email','slack'],peak:false,msg:''},
+};
+
+// ─ Channel behaviour profiles ─────────────────────
+// sent[]: angry/unsatisfied/satisfied/content/happy weights
+// *Mod: multipliers for metric behaviour vs baseline
+const CHANNEL_PROFILES={
+  bot:     {sent:[2,10,57,24,7],  timeMod:0.28,resMod:1.30,abaMod:0.70,escMod:0.40,aluMod:1.80},
+  whatsapp:{sent:[4,14,52,23,7],  timeMod:0.65,resMod:1.00,abaMod:0.90,escMod:0.80,aluMod:0.70},
+  voice:   {sent:[7,18,46,22,7],  timeMod:1.90,resMod:0.85,abaMod:0.75,escMod:1.50,aluMod:0.40},
+  app:     {sent:[3,12,54,23,8],  timeMod:0.85,resMod:1.10,abaMod:0.90,escMod:0.70,aluMod:0.80},
+  forms:   {sent:[5,16,48,23,8],  timeMod:1.30,resMod:0.90,abaMod:1.20,escMod:0.90,aluMod:0.50},
+  email:   {sent:[3,12,52,25,8],  timeMod:2.80,resMod:0.80,abaMod:1.40,escMod:0.80,aluMod:0.30},
+  social:  {sent:[9,20,44,20,7],  timeMod:1.20,resMod:0.80,abaMod:1.30,escMod:1.40,aluMod:0.60},
+  retail:  {sent:[2,8, 50,28,12], timeMod:1.10,resMod:1.10,abaMod:0.60,escMod:0.70,aluMod:0.20},
+  google:  {sent:[4,14,50,24,8],  timeMod:1.00,resMod:1.00,abaMod:1.00,escMod:1.00,aluMod:0.80},
+  tickets: {sent:[5,16,48,23,8],  timeMod:1.40,resMod:0.90,abaMod:0.95,escMod:1.15,aluMod:0.50},
+  chat:    {sent:[3,11,54,24,8],  timeMod:0.75,resMod:1.10,abaMod:0.85,escMod:0.75,aluMod:0.90},
+  reddit:  {sent:[8,18,46,21,7],  timeMod:1.30,resMod:0.85,abaMod:1.25,escMod:1.15,aluMod:0.70},
+};
+
+// ─ Alert log (pre-seeded with demo entries) ───────
+const alertLog=[
+  {id:1,mid:'aba',  mname:'Abandonados',  type:'upper',val:43,thresh:40,time:'14:23',sev:'critical',notif:'Email'},
+  {id:2,mid:'alu',  mname:'Alucinaciones',type:'upper',val:23,thresh:20,time:'13:47',sev:'warning', notif:'Slack'},
+  {id:3,mid:'avgtime',mname:'Tiempo Prom.',type:'upper',val:18,thresh:15,time:'12:15',sev:'warning', notif:'Slack'},
+];
+let alertIdCtr=4;
+let actMetricId=null;
+
+// ─ Open / Close / Switch tab ──────────────────────
+function openActionables(metricId,name,val){
+  actMetricId=metricId;
+  document.getElementById('actMetricName').innerHTML=name;  // innerHTML renders HTML entities
+  document.getElementById('actMetricVal').textContent=val||'';
+  // Reset BObee tab so it re-initialises for the new metric
+  const bobeeEl=document.getElementById('actContent-bobee');
+  if(bobeeEl) bobeeEl.dataset.mid='';
+  actBobeeHistory=[];
+  renderActivityTab(metricId);
+  renderAlertsTab(metricId);
+  renderConfigTab(metricId);
+  document.getElementById('actPanel').classList.add('open');
+  // Darken background same as sidebar
+  overlayMode='actionables';
+  document.getElementById('overlay').classList.add('open');
+  switchActTab('activity');
+}
+function closeActionables(){
+  document.getElementById('actPanel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+  actMetricId=null;
+}
+function switchActTab(tab){
+  ['activity','alerts','config','bobee'].forEach(t=>{
+    document.getElementById(`actContent-${t}`)?.classList.toggle('active',t===tab);
+    document.getElementById(`aTab-${t}`)?.classList.toggle('active',t===tab);
+  });
+  if(tab==='bobee') renderActBobeeTab();
+}
+
+// ─ Activity tab ───────────────────────────────────
+function renderActivityTab(metricId){
+  switch(metricId){
+    case 'nps':       renderNpsActivity();break;
+    case 'sessions':  renderSessionsActivity();break;
+    case 'avgtime':   renderAvgTimeActivity();break;
+    case 'sentiment': renderSentimentActivity();break;
+    case 'acciones':  renderActionsActivity();break;
+    case 'temas':     renderTemasActivity();break;
+    default:          renderGenericActivity(metricId);
+  }
+}
+
+function renderSessionsActivity(){
+  const total=activeChannels.filter(c=>c.on).reduce((s,c)=>s+c.live,0);
+  const sorted=[...activeChannels].filter(c=>c.on).sort((a,b)=>b.live-a.live);
+  const maxLive=sorted[0]?.live||1;
+  const delta=Math.round((Math.random()-.35)*total*0.12);
+  const pct=total>0?Math.round(Math.abs(delta)/total*100):0;
+  const rising=delta>=0;
+  const bars=sorted.map(c=>{
+    const w=Math.round(c.live/maxLive*100);
+    const def=CH_LIBRARY.find(x=>x.id===c.id);
+    return`<div class="act-bar-item"><div class="act-bar-label">${def?.name||c.id}</div><div class="act-bar-track"><div class="act-bar-fill" style="width:${w}%"></div></div><div class="act-bar-count">${c.live}</div></div>`;
+  }).join('');
+  document.getElementById('actContent-activity').innerHTML=`
+    <div class="act-section-hd">Live Session Count</div>
+    <div class="act-trend-row"><div class="act-trend-val">${formatNum(total)}</div><div class="act-trend-delta ${rising?'act-trend-up':'act-trend-down'}">${rising?'↑':'↓'} ${Math.abs(delta)} (${pct}%) last 30 min</div></div>
+    <div class="act-mini-grid">
+      <div class="act-mini-card"><div class="act-mini-label">Peak Today</div><div class="act-mini-val">${formatNum(Math.round(total*1.18))}</div><div class="act-mini-sub">09:15 – 09:45</div></div>
+      <div class="act-mini-card"><div class="act-mini-label">7-Day Avg</div><div class="act-mini-val">${formatNum(Math.round(total*0.92))}</div><div class="act-mini-sub">Baseline reference</div></div>
+    </div>
+    <div class="act-section-hd mt">Channel Breakdown</div>
+    <div class="act-bar-list">${bars}</div>
+    <div class="act-section-hd mt">Pattern Insight</div>
+    <div class="pattern-box">${patternInsight('sessions')}</div>`;
+}
+
+function renderAvgTimeActivity(){
+  const now=avgTimeVal;
+  const aiTime=Math.max(1,Math.round(now*0.28));
+  const humanTime=Math.round(now*1.4);
+  const isAbove=now>13;
+  const chBars=activeChannels.filter(c=>c.on).map(c=>{
+    const t=Math.max(1,Math.round(now*(0.3+Math.random()*1.1)));
+    const w=Math.round(t/Math.max(20,now*1.8)*100);
+    const def=CH_LIBRARY.find(x=>x.id===c.id);
+    return`<div class="act-bar-item"><div class="act-bar-label">${def?.name||c.id}</div><div class="act-bar-track"><div class="act-bar-fill" style="width:${w}%"></div></div><div class="act-bar-count">${t}m</div></div>`;
+  }).join('');
+  document.getElementById('actContent-activity').innerHTML=`
+    <div class="act-section-hd">Average Interaction Time</div>
+    <div class="act-trend-row"><div class="act-trend-val">${now}</div><div class="act-trend-unit"> min</div><div class="act-trend-delta ${isAbove?'act-trend-up':'act-trend-down'}" style="margin-left:auto">${isAbove?'↑ Above':'↓ Below'} threshold (13 min)</div></div>
+    <div class="act-mini-grid">
+      <div class="act-mini-card"><div class="act-mini-label">AI Agent</div><div class="act-mini-val" style="color:var(--accent)">${aiTime}m</div><div class="act-mini-sub">Avg resolution</div></div>
+      <div class="act-mini-card"><div class="act-mini-label">Human Agent</div><div class="act-mini-val">${humanTime}m</div><div class="act-mini-sub">Avg resolution</div></div>
+    </div>
+    <div class="act-section-hd mt">By Channel</div>
+    <div class="act-bar-list">${chBars}</div>
+    <div class="act-section-hd mt">Pattern Insight</div>
+    <div class="pattern-box">${patternInsight('avgtime')}</div>`;
+}
+
+function renderSentimentActivity(){
+  const labels=T[CFG.lang]?.sent||T.es.sent;
+  const colors=['var(--red)','#F59E0B','var(--black)','#22C55E','#15803D'];
+  const maxPct=Math.max(...sentiment.map(s=>s.pct));
+  const positive=sentiment[2].pct+sentiment[3].pct+sentiment[4].pct;
+  const negative=sentiment[0].pct+sentiment[1].pct;
+  const bars=sentiment.map((s,i)=>{
+    const w=Math.round(s.pct/maxPct*100);
+    return`<div class="act-bar-item"><div class="act-bar-label">${labels[i]}</div><div class="act-bar-track"><div class="act-bar-fill" style="width:${w}%;background:${colors[i]}"></div></div><div class="act-bar-count">${s.pct}%</div></div>`;
+  }).join('');
+  document.getElementById('actContent-activity').innerHTML=`
+    <div class="act-section-hd">Sentiment Distribution</div>
+    <div class="act-mini-grid">
+      <div class="act-mini-card"><div class="act-mini-label">Positive</div><div class="act-mini-val" style="color:#15803D">${positive}%</div><div class="act-mini-sub">Satisfied + Content + Happy</div></div>
+      <div class="act-mini-card"><div class="act-mini-label">Negative</div><div class="act-mini-val" style="color:var(--red)">${negative}%</div><div class="act-mini-sub">Angry + Unsatisfied</div></div>
+    </div>
+    <div class="act-bar-list">${bars}</div>
+    <div class="act-section-hd mt">Sentiment Drivers</div>
+    <div class="act-sentiment-driver"><strong>↑ Positive:</strong> Fast AI resolution, first-contact resolution, no escalation<br><strong>↓ Negative:</strong> Wait times exceeding <strong>4 min</strong>, escalation events, disambiguation loops</div>
+    <div class="act-section-hd mt">Pattern Insight</div>
+    <div class="pattern-box">${patternInsight('sentiment')}</div>`;
+}
+
+function renderActionsActivity(){
+  const acc=[...document.querySelectorAll('#accList li')].map(li=>li.textContent.replace(/^\d+\./,'').trim()).filter(Boolean);
+  if(!acc.length){renderGenericActivity('acciones');return;}
+  const total=Math.max(50,activeChannels.filter(c=>c.on).reduce((s,c)=>s+c.live,0));
+  const weights=[.18,.15,.13,.11,.10,.09,.08,.07,.05,.04];
+  const data=acc.map((a,i)=>({name:a,count:Math.round(total*(weights[i]||.04)*(0.8+Math.random()*.4))}));
+  const maxC=Math.max(...data.map(d=>d.count));
+  const bars=data.map(d=>{
+    const w=Math.round(d.count/maxC*100);
+    return`<div class="act-bar-item"><div class="act-bar-label">${d.name}</div><div class="act-bar-track"><div class="act-bar-fill" style="width:${w}%"></div></div><div class="act-bar-count">${d.count}</div></div>`;
+  }).join('');
+  document.getElementById('actContent-activity').innerHTML=`
+    <div class="act-section-hd">Action Frequency</div>
+    <div class="act-bar-list">${bars}</div>
+    <div class="act-section-hd mt">Pattern Insight</div>
+    <div class="pattern-box">${patternInsight('acciones')}</div>`;
+}
+
+function renderTemasActivity(){
+  const tem=[...document.querySelectorAll('#temList li')].map(li=>li.textContent.replace(/^\d+\./,'').trim()).filter(Boolean);
+  if(!tem.length){renderGenericActivity('temas');return;}
+  const total=Math.max(50,activeChannels.filter(c=>c.on).reduce((s,c)=>s+c.live,0));
+  const weights=[.20,.17,.14,.12,.10,.08,.07,.06,.04,.02];
+  const data=tem.map((t,i)=>({name:t,count:Math.round(total*(weights[i]||.03)*(0.8+Math.random()*.4))}));
+  const maxC=Math.max(...data.map(d=>d.count));
+  const bars=data.map(d=>{
+    const w=Math.round(d.count/maxC*100);
+    return`<div class="act-bar-item"><div class="act-bar-label">${d.name}</div><div class="act-bar-track"><div class="act-bar-fill" style="width:${w}%"></div></div><div class="act-bar-count">${d.count}</div></div>`;
+  }).join('');
+  document.getElementById('actContent-activity').innerHTML=`
+    <div class="act-section-hd">Theme Frequency</div>
+    <div class="act-bar-list">${bars}</div>
+    <div class="act-section-hd mt">Pattern Insight</div>
+    <div class="pattern-box">${patternInsight('temas')}</div>`;
+}
+
+function renderGenericActivity(metricId){
+  const items=buildFeed(metricId);
+  const feedHtml=items.map(f=>`<div class="feed-item"><span class="feed-time">${f.time}</span><div class="feed-ch">${f.chSvg}</div><div class="feed-desc">${f.desc}</div><span class="feed-badge ${f.cls}">${f.label}</span></div>`).join('');
+  document.getElementById('actContent-activity').innerHTML=
+    `<div class="act-section-hd">Recent Interactions</div><div class="act-feed">${feedHtml}</div><div class="act-section-hd mt">Pattern Insight</div><div class="pattern-box">${patternInsight(metricId)}</div>`;
+}
+
+
+function getContextDescs(){
+  const acc=[...document.querySelectorAll('#accList li')].map(li=>li.textContent.replace(/^\d+\./,'').trim()).filter(Boolean);
+  const tem=[...document.querySelectorAll('#temList li')].map(li=>li.textContent.replace(/^\d+\./,'').trim()).filter(Boolean);
+  const all=[...acc,...tem];
+  return all.length?all:['Customer support inquiry','Product information request','Account management query','Billing question','Technical issue'];
+}
+
+function buildFeed(metricId){
+  const now=new Date();
+  const descs=getContextDescs();
+  const chs=activeChannels.filter(c=>c.on);
+  const count=6+Math.floor(Math.random()*2);
+  const items=[];
+  const outcomeFor=mid=>{
+    if(mid==='aba')return{cls:'aba',label:'Abandoned'};
+    if(mid==='der')return{cls:'esc',label:'Escalated'};
+    if(mid==='alu')return{cls:'hal',label:'Hallucination'};
+    if(mid==='des')return{cls:'dis',label:'Disambiguated'};
+    if(mid==='res')return{cls:'res',label:'Resolved'};
+    const r=Math.random();
+    if(r<0.62)return{cls:'res',label:'Resolved'};
+    if(r<0.82)return{cls:'esc',label:'Escalated'};
+    return{cls:'aba',label:'Abandoned'};
+  };
+  for(let i=0;i<count;i++){
+    const minsAgo=i*(2+Math.floor(Math.random()*4));
+    const t=new Date(now-minsAgo*60000);
+    const ts=`${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
+    const ch=chs.length?chs[Math.floor(Math.random()*chs.length)]:{id:'chat'};
+    const def=CH_LIBRARY.find(x=>x.id===ch.id)||CH_LIBRARY[0];
+    const desc=descs[Math.floor(Math.random()*descs.length)];
+    const{cls,label}=outcomeFor(metricId);
+    items.push({time:ts,chSvg:def.svg,desc,cls,label});
+  }
+  return items;
+}
+
+function patternInsight(metricId){
+  const topCh=[...activeChannels].filter(c=>c.on).sort((a,b)=>b.live-a.live)[0];
+  const topName=topCh?topCh.name:'the primary channel';
+  const map={
+    sessions:`Peak volume observed <strong>09:00–11:00</strong>. <strong>${topName}</strong> currently leads with the highest active session count. Current load is within normal operating range.`,
+    avgtime:`AI-handled interactions average <strong>3–4 min</strong>. Human-assisted sessions average <strong>${avgTimeVal} min</strong>. Disambiguation events add an estimated <strong>2.3 min</strong> per affected interaction.`,
+    sentiment:`Negative sentiment spikes correlate with <strong>wait times exceeding 4 min</strong>. Positive peaks occur consistently after AI-resolved interactions requiring no escalation.`,
+    acciones:`Top actions concentrate around <strong>information requests</strong> and <strong>process completions</strong>. First-contact resolution is highest for information queries at <strong>${Math.round(65+Math.random()*10)}%</strong>.`,
+    temas:`Conversation topics cluster into <strong>3 dominant themes</strong>. Cross-topic escalation is most common between pricing and availability queries.`,
+    nps:`Score of <strong>07</strong> reflects mixed customer sentiment. Promoters (~18%) concentrate in the <strong>BOT / AI Chat</strong> channel. Detractors are highest in <strong>voice and forms</strong>.`,
+    res:`<strong>${metrics[0].pcts[1]}%</strong> of resolutions handled autonomously by AI. Resolution rate is highest in <strong>${topName}</strong>. Human-assisted resolutions average 3× longer.`,
+    aba:`Abandonment spikes correlate with wait times exceeding <strong>4 min</strong>. <strong>${topName}</strong> shows the highest dropout during peak hours. Proactive re-engagement at the 3-minute mark reduces abandonment by ~22%.`,
+    des:`Disambiguation events concentrate in <strong>complex product queries</strong> and multi-step processes. AI accuracy improves measurably after <strong>3 interaction turns</strong>.`,
+    der:`Human agents handle <strong>${metrics[3].pcts[2]}%</strong> of escalations. Top triggers: billing disputes, identity verification, and unresolvable technical issues.`,
+    alu:`Hallucination events peak when queries involve <strong>real-time inventory</strong> or <strong>live pricing data</strong> not in the model's knowledge base. Grounding with live retrieval would reduce this by an estimated <strong>60%</strong>.`,
+  };
+  return map[metricId]||`Monitoring active. Set thresholds in the <strong>Configuration</strong> tab to receive automated alerts when this metric crosses critical limits.`;
+}
+
+// ─ Alerts tab ─────────────────────────────────────
+function renderAlertsTab(metricId){
+  const filtered=alertLog.filter(a=>a.mid===metricId);
+  const badge=document.getElementById('actAlertsBadge');
+  if(alertLog.length){badge.textContent=alertLog.length;badge.classList.add('show');}
+  else badge.classList.remove('show');
+  const el=document.getElementById('actContent-alerts');
+  if(!filtered.length){
+    el.innerHTML=`<div class="alert-empty">
+      <div class="alert-empty-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg></div>
+      <p>No alerts for this metric</p>
+      <p class="sub">Set upper or lower thresholds in the<br>Configuration tab to start receiving alerts.</p>
+    </div>`;
+    return;
+  }
+  el.innerHTML=filtered.map(a=>`<div class="alert-item ${a.sev}">
+    <div class="alert-item-top">
+      <div class="alert-dot ${a.sev}"></div>
+      <div class="alert-title">${a.mname} — ${a.type==='upper'?'Upper':'Lower'} Threshold Breach</div>
+      <div class="alert-time">${a.time}</div>
+    </div>
+    <div class="alert-body">Value <span class="hl">${a.val}</span> ${a.type==='upper'?'exceeded':'fell below'} configured threshold of <strong>${a.thresh}</strong>.</div>
+    <div class="alert-ch-tag">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+      Sent via ${a.notif}
+    </div>
+  </div>`).join('');
+}
+
+// ─ Configuration tab ──────────────────────────────
+const NOTIF_DEFS=[
+  {id:'email',label:'Email',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>'},
+  {id:'sms',  label:'SMS',  svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>'},
+  {id:'slack',label:'Slack',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5zM20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5zM3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14zM14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5zM15.5 19H14v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zM10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5zM8.5 5H10V3.5C10 2.67 9.33 2 8.5 2S7 2.67 7 3.5 7.67 5 8.5 5z"/></svg>'},
+  {id:'call', label:'Call', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a2 2 0 012-2.18h3A2 2 0 0110.12 9c.19 1.06.51 2.1.93 3.08L9.7 13.43a16 16 0 006.87 6.87l1.35-1.35c.98.42 2.02.74 3.08.93A2 2 0 0122 16.92z"/></svg>'},
+];
+
+// ─ Config tab dispatcher ──────────────────────────
+function renderConfigTab(metricId){
+  switch(metricId){
+    case 'sessions':  renderSessionsConfig();break;
+    case 'avgtime':   renderAvgTimeConfig();break;
+    case 'sentiment': renderSentimentConfig();break;
+    case 'acciones':  renderItemsConfig('acciones','#accList li','Action');break;
+    case 'temas':     renderItemsConfig('temas','#temList li','Theme');break;
+    default:          renderMetricColConfig(metricId);
+  }
+}
+
+// ── Shared helpers ────────────────────────────────
+function _notifChips(storeKey,extraKey){
+  const key=extraKey?`${storeKey}_${extraKey}`:storeKey;
+  if(!metricCfg[storeKey])metricCfg[storeKey]={notifs:[]};
+  const base=extraKey
+    ?(metricCfg[storeKey].items?.[extraKey]||{notifs:[]})
+    :metricCfg[storeKey];
+  return NOTIF_DEFS.map(n=>{
+    const on=(base.notifs||[]).includes(n.id);
+    return`<div class="notif-chip ${on?'on':''}" onclick="_toggleN('${storeKey}','${extraKey||''}','${n.id}',this)">${n.svg}<span>${n.label}</span></div>`;
+  }).join('');
+}
+function _toggleN(mid,sub,ch,el){
+  let target;
+  if(sub){
+    if(!metricCfg[mid])metricCfg[mid]={items:{}};
+    if(!metricCfg[mid].items)metricCfg[mid].items={};
+    if(!metricCfg[mid].items[sub])metricCfg[mid].items[sub]={notifs:[]};
+    target=metricCfg[mid].items[sub];
+  }else{
+    if(!metricCfg[mid])metricCfg[mid]={notifs:[]};
+    target=metricCfg[mid];
+  }
+  const i=target.notifs.indexOf(ch);
+  if(i>=0){target.notifs.splice(i,1);el.classList.remove('on');}
+  else{target.notifs.push(ch);el.classList.add('on');}
+}
+function _peakRow(mid,cfg){
+  return`<div class="cfg-group"><span class="cfg-lbl">Peak-Time Exception</span>
+    <div class="peak-row"><div class="peak-info">
+      <div class="peak-lbl">Suppress alerts during peak hours</div>
+      <div class="peak-sub">09:00–11:00 &amp; 14:00–16:00 — alerts paused</div>
+    </div><label class="tog-sw"><input type="checkbox" id="cfg-peak-${mid}" ${cfg.peak?'checked':''}><span class="sl"></span></label></div></div>`;
+}
+function _msgRow(mid,cfg){
+  return`<div class="cfg-group"><span class="cfg-lbl">Alert Message Context <span style="font-weight:400;color:var(--gray-light)">— optional</span></span>
+    <textarea class="cfg-textarea" id="cfg-msg-${mid}" placeholder="Add context for every alert (e.g. escalation owner, SLA, resolution steps)…">${cfg.msg||''}</textarea></div>`;
+}
+function _saveBtn(fn){
+  return`<button class="cfg-save" onclick="${fn}">Save Configuration</button>`;
+}
+
+// ── Sessions config ───────────────────────────────
+function renderSessionsConfig(){
+  const cfg=metricCfg.sessions;
+  document.getElementById('actContent-config').innerHTML=`
+    <div class="act-section-hd">Session Volume Thresholds</div>
+    <div class="cfg-group"><span class="cfg-lbl">Upper — alert when sessions exceed</span>
+      <div class="cfg-thresh-row">
+        <label class="cfg-toggle"><input type="checkbox" id="cfg-upper-chk-sessions" ${cfg.upper!==null?'checked':''} onchange="toggleThreshInput('sessions','upper',this.checked)"><span>Enabled</span></label>
+        <input type="number" class="cfg-num" id="cfg-upper-val-sessions" value="${cfg.upper??''}" placeholder="—" ${cfg.upper===null?'disabled':''} min="0">
+        <span class="cfg-thresh-hint">sessions</span>
+      </div></div>
+    <div class="cfg-group"><span class="cfg-lbl">Lower — alert when sessions fall below</span>
+      <div class="cfg-thresh-row">
+        <label class="cfg-toggle"><input type="checkbox" id="cfg-lower-chk-sessions" ${cfg.lower!==null?'checked':''} onchange="toggleThreshInput('sessions','lower',this.checked)"><span>Enabled</span></label>
+        <input type="number" class="cfg-num" id="cfg-lower-val-sessions" value="${cfg.lower??''}" placeholder="—" ${cfg.lower===null?'disabled':''} min="0">
+        <span class="cfg-thresh-hint">sessions</span>
+      </div></div>
+    <div class="cfg-group"><span class="cfg-lbl">Trend Alert</span>
+      <div class="peak-row"><div class="peak-info">
+        <div class="peak-lbl">Alert on rapid decline</div>
+        <div class="peak-sub">Notify when sessions drop &gt;10% in 30 minutes</div>
+      </div><label class="tog-sw"><input type="checkbox" id="cfg-trend-sessions" ${cfg.trendAlert?'checked':''}><span class="sl"></span></label></div></div>
+    <div class="cfg-divider"></div>
+    <div class="cfg-group"><span class="cfg-lbl">Notification Channels</span>
+      <div class="notif-grid">${_notifChips('sessions')}</div></div>
+    <div class="cfg-divider"></div>
+    ${_peakRow('sessions',cfg)}
+    <div class="cfg-divider"></div>
+    ${_msgRow('sessions',cfg)}
+    ${_saveBtn('saveSessionsConfig()')}`;
+}
+function saveSessionsConfig(){
+  const cfg=metricCfg.sessions;
+  cfg.upper=document.getElementById('cfg-upper-chk-sessions')?.checked?(parseInt(document.getElementById('cfg-upper-val-sessions')?.value)||null):null;
+  cfg.lower=document.getElementById('cfg-lower-chk-sessions')?.checked?(parseInt(document.getElementById('cfg-lower-val-sessions')?.value)||null):null;
+  cfg.trendAlert=document.getElementById('cfg-trend-sessions')?.checked||false;
+  cfg.peak=document.getElementById('cfg-peak-sessions')?.checked||false;
+  cfg.msg=document.getElementById('cfg-msg-sessions')?.value||'';
+  toast('Sessions configuration saved');
+}
+
+// ── Avg Time config ───────────────────────────────
+function renderAvgTimeConfig(){
+  const cfg=metricCfg.avgtime;
+  if(!cfg.channels)cfg.channels={};
+  const onChs=activeChannels.filter(c=>c.on);
+  const chRows=onChs.map(c=>{
+    const def=CH_LIBRARY.find(x=>x.id===c.id);
+    const chCfg=cfg.channels[c.id]||{upper:null};
+    return`<div class="cfg-ch-time-row">
+      <div class="cfg-ch-icon">${def?.svg||''}</div>
+      <div class="cfg-ch-name">${def?.name||c.id}</div>
+      <label class="cfg-toggle"><input type="checkbox" id="cfg-cht-chk-${c.id}" ${chCfg.upper!==null?'checked':''} onchange="toggleChTimeThresh('${c.id}',this.checked)"><span>Limit</span></label>
+      <input type="number" class="cfg-num" id="cfg-cht-val-${c.id}" value="${chCfg.upper??''}" placeholder="—" ${chCfg.upper===null?'disabled':''} min="1" style="width:54px">
+      <span class="cfg-thresh-hint">min</span>
+    </div>`;
+  }).join('')||'<div style="font-size:11px;color:var(--gray-light);padding:8px 0">Enable channels via the sidebar to set per-channel limits.</div>';
+  document.getElementById('actContent-config').innerHTML=`
+    <div class="act-section-hd">Response Time Thresholds</div>
+    <div class="cfg-group"><span class="cfg-lbl">Upper — alert when avg time exceeds</span>
+      <div class="cfg-thresh-row">
+        <label class="cfg-toggle"><input type="checkbox" id="cfg-upper-chk-avgtime" ${cfg.upper!==null?'checked':''} onchange="toggleThreshInput('avgtime','upper',this.checked)"><span>Enabled</span></label>
+        <input type="number" class="cfg-num" id="cfg-upper-val-avgtime" value="${cfg.upper??''}" placeholder="—" ${cfg.upper===null?'disabled':''} min="1">
+        <span class="cfg-thresh-hint">min</span>
+      </div></div>
+    <div class="cfg-group"><span class="cfg-lbl">Lower — alert if resolution is unusually fast</span>
+      <div class="cfg-thresh-row">
+        <label class="cfg-toggle"><input type="checkbox" id="cfg-lower-chk-avgtime" ${cfg.lower!==null?'checked':''} onchange="toggleThreshInput('avgtime','lower',this.checked)"><span>Enabled</span></label>
+        <input type="number" class="cfg-num" id="cfg-lower-val-avgtime" value="${cfg.lower??''}" placeholder="—" ${cfg.lower===null?'disabled':''} min="1">
+        <span class="cfg-thresh-hint">min</span>
+      </div></div>
+    <div class="cfg-divider"></div>
+    <div class="act-section-hd">Per-Channel Time Limits</div>
+    <div style="padding:4px 0">${chRows}</div>
+    <div class="cfg-divider"></div>
+    <div class="cfg-group"><span class="cfg-lbl">Notification Channels</span>
+      <div class="notif-grid">${_notifChips('avgtime')}</div></div>
+    <div class="cfg-divider"></div>
+    ${_peakRow('avgtime',cfg)}
+    <div class="cfg-divider"></div>
+    ${_msgRow('avgtime',cfg)}
+    ${_saveBtn('saveAvgTimeConfig()')}`;
+}
+function toggleChTimeThresh(chId,enabled){
+  const inp=document.getElementById(`cfg-cht-val-${chId}`);
+  if(inp)inp.disabled=!enabled;
+}
+function saveAvgTimeConfig(){
+  const cfg=metricCfg.avgtime;
+  cfg.upper=document.getElementById('cfg-upper-chk-avgtime')?.checked?(parseInt(document.getElementById('cfg-upper-val-avgtime')?.value)||null):null;
+  cfg.lower=document.getElementById('cfg-lower-chk-avgtime')?.checked?(parseInt(document.getElementById('cfg-lower-val-avgtime')?.value)||null):null;
+  cfg.peak=document.getElementById('cfg-peak-avgtime')?.checked||false;
+  cfg.msg=document.getElementById('cfg-msg-avgtime')?.value||'';
+  if(!cfg.channels)cfg.channels={};
+  activeChannels.filter(c=>c.on).forEach(c=>{
+    const chk=document.getElementById(`cfg-cht-chk-${c.id}`);
+    const val=document.getElementById(`cfg-cht-val-${c.id}`);
+    cfg.channels[c.id]={upper:chk?.checked?(parseInt(val?.value)||null):null};
+  });
+  toast('Avg Time configuration saved');
+}
+
+// ── Sentiment config ──────────────────────────────
+function renderSentimentConfig(){
+  const cfg=metricCfg.sentiment;
+  if(!cfg.thresholds)cfg.thresholds={
+    s0:{type:'upper',val:10,notifs:['email']},s1:{type:'upper',val:25,notifs:['email']},
+    s2:{type:'lower',val:40,notifs:[]},s3:{type:'lower',val:15,notifs:[]},s4:{type:'lower',val:5,notifs:[]},
+  };
+  const labels=T[CFG.lang]?.sent||T.es.sent;
+  const colors=['var(--red)','#F59E0B','var(--black)','#22C55E','#15803D'];
+  const emojis=['😡','😕','😊','😌','😁'];
+  const ids=['s0','s1','s2','s3','s4'];
+  const rows=ids.map((sid,i)=>{
+    const sc=cfg.thresholds[sid]||{type:i<2?'upper':'lower',val:'',notifs:[]};
+    const isNeg=i<2;
+    const label=isNeg?'Alert if exceeds':'Alert if falls below';
+    const enabled=sc.val!==null&&sc.val!=='';
+    const chips=NOTIF_DEFS.map(n=>{
+      const on=(sc.notifs||[]).includes(n.id);
+      return`<div class="notif-chip ${on?'on':''}" onclick="toggleSentNotif('${sid}','${n.id}',this)">${n.svg}<span>${n.label}</span></div>`;
+    }).join('');
+    return`<div class="cfg-sent-row">
+      <div class="cfg-sent-hd" style="color:${colors[i]}">${emojis[i]} ${labels[i]}<span class="cfg-sent-pct">Now: ${sentiment[i].pct}%</span></div>
+      <div class="cfg-sent-thresh">
+        <label class="cfg-toggle"><input type="checkbox" id="cfg-sent-chk-${sid}" ${enabled?'checked':''} onchange="toggleSentThresh('${sid}',this.checked)"><span>${label}</span></label>
+        <input type="number" class="cfg-num" id="cfg-sent-val-${sid}" value="${sc.val??''}" placeholder="%" ${!enabled?'disabled':''} min="0" max="100" style="width:56px">
+        <span class="cfg-thresh-hint">%</span>
+      </div>
+      <div class="notif-grid" style="grid-template-columns:repeat(4,1fr)">${chips}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('actContent-config').innerHTML=`
+    <div class="act-section-hd">Sentiment State Thresholds</div>
+    ${rows}
+    <div class="cfg-divider"></div>
+    ${_peakRow('sentiment',cfg)}
+    <div class="cfg-divider"></div>
+    ${_msgRow('sentiment',cfg)}
+    ${_saveBtn('saveSentimentConfig()')}`;
+}
+function toggleSentThresh(sid,enabled){
+  const inp=document.getElementById(`cfg-sent-val-${sid}`);
+  if(inp)inp.disabled=!enabled;
+}
+function toggleSentNotif(sid,ch,el){
+  const cfg=metricCfg.sentiment;
+  if(!cfg.thresholds)cfg.thresholds={};
+  if(!cfg.thresholds[sid])cfg.thresholds[sid]={type:'upper',val:'',notifs:[]};
+  const notifs=cfg.thresholds[sid].notifs;
+  const i=notifs.indexOf(ch);
+  if(i>=0){notifs.splice(i,1);el.classList.remove('on');}
+  else{notifs.push(ch);el.classList.add('on');}
+}
+function saveSentimentConfig(){
+  const cfg=metricCfg.sentiment;
+  if(!cfg.thresholds)cfg.thresholds={};
+  ['s0','s1','s2','s3','s4'].forEach((sid,i)=>{
+    const chk=document.getElementById(`cfg-sent-chk-${sid}`);
+    const val=document.getElementById(`cfg-sent-val-${sid}`);
+    if(!cfg.thresholds[sid])cfg.thresholds[sid]={type:i<2?'upper':'lower',val:'',notifs:[]};
+    cfg.thresholds[sid].val=chk?.checked?(parseInt(val?.value)||null):null;
+  });
+  cfg.peak=document.getElementById('cfg-peak-sentiment')?.checked||false;
+  cfg.msg=document.getElementById('cfg-msg-sentiment')?.value||'';
+  toast('Sentiment configuration saved');
+}
+
+// ── Actions / Themes config (shared) ─────────────
+function renderItemsConfig(mid,selector,label){
+  const items=[...document.querySelectorAll(selector)]
+    .map(li=>li.textContent.replace(/^\d+\./,'').trim()).filter(Boolean);
+  if(!items.length){
+    document.getElementById('actContent-config').innerHTML=
+      `<div style="font-size:12px;color:var(--gray-light);padding:12px 0;text-align:center">Apply a Business Context first to generate ${label.toLowerCase()} to configure.</div>`;
+    return;
+  }
+  const cfg=metricCfg[mid]; if(!cfg.items)cfg.items={};
+  const cards=items.map((name,i)=>{
+    const ic=cfg.items[`i${i}`]||{keywords:'',upper:null,lower:null,notifs:[]};
+    const chips=NOTIF_DEFS.map(n=>{
+      const on=(ic.notifs||[]).includes(n.id);
+      return`<div class="notif-chip ${on?'on':''}" onclick="_toggleN('${mid}','i${i}','${n.id}',this)">${n.svg}<span>${n.label}</span></div>`;
+    }).join('');
+    return`<div class="cfg-item-card">
+      <div class="cfg-item-name">${name}</div>
+      <input class="cfg-kw-input" type="text" id="cfg-kw-${mid}-${i}" value="${ic.keywords||''}" placeholder="Keywords to monitor (e.g. cancel, urgent, complaint)">
+      <div class="cfg-item-thresh">
+        <label class="cfg-toggle"><input type="checkbox" id="cfg-upper-chk-${mid}-${i}" ${ic.upper!==null?'checked':''} onchange="toggleItemThresh('${mid}',${i},'upper',this.checked)"><span>Alert above</span></label>
+        <input type="number" class="cfg-num" id="cfg-upper-val-${mid}-${i}" value="${ic.upper??''}" placeholder="—" ${ic.upper===null?'disabled':''} min="0" style="width:56px">
+        <label class="cfg-toggle" style="margin-left:8px"><input type="checkbox" id="cfg-lower-chk-${mid}-${i}" ${ic.lower!==null?'checked':''} onchange="toggleItemThresh('${mid}',${i},'lower',this.checked)"><span>Alert below</span></label>
+        <input type="number" class="cfg-num" id="cfg-lower-val-${mid}-${i}" value="${ic.lower??''}" placeholder="—" ${ic.lower===null?'disabled':''} min="0" style="width:56px">
+        <span class="cfg-thresh-hint">interactions</span>
+      </div>
+      <div class="notif-grid" style="grid-template-columns:repeat(4,1fr)">${chips}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('actContent-config').innerHTML=`
+    <div class="act-section-hd">${label} Configuration</div>
+    ${cards}
+    ${_saveBtn(`saveItemsConfig('${mid}','${selector}')`)}`;
+}
+function toggleItemThresh(mid,i,type,enabled){
+  const inp=document.getElementById(`cfg-${type}-val-${mid}-${i}`);
+  if(inp)inp.disabled=!enabled;
+}
+function saveItemsConfig(mid,selector){
+  const items=[...document.querySelectorAll(selector)]
+    .map(li=>li.textContent.replace(/^\d+\./,'').trim()).filter(Boolean);
+  if(!metricCfg[mid])metricCfg[mid]={items:{}};
+  if(!metricCfg[mid].items)metricCfg[mid].items={};
+  items.forEach((_,i)=>{
+    const key=`i${i}`;
+    if(!metricCfg[mid].items[key])metricCfg[mid].items[key]={notifs:[]};
+    const ic=metricCfg[mid].items[key];
+    ic.keywords=document.getElementById(`cfg-kw-${mid}-${i}`)?.value||'';
+    ic.upper=document.getElementById(`cfg-upper-chk-${mid}-${i}`)?.checked?(parseInt(document.getElementById(`cfg-upper-val-${mid}-${i}`)?.value)||null):null;
+    ic.lower=document.getElementById(`cfg-lower-chk-${mid}-${i}`)?.checked?(parseInt(document.getElementById(`cfg-lower-val-${mid}-${i}`)?.value)||null):null;
+  });
+  toast('Configuration saved');
+}
+
+// ── Performance metric config (res/aba/des/der/alu/nps) ──
+function renderMetricColConfig(metricId){
+  const cfg=metricCfg[metricId]||{upper:null,lower:null,notifs:[],peak:false,msg:''};
+  const actorLabels=['Customer','AI Agent','Human Agent'];
+  const actorColors=['var(--black)','var(--accent)','var(--gray-dark)'];
+  if(!cfg.cols)cfg.cols={cust:{upper:null,lower:null},ai:{upper:null,lower:null},human:{upper:null,lower:null}};
+  const colKeys=['cust','ai','human'];
+  const colRows=colKeys.map((k,i)=>{
+    const cc=cfg.cols[k]||{upper:null,lower:null};
+    return`<div class="cfg-col-row">
+      <div class="cfg-col-name" style="color:${actorColors[i]}">${actorLabels[i]}</div>
+      <label class="cfg-toggle"><input type="checkbox" id="cfg-col-upper-chk-${metricId}-${k}" ${cc.upper!==null?'checked':''} onchange="toggleColThresh('${metricId}','${k}','upper',this.checked)"><span>Max</span></label>
+      <input type="number" class="cfg-num" id="cfg-col-upper-val-${metricId}-${k}" value="${cc.upper??''}" placeholder="—" ${cc.upper===null?'disabled':''} min="0" max="100" style="width:52px">
+      <span class="cfg-thresh-hint">%</span>
+      <label class="cfg-toggle" style="margin-left:6px"><input type="checkbox" id="cfg-col-lower-chk-${metricId}-${k}" ${cc.lower!==null?'checked':''} onchange="toggleColThresh('${metricId}','${k}','lower',this.checked)"><span>Min</span></label>
+      <input type="number" class="cfg-num" id="cfg-col-lower-val-${metricId}-${k}" value="${cc.lower??''}" placeholder="—" ${cc.lower===null?'disabled':''} min="0" max="100" style="width:52px">
+      <span class="cfg-thresh-hint">%</span>
+    </div>`;
+  }).join('');
+  const chips=NOTIF_DEFS.map(n=>{
+    const on=cfg.notifs.includes(n.id);
+    return`<div class="notif-chip ${on?'on':''}" onclick="toggleNotif('${metricId}','${n.id}',this)">${n.svg}<span>${n.label}</span></div>`;
+  }).join('');
+  document.getElementById('actContent-config').innerHTML=`
+    <div class="act-section-hd">Total Threshold</div>
+    <div class="cfg-group"><span class="cfg-lbl">Upper — alert when total exceeds</span>
+      <div class="cfg-thresh-row">
+        <label class="cfg-toggle"><input type="checkbox" id="cfg-upper-chk-${metricId}" ${cfg.upper!==null?'checked':''} onchange="toggleThreshInput('${metricId}','upper',this.checked)"><span>Enabled</span></label>
+        <input type="number" class="cfg-num" id="cfg-upper-val-${metricId}" value="${cfg.upper??''}" placeholder="—" ${cfg.upper===null?'disabled':''} min="0">
+      </div></div>
+    <div class="cfg-group"><span class="cfg-lbl">Lower — alert when total falls below</span>
+      <div class="cfg-thresh-row">
+        <label class="cfg-toggle"><input type="checkbox" id="cfg-lower-chk-${metricId}" ${cfg.lower!==null?'checked':''} onchange="toggleThreshInput('${metricId}','lower',this.checked)"><span>Enabled</span></label>
+        <input type="number" class="cfg-num" id="cfg-lower-val-${metricId}" value="${cfg.lower??''}" placeholder="—" ${cfg.lower===null?'disabled':''} min="0">
+      </div></div>
+    <div class="cfg-divider"></div>
+    <div class="act-section-hd">By Actor Attribution (%)</div>
+    ${colRows}
+    <div class="cfg-divider"></div>
+    <div class="cfg-group"><span class="cfg-lbl">Notification Channels</span>
+      <div class="notif-grid">${chips}</div></div>
+    <div class="cfg-divider"></div>
+    ${_peakRow(metricId,cfg)}
+    <div class="cfg-divider"></div>
+    ${_msgRow(metricId,cfg)}
+    ${_saveBtn(`saveMetricColConfig('${metricId}')`)}`;
+}
+function toggleColThresh(mid,k,type,enabled){
+  const inp=document.getElementById(`cfg-col-${type}-val-${mid}-${k}`);
+  if(inp)inp.disabled=!enabled;
+}
+function saveMetricColConfig(metricId){
+  if(!metricCfg[metricId])metricCfg[metricId]={upper:null,lower:null,notifs:[],peak:false,msg:'',cols:{}};
+  const cfg=metricCfg[metricId];
+  cfg.upper=document.getElementById(`cfg-upper-chk-${metricId}`)?.checked?(parseInt(document.getElementById(`cfg-upper-val-${metricId}`)?.value)||null):null;
+  cfg.lower=document.getElementById(`cfg-lower-chk-${metricId}`)?.checked?(parseInt(document.getElementById(`cfg-lower-val-${metricId}`)?.value)||null):null;
+  cfg.peak=document.getElementById(`cfg-peak-${metricId}`)?.checked||false;
+  cfg.msg=document.getElementById(`cfg-msg-${metricId}`)?.value||'';
+  if(!cfg.cols)cfg.cols={};
+  ['cust','ai','human'].forEach(k=>{
+    cfg.cols[k]={
+      upper:document.getElementById(`cfg-col-upper-chk-${metricId}-${k}`)?.checked?(parseInt(document.getElementById(`cfg-col-upper-val-${metricId}-${k}`)?.value)||null):null,
+      lower:document.getElementById(`cfg-col-lower-chk-${metricId}-${k}`)?.checked?(parseInt(document.getElementById(`cfg-col-lower-val-${metricId}-${k}`)?.value)||null):null,
+    };
+  });
+  toast('Configuration saved');
+}
+
+
+// ═══ BOBEE MODAL ═════════════════════════════════
+// These small helpers are used by the generic metric config
+function toggleThreshInput(metricId,type,enabled){
+  const inp=document.getElementById(`cfg-${type}-val-${metricId}`);
+  if(inp)inp.disabled=!enabled;
+}
+function toggleNotif(metricId,ch,el){
+  if(!metricCfg[metricId])metricCfg[metricId]={upper:null,lower:null,notifs:[],peak:false,msg:''};
+  const notifs=metricCfg[metricId].notifs;
+  const idx=notifs.indexOf(ch);
+  if(idx>=0){notifs.splice(idx,1);el.classList.remove('on');}
+  else{notifs.push(ch);el.classList.add('on');}
+}
+
+
+let bobeeChatHistory = [];
+
+function openBobee() {
+  bobeeChatHistory = [];
+  document.getElementById('bobeeMsgs').innerHTML =
+    '<div class="bmsg bobby">Hi! I\'m BOBee \uD83D\uDC1D Ask me anything about your dashboard.</div>';
+  document.getElementById('bobeeInput').value = '';
+  document.getElementById('bobeeSendBtn').disabled = false;
+  // Stop any active conversation when re-opening
+  if(conversationActive) toggleConversation('bobeeInput',sendBobeeChat,'bobeeConvBtn','bobeeConvStatus');
+
+  // Reset insight tabs — Explanation active, all loading shown
+  ['exp','rec','pre'].forEach(id => {
+    const loadEl=document.getElementById(`bobee-${id}-loading`);
+    const textEl=document.getElementById(`bobee-${id}-text`);
+    if(loadEl) loadEl.style.display=id==='exp'?'flex':'none';
+    if(textEl){ textEl.textContent=''; textEl.style.display='none'; }
+  });
+  ['exp','rec','pre'].forEach(id =>
+    document.getElementById(`bitab-${id}`)?.classList.toggle('active',id==='exp'));
+
+  const industryLabel = CFG.industry
+    ? ({education:'Education',retail:'Fashion & Retail',banking:'Banking',
+        healthcare:'Healthcare',hospitality:'Hospitality',telecom:'Telecom',
+        fnb:'F&B',ecommerce:'E-Commerce',tech:'Tech/SaaS',insurance:'Insurance'}[CFG.industry] || CFG.industry)
+    : 'your dashboard';
+  document.getElementById('bobeeSubtitle').textContent = `Analyzing ${industryLabel}\u2026`;
+  document.getElementById('bobeeBg').classList.add('open');
+  loadBobeeInsights();
+}
+
+function switchBobeeInsightTab(tab){
+  ['exp','rec','pre'].forEach(t=>{
+    const isMe=t===tab;
+    document.getElementById(`bitab-${t}`)?.classList.toggle('active',isMe);
+    const loadEl=document.getElementById(`bobee-${t}-loading`);
+    const textEl=document.getElementById(`bobee-${t}-text`);
+    const hasText=!!(textEl?.textContent);
+    if(loadEl) loadEl.style.display=isMe&&!hasText?'flex':'none';
+    if(textEl) textEl.style.display=isMe&&hasText?'block':'none';
+  });
+}
+
+function closeBobee() {
+  document.getElementById('bobeeBg').classList.remove('open');
+  if(conversationActive) toggleConversation('bobeeInput',sendBobeeChat,'bobeeConvBtn','bobeeConvStatus');
+}
+
+
+function bobeeBgClick(e) {
+  if (e.target === document.getElementById('bobeeBg')) closeBobee();
+}
+
+// Build a concise snapshot of the current dashboard state for the API prompt
+function buildBobeeContext() {
+  const ses    = document.getElementById('sesCount').textContent;
+  const onChs  = activeChannels.filter(c => c.on).map(c => c.name).join(', ') || 'none';
+  const sLbls  = T[CFG.lang]?.sent || T.es.sent;
+  const sentStr= sLbls.map((l, i) => `${l}: ${sentiment[i].pct}%`).join(', ');
+  const metStr = metrics.map(m => `${m[CFG.lang]||m.es}: ${m.total}`).join(' | ');
+  return `Industry: ${CFG.industry || 'not specified'}
+Activity type: ${CFG.activity || 'customer support'}
+Active sessions: ${ses}
+Average interaction time: ${avgTimeVal} min
+Channels: ${onChs}
+Sentiment: ${sentStr}
+Metrics: ${metStr}`;
+}
+
+// Single API call that returns all three insights as JSON
+async function loadBobeeInsights() {
+  const ctx = buildBobeeContext();
+  const prompt = `You are BOBee, the intelligence agent for BOb (Business Observer) by Boss.Technology.
+Analyze this live business interaction dashboard and generate three concise insights.
+
+Dashboard snapshot:
+${ctx}
+
+Return ONLY valid JSON — no markdown, no code fences, no explanation:
+{
+  "explanation": "1-2 sentences: what does the current data mean in plain language for this type of business?",
+  "recommendation": "1-2 sentences: what is the single most actionable thing to do right now based on this data?",
+  "prediction": "1-2 sentences: if current trends continue unchanged, where is this dashboard heading?"
+}`;
+
+  try {
+    const resp = await fetch('/api/ai', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: 'You are BOBee, the AI intelligence assistant for the BOb platform by Boss.Technology. Return ONLY valid JSON. No markdown fences. No preamble. No explanation outside the JSON.',
+        messages: [{role:'user', content: prompt}]
+      })
+    });
+    if (!resp.ok) throw new Error(`API ${resp.status}`);
+    const data = await resp.json();
+    const raw  = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    const json = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    setBobeeBlock('exp', json.explanation   || '\u2014');
+    setBobeeBlock('rec', json.recommendation|| '\u2014');
+    setBobeeBlock('pre', json.prediction    || '\u2014');
+    // Prime the chat with the assistant's context so follow-ups are grounded
+    bobeeChatHistory = [{
+      role: 'assistant',
+      content: `I've reviewed your dashboard. ${json.explanation} ${json.recommendation}`
+    }];
+  } catch(err) {
+    console.warn('BOBee insights failed:', err);
+    setBobeeBlock('exp', 'Unable to generate insight — please verify your Business Context settings and try again.');
+    setBobeeBlock('rec', 'Add an industry and activity type in the sidebar for accurate, data-grounded recommendations.');
+    setBobeeBlock('pre', 'Insufficient context for a reliable prediction. Configure your business settings first.');
+  }
+}
+
+function setBobeeBlock(id, text) {
+  const loadEl=document.getElementById(`bobee-${id}-loading`);
+  const textEl=document.getElementById(`bobee-${id}-text`);
+  if(loadEl) loadEl.style.display='none';
+  if(textEl){
+    textEl.textContent=text;
+    const isActive=document.getElementById(`bitab-${id}`)?.classList.contains('active');
+    textEl.style.display=isActive?'block':'none';
+  }
+}
+
+// Chat — sends user message with full conversation history
+async function sendBobeeChat() {
+  const input   = document.getElementById('bobeeInput');
+  const sendBtn = document.getElementById('bobeeSendBtn');
+  const msg     = input.value.trim();
+  if (!msg) return;
+
+  input.value      = '';
+  sendBtn.disabled = true;
+
+  appendBobeeMsg('user', msg);
+  bobeeChatHistory.push({role:'user', content: msg});
+
+  const typingEl = appendBobeeMsg('bobby', null, true); // typing indicator
+
+  try {
+    const ctx  = buildBobeeContext();
+    const resp = await fetch('/api/ai', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `You are BOBee (Bobby), the AI intelligence assistant for BOb (Business Observer) by Boss.Technology. Answer questions about the business dashboard concisely in 2-3 sentences. Be specific and reference actual numbers from the data.
+
+Current dashboard:
+${ctx}`,
+        messages: bobeeChatHistory
+      })
+    });
+    if (!resp.ok) throw new Error(`API ${resp.status}`);
+    const data  = await resp.json();
+    const reply = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    bobeeChatHistory.push({role:'assistant', content: reply});
+    typingEl.remove();
+    appendBobeeMsg('bobby', reply);
+  } catch(err) {
+    typingEl.remove();
+    bobeeChatHistory.pop(); // remove the failed user message from history
+    appendBobeeMsg('bobby', 'Something went wrong — please try again.');
+  } finally {
+    sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
+function appendBobeeMsg(role, text, isTyping = false) {
+  const msgs = document.getElementById('bobeeMsgs');
+  const div  = document.createElement('div');
+  div.className = `bmsg ${role}${isTyping ? ' typing' : ''}`;
+  if (isTyping) {
+    div.innerHTML = '<div class="bobee-dots"><span></span><span></span><span></span></div>';
+  } else {
+    div.textContent = text;
+  }
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+// Learn More → close BObee, open Actionables for the most urgent metric
+function bobeeLearnMore() {
+  closeBobee();
+  // Route to the metric with the most recent alert, or default to sessions
+  const topAlert = alertLog[0];
+  if (topAlert) {
+    const m = metrics.find(x => x.id === topAlert.mid);
+    openActionables(topAlert.mid, m?.[CFG.lang] || m?.es || topAlert.mname, m?.total || '');
+  } else {
+    openActionables('sessions', getT('ses'), document.getElementById('sesCount').textContent);
+  }
+}
+
+// ─ Conversation mode ──────────────────────────────
+let conversationActive=false;
+let convRecognition=null;
+
+function toggleConversation(inputId,sendFn,btnId,statusId){
+  if(conversationActive){
+    conversationActive=false;
+    if(convRecognition){try{convRecognition.stop();}catch(e){}convRecognition=null;}
+    document.getElementById(btnId)?.classList.remove('active');
+    document.getElementById(statusId)?.classList.remove('show');
+  }else{
+    if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){
+      toast('Conversation mode is not supported in this browser');return;
+    }
+    conversationActive=true;
+    document.getElementById(btnId)?.classList.add('active');
+    document.getElementById(statusId)?.classList.add('show');
+    runConvListen(inputId,sendFn,btnId,statusId);
+  }
+}
+
+function runConvListen(inputId,sendFn,btnId,statusId){
+  if(!conversationActive)return;
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  convRecognition=new SR();
+  convRecognition.lang={es:'es-ES',en:'en-US',fr:'fr-FR',pt:'pt-BR'}[CFG.lang]||'en-US';
+  convRecognition.onresult=async e=>{
+    const transcript=e.results[0][0].transcript;
+    document.getElementById(inputId).value=transcript;
+    await sendFn();
+    if(conversationActive) setTimeout(()=>runConvListen(inputId,sendFn,btnId,statusId),800);
+  };
+  convRecognition.onerror=()=>{
+    if(conversationActive) setTimeout(()=>runConvListen(inputId,sendFn,btnId,statusId),1000);
+  };
+  try{convRecognition.start();}catch(e){}
+}
+
+// ═══ INTERACTIVITY ════════════════════════════════
+function setActor(idx){[0,1,2].forEach(i=>document.getElementById(`act-${i}`)?.classList.toggle('active',i===idx));}
+function onTimeChange(v){document.getElementById('drWrap').classList.toggle('show',v==='custom');}
+function applyDate(){const f=document.getElementById('dateFrom').value,t=document.getElementById('dateTo').value;if(!f||!t){toast('Please select both dates');return;}toast(`Range: ${f} \u2192 ${t}`);}
+let faqOpen=true;
+function toggleFaq(){
+  faqOpen=!faqOpen;
+  document.getElementById('faqBody').style.display=faqOpen?'':'none';
+  document.getElementById('wordsBody').style.display=faqOpen&&faqActiveTab==='words'?'':'none';
+  document.getElementById('faqChev').style.transform=faqOpen?'':'rotate(-90deg)';
+}
+
+// ─ FAQ tabs ───────────────────────────────────────
+let faqActiveTab='faq';
+function switchFaqTab(tab){
+  faqActiveTab=tab;
+  document.getElementById('ftab-faq').classList.toggle('active',tab==='faq');
+  document.getElementById('ftab-words').classList.toggle('active',tab==='words');
+  document.getElementById('faqBody').style.display=tab==='faq'&&faqOpen?'':'none';
+  const wb=document.getElementById('wordsBody');
+  if(tab==='words'&&faqOpen){renderPopularWords();wb.style.display='';}
+  else wb.style.display='none';
+}
+function renderPopularWords(){
+  const acc=[...document.querySelectorAll('#accList li')].map(li=>li.textContent.replace(/^\d+\./,'').trim()).filter(Boolean);
+  const tem=[...document.querySelectorAll('#temList li')].map(li=>li.textContent.replace(/^\d+\./,'').trim()).filter(Boolean);
+  const stop=new Set(['de','la','el','en','y','a','los','las','un','una','es','por','con','se','su','del','the','and','or','in','of','to','for','is','are','at','on','how','do','you','have','what','its','their','can','i']);
+  const wordCounts={};
+  [...acc,...tem].join(' ').toLowerCase().replace(/[¿?¡!.,;:]/g,'').split(/\s+/).forEach(w=>{
+    if(w.length>3&&!stop.has(w)) wordCounts[w]=(wordCounts[w]||0)+Math.floor(15+Math.random()*60);
+  });
+  const tags=Object.entries(wordCounts).sort((a,b)=>b[1]-a[1]).slice(0,22);
+  document.getElementById('wordsBody').innerHTML=
+    `<div class="words-cloud">${tags.map(([w,c])=>`<span class="word-tag">${w}<span class="word-count">${c}</span></span>`).join('')}</div>`;
+}
+
+// ─ Number formatter ───────────────────────────────
+function formatNum(n){
+  if(n>=10000) return(n/1000).toFixed(0)+'K';
+  if(n>=1000)  return(n/1000).toFixed(1).replace(/\.0$/,'')+'K';
+  return n.toString();
+}
+function updateSesDisplay(n){
+  const el=document.getElementById('sesCount');
+  const fmt=formatNum(n);
+  el.textContent=fmt;
+  el.classList.toggle('compact',n>=1000);
+}
+
+let toastTimer;
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2400);}
+
+// ─ NPS Activity special rendering ────────────────
+function tStr(base,minsAgo){const t=new Date(base-minsAgo*60000);return`${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;}
+function npsCategory(s){if(s>=9)return{label:'Promoter',cls:'promoter'};if(s>=7)return{label:'Passive',cls:'passive'};return{label:'Detractor',cls:'detractor'};}
+function renderNpsActivity(){
+  const now=new Date();
+  const events=[
+    {time:tStr(now,4), type:'human',score:9},{time:tStr(now,11),type:'bob',  score:7},
+    {time:tStr(now,22),type:'human',score:6},{time:tStr(now,34),type:'bob',  score:8},
+    {time:tStr(now,49),type:'human',score:8},{time:tStr(now,63),type:'bob',  score:5},
+  ];
+  const hScores=events.filter(e=>e.type==='human');
+  const bScores=events.filter(e=>e.type==='bob');
+  const wtSum=hScores.reduce((s,e)=>s+e.score*4,0)+bScores.reduce((s,e)=>s+e.score,0);
+  const wtTot=hScores.length*4+bScores.length;
+  const wa=(wtTot>0?(wtSum/wtTot):0).toFixed(1);
+  const items=events.map(e=>{
+    const cat=npsCategory(e.score);
+    const isH=e.type==='human';
+    return`<div class="nps-score-item">
+      <span class="nps-score-time">${e.time}</span>
+      <div class="nps-type-chip ${e.type}">${isH?'H':'B'}<span class="nps-type-wt">${isH?'×4':'×1'}</span></div>
+      <div class="nps-sv ${cat.cls}">${e.score}</div>
+      <div class="nps-cat">${cat.label}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('actContent-activity').innerHTML=`
+    <div class="act-section-hd">Weighted NPS Score</div>
+    <div class="nps-summary">
+      <div class="nps-ws">${wa}</div>
+      <div>
+        <div class="nps-legend"><span class="nps-badge-h">H</span> Human scoring — weight <strong>4×</strong></div>
+        <div class="nps-legend"><span class="nps-badge-b">B</span> BOb scoring — weight <strong>1×</strong></div>
+        <div style="font-size:10px;color:var(--gray-light);margin-top:6px">Formula: (Σ Human×4 + Σ BOb×1) ÷ total weight</div>
+      </div>
+    </div>
+    <div class="act-section-hd mt">Recent Scoring Events</div>
+    <div class="nps-score-list">${items}</div>
+    <div class="act-section-hd mt">Pattern Insight</div>
+    <div class="pattern-box">${patternInsight('nps')}</div>`;
+}
+
+// ─ Actionables BObee tab ─────────────────────────
+// ─ Voice input ─────────────────────────────────────
+function startVoiceInput(inputId,btnEl){
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){
+    toast('Voice input not supported in this browser');return;
+  }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const rec=new SR();
+  rec.lang={es:'es-ES',en:'en-US',fr:'fr-FR',pt:'pt-BR'}[CFG.lang]||'en-US';
+  rec.onstart=()=>btnEl?.classList.add('listening');
+  rec.onresult=e=>{
+    document.getElementById(inputId).value=e.results[0][0].transcript;
+    btnEl?.classList.remove('listening');
+  };
+  rec.onerror=()=>{toast('Voice input error');btnEl?.classList.remove('listening');};
+  rec.onend=()=>btnEl?.classList.remove('listening');
+  rec.start();
+}
+
+let actBobeeHistory=[];
+function renderActBobeeTab(){
+  const el=document.getElementById('actContent-bobee');
+  if(el.dataset.mid===actMetricId&&el.innerHTML) return;
+  el.dataset.mid=actMetricId||'';
+  actBobeeHistory=[];
+  const name=document.getElementById('actMetricName').textContent||'this metric';
+  el.innerHTML=`
+    <div class="act-section-hd">BOBee — ${name}</div>
+    <div class="act-bobee-msgs" id="actBobeeMsgs">
+      <div class="bmsg bobby">Hi! I'm focused on <strong>${name}</strong>. What would you like to know?</div>
+    </div>
+    <div class="conv-status" id="actBobeeConvStatus">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="5" fill="currentColor"/></svg>
+      Listening&hellip; speak now
+    </div>
+    <div class="act-bobee-row">
+      <button class="bobee-voice" id="actBobeeVoiceBtn" onclick="startVoiceInput('actBobeeInput',this)" title="Voice input">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0014 0M12 21v-4M8 21h8"/></svg>
+      </button>
+      <button class="bobee-conv" id="actBobeeConvBtn" onclick="toggleConversation('actBobeeInput',sendActBobeeChat,'actBobeeConvBtn','actBobeeConvStatus')" title="Conversation mode">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 18v-6a9 9 0 0118 0v6"/><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"/></svg>
+      </button>
+      <input class="bobee-input" id="actBobeeInput" type="text" placeholder="Ask about this metric…" onkeydown="if(event.key==='Enter')sendActBobeeChat()">
+      <button class="bobee-send" id="actBobeeSendBtn" onclick="sendActBobeeChat()">Send</button>
+    </div>`;
+}
+async function sendActBobeeChat(){
+  const input=document.getElementById('actBobeeInput');
+  const btn=document.getElementById('actBobeeSendBtn');
+  const msg=input.value.trim();if(!msg)return;
+  input.value='';btn.disabled=true;
+  const msgs=document.getElementById('actBobeeMsgs');
+  const uDiv=document.createElement('div');uDiv.className='bmsg user';uDiv.textContent=msg;msgs.appendChild(uDiv);
+  const tDiv=document.createElement('div');tDiv.className='bmsg bobby typing';
+  tDiv.innerHTML='<div class="bobee-dots"><span></span><span></span><span></span></div>';
+  msgs.appendChild(tDiv);msgs.scrollTop=msgs.scrollHeight;
+  actBobeeHistory.push({role:'user',content:msg});
+  try{
+    const name=document.getElementById('actMetricName').textContent;
+    const resp=await fetch('/api/ai',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
+        system:`You are BOBee, focused on the "${name}" metric for BOb (Business Observer). Answer in 2-3 sentences with specific data references.\n\nDashboard:\n${buildBobeeContext()}`,
+        messages:actBobeeHistory})
+    });
+    const data=await resp.json();
+    const reply=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    actBobeeHistory.push({role:'assistant',content:reply});
+    tDiv.remove();
+    const bDiv=document.createElement('div');bDiv.className='bmsg bobby';bDiv.textContent=reply;
+    msgs.appendChild(bDiv);msgs.scrollTop=msgs.scrollHeight;
+  }catch(e){
+    tDiv.remove();actBobeeHistory.pop();
+    const eDiv=document.createElement('div');eDiv.className='bmsg bobby';eDiv.textContent='Something went wrong. Please try again.';
+    msgs.appendChild(eDiv);msgs.scrollTop=msgs.scrollHeight;
+  }finally{btn.disabled=false;input?.focus();}
+}
+
+// ═══ SIMULATION ═══════════════════════════════════
+function jitter(val,range){return Math.max(0,val+Math.round((Math.random()-.45)*range));}
+function rebalance(){
+  const delta=Math.random()<0.5?1:-1;
+  sentiment[2].pct=Math.min(70,Math.max(40,sentiment[2].pct+delta));
+  sentiment[1].pct=Math.min(25,Math.max(5,sentiment[1].pct-delta));
+  const sum=sentiment.reduce((a,x)=>a+x.pct,0);
+  sentiment[3].pct=Math.max(5,sentiment[3].pct+(100-sum));
+}
+let avgTimeVal=10;
+function tick(){
+  const volRange=[0,1,2,4,7][CFG.vol-1];
+  activeChannels.forEach(c=>{
+    if(!c.on)return; c.live=jitter(c.live,volRange);
+    const el=document.getElementById(`chcount-${c.id}`);if(el)el.textContent=c.live;
+  });
+  updateSesDisplay(activeChannels.filter(c=>c.on).reduce((s,c)=>s+c.live,0));
+  const prev=avgTimeVal; avgTimeVal=Math.max(5,Math.min(20,jitter(avgTimeVal,1)));
+  document.getElementById('avgTimeNum').textContent=avgTimeVal;
+  const arr=document.getElementById('trendArr');
+  if(avgTimeVal>prev){arr.textContent='\u2191';arr.className='trend up';}
+  else if(avgTimeVal<prev){arr.textContent='\u2193';arr.className='trend down';}
+  rebalance(); sentiment.forEach(s=>updateLollipop(s));
+  for(let i=0;i<4;i++){const el=document.getElementById(`faq-n-${i}`);if(el)el.textContent=jitter(parseInt(el.textContent)||100,CFG.vol);}
+  checkThresholds();
+}
+function restartSim(){if(simTimer)clearInterval(simTimer);simTimer=setInterval(tick,SPD_MS[CFG.speed-1]);}
+
+// ═══ THRESHOLD BREACH DETECTION ══════════════════
+
+// Tracks which metrics are currently in breach to prevent duplicate log entries
+const breachState={sessions:false,avgtime:false,res:false,aba:false,des:false,der:false,alu:false};
+
+function checkThresholds(){
+  // Build list of checks: id, current value, element to turn red, element to pulse
+  const checks=[
+    {
+      id:'sessions',
+      val:parseInt(document.getElementById('sesCount').textContent)||0,
+      valEl:document.getElementById('sesCount'),
+      pulseEl:document.getElementById('sesCount')?.closest('.card-panel'),
+    },
+    {
+      id:'avgtime',
+      val:avgTimeVal,  // read from JS variable — more reliable than DOM (" min" suffix)
+      valEl:document.getElementById('avgTimeNum'),
+      pulseEl:document.getElementById('avgTimeNum')?.closest('.card-panel'),
+    },
+  ];
+  // Add the five performance metrics (totals are JS data, elements are in rendered DOM)
+  metrics.forEach(m=>{
+    const valEl =document.getElementById(`mtotal-${m.id}`);
+    const pulseEl=document.getElementById(`mrow-${m.id}`);
+    if(valEl) checks.push({id:m.id, val:m.total, valEl, pulseEl});
+  });
+
+  checks.forEach(({id,val,valEl,pulseEl})=>{
+    const cfg=metricCfg[id];
+    if(!cfg||!valEl)return;
+
+    const upperBreach=cfg.upper!==null&&val>cfg.upper;
+    const lowerBreach=cfg.lower!==null&&val<cfg.lower;
+    const inBreach   =upperBreach||lowerBreach;
+
+    if(inBreach&&!breachState[id]){
+      // ── ENTERING BREACH ──────────────────────────
+      breachState[id]=true;
+      valEl.classList.add('val-breach');
+
+      // Pulse animation on the parent container
+      if(pulseEl){
+        pulseEl.classList.remove('breach-pulse');
+        void pulseEl.offsetWidth;            // force reflow to restart animation
+        pulseEl.classList.add('breach-pulse');
+      }
+
+      // Log the event
+      const now   =new Date();
+      const ts    =`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+      const type  =upperBreach?'upper':'lower';
+      const thresh=upperBreach?cfg.upper:cfg.lower;
+      const m     =metrics.find(x=>x.id===id);
+      const mname =m?.[CFG.lang]||m?.es||id;
+      const sev   =(id==='aba'||id==='alu')?'critical':'warning';
+      const notif =cfg.notifs.length
+        ? cfg.notifs[0].charAt(0).toUpperCase()+cfg.notifs[0].slice(1)
+        : 'Email';
+      alertLog.unshift({id:alertIdCtr++,mid:id,mname,type,val,thresh,time:ts,sev,notif});
+
+      // Refresh Alerts tab if the panel is open for this metric
+      if(actMetricId===id) renderAlertsTab(id);
+      updateAlertsBadge();
+
+    } else if(!inBreach&&breachState[id]){
+      // ── RECOVERING ───────────────────────────────
+      breachState[id]=false;
+      valEl.classList.remove('val-breach');
+    }
+  });
+}
+
+function updateAlertsBadge(){
+  const badge=document.getElementById('actAlertsBadge');
+  if(!badge)return;
+  if(alertLog.length){badge.textContent=alertLog.length;badge.classList.add('show');}
+  else badge.classList.remove('show');
+}
+
+// ═══ EXPORT / IMPORT CONFIGURATION ══════════════
+
+function buildConfigSnapshot(){
+  // Read live dashboard content from DOM
+  const actions=[...document.querySelectorAll('#accList li')]
+    .map(li=>li.textContent.replace(/^\d+\./,'').trim()).filter(Boolean);
+  const themes=[...document.querySelectorAll('#temList li')]
+    .map(li=>li.textContent.replace(/^\d+\./,'').trim()).filter(Boolean);
+  const faqs=[...document.querySelectorAll('#faqBody .faq-item')]
+    .map(el=>({question:el.querySelector('.faq-q')?.textContent||'',count:parseInt(el.querySelector('.faq-n')?.textContent)||0}))
+    .filter(f=>f.question);
+  return{
+    version:'1.0',
+    exportedAt:new Date().toISOString(),
+    clientName:document.getElementById('configClientName')?.value?.trim()||'',
+    config:{...CFG},
+    channels:activeChannels.map(c=>({id:c.id,name:c.name,live:c.live,on:c.on})),
+    metricCfg:{...metricCfg},
+    alertLog:alertLog.slice(0,50),
+    dashboard:{
+      actions,themes,faqs,
+      sentiment:sentiment.map(s=>({id:s.id,pct:s.pct,threshold:s.threshold})),
+      avgTimeVal
+    }
+  };
+}
+
+function exportConfig(){
+  const snapshot=buildConfigSnapshot();
+  const name=(snapshot.clientName.replace(/[^a-zA-Z0-9-_\s]/g,'')||'unnamed')
+    .trim().replace(/\s+/g,'-').toLowerCase();
+  const date=new Date().toISOString().split('T')[0];
+  const filename=`bob-config-${name}-${date}.json`;
+  const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+  toast(`✦ Exported: ${filename}`);
+}
+
+function handleImport(input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.version)throw new Error('Invalid BOb configuration file');
+      applyConfigSnapshot(data);
+      toast(`✦ Loaded: ${data.clientName||'Configuration'}`);
+    }catch(err){
+      console.error('Import error:',err);
+      toast('Error — invalid configuration file');
+    }
+  };
+  reader.readAsText(file);
+  input.value=''; // allow reimport of same file
+}
+
+function applyConfigSnapshot(data){
+  // Restore CFG
+  if(data.config) Object.assign(CFG,data.config);
+
+  // Restore channels
+  if(Array.isArray(data.channels)){
+    activeChannels=data.channels.map(c=>{
+      const def=CH_LIBRARY.find(x=>x.id===c.id)||{};
+      return{...def,...c};
+    });
+  }
+
+  // Restore metric thresholds
+  if(data.metricCfg) Object.assign(metricCfg,data.metricCfg);
+
+  // Restore alert log
+  if(Array.isArray(data.alertLog)){
+    alertLog.length=0;
+    alertLog.push(...data.alertLog);
+  }
+
+  // Restore sentiment
+  if(Array.isArray(data.dashboard?.sentiment)){
+    data.dashboard.sentiment.forEach((s,i)=>{
+      if(sentiment[i]){sentiment[i].pct=s.pct;sentiment[i].threshold=s.threshold;}
+    });
+  }
+
+  // Restore avgTime
+  if(data.dashboard?.avgTimeVal) avgTimeVal=data.dashboard.avgTimeVal;
+
+  // Re-render core UI
+  applyLang(CFG.lang);
+  renderChannelDisplay();
+  renderLollipops();
+  renderMetrics();
+  document.getElementById('avgTimeNum').textContent=avgTimeVal;
+
+  // Restore Actions / Themes / FAQs
+  if(data.dashboard?.actions?.length)
+    document.getElementById('accList').innerHTML=
+      data.dashboard.actions.map((a,i)=>`<li><span class="at-n">${i+1}.</span>${a}</li>`).join('');
+  if(data.dashboard?.themes?.length)
+    document.getElementById('temList').innerHTML=
+      data.dashboard.themes.map((t,i)=>`<li><span class="at-n">${i+1}.</span>${t}</li>`).join('');
+  if(data.dashboard?.faqs?.length)
+    document.getElementById('faqBody').innerHTML=
+      data.dashboard.faqs.map((f,i)=>
+        `<div class="faq-item"><div class="faq-q">${f.question}</div><div class="faq-n" id="faq-n-${i}">${f.count}</div></div>`
+      ).join('');
+
+  // Restore logo if present
+  if(CFG.logoSrc){
+    const img=document.getElementById('hLogoImg');
+    img.src=CFG.logoSrc;img.style.display='block';
+    document.getElementById('hLogoIcon').style.display='none';
+  }
+
+  // Restore client name in sidebar
+  const nameEl=document.getElementById('configClientName');
+  if(nameEl&&data.clientName) nameEl.value=data.clientName;
+
+  updateAlertsBadge();
+  restartSim();
+}
+
+// ═══ INIT ═════════════════════════════════════════
+function init(){
+  renderChannelDisplay(); renderLollipops(); renderMetrics(); renderFAQ(); renderAccTemas();
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('dateTo').value=today;
+  const from=new Date();from.setDate(from.getDate()-30);
+  document.getElementById('dateFrom').value=from.toISOString().split('T')[0];
+  restartSim();
+  updateAlertsBadge();
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){ closeBobee(); closeActionables(); }
+  });
+}
+init();
+</script>
+</body>
+</html>
