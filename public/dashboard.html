@@ -1194,7 +1194,7 @@ Rules:
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1000,
       system: 'You are a business intelligence data generator for the BOb platform by Boss.Technology. Return ONLY valid JSON. No markdown code fences. No preamble. No explanation.',
       messages: [{role:'user', content:prompt}]
@@ -2291,7 +2291,7 @@ Return ONLY valid JSON — no markdown, no code fences, no explanation:
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1000,
         system: 'You are BOBee, the AI intelligence assistant for the BOb platform by Boss.Technology. Return ONLY valid JSON. No markdown fences. No preamble. No explanation outside the JSON.',
         messages: [{role:'user', content: prompt}]
@@ -2349,7 +2349,7 @@ async function sendBobeeChat() {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1000,
         system: `You are BOBee (Bobby), the AI intelligence assistant for BOb (Business Observer) by Boss.Technology. Answer questions about the business dashboard concisely in 2-3 sentences. Be specific and reference actual numbers from the data.
 
@@ -2593,7 +2593,7 @@ async function sendActBobeeChat(){
     const name=document.getElementById('actMetricName').textContent;
     const resp=await fetch('/api/ai',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,
         system:`You are BOBee, focused on the "${name}" metric for BOb (Business Observer). Answer in 2-3 sentences with specific data references.\n\nDashboard:\n${buildBobeeContext()}`,
         messages:actBobeeHistory})
     });
