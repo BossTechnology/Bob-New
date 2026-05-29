@@ -1749,7 +1749,7 @@ async function loadAnomalyData(){
       ANOMALY_DATA.length=0;
       rows.forEach(a=>ANOMALY_DATA.push({
         id:a.id,type:a.type,sev:a.sev,metric:a.metric,
-        title:a.title,desc:a.desc||'',
+        title:a.title,desc:a.description||a.desc||'',
         time:a.time||new Date(a.occurred_at).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'}),
         status:a.status,sigma:a.sigma,baseline:a.baseline,actual:a.actual
       }));

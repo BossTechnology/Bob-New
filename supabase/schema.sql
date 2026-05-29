@@ -29,7 +29,7 @@ create table if not exists anomalies (
   sev         text not null check (sev in ('critical','warning','info')),
   metric      text not null,
   title       text not null,
-  desc        text,
+  description text,
   status      text not null default 'active'
               check (status in ('active','open','investigating','escalated','resolved')),
   channel_id  text,
@@ -95,7 +95,7 @@ alter table rootcause_log enable row level security;
 
 -- ── Seed data (realistic demo) ────────────────────────────────────────────────
 
-insert into anomalies (type, sev, metric, title, "desc", status, occurred_at) values
+insert into anomalies (type, sev, metric, title, description, status, occurred_at) values
   ('anomaly',  'warning',  'sessions', 'Session volume deviation',
    'Volume 2.3σ above 7-day baseline during off-peak window. Possible viral campaign or external referral spike.',
    'active',       now() - interval '25 min'),
