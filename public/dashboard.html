@@ -215,6 +215,8 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
 .avg-unit{font-size:20px;font-weight:400;color:var(--gray-mid);letter-spacing:0}
 .stat-row{display:grid;grid-template-columns:1fr 52px 58px 52px;padding:8px 12px;align-items:center;border-bottom:1px solid var(--gray-border);gap:4px}
 .stat-row:last-child{border-bottom:none}
+.stat-row.click{cursor:pointer;transition:background .15s}
+.stat-row.click:hover{background:var(--gray-bg)}
 .stat-lbl{font-size:12px;color:var(--black)}
 .stat-lbl strong{font-weight:700}
 .stat-val{font-size:11px;color:var(--gray-mid);text-align:center;font-weight:500;padding:2px 4px;border-radius:4px}
@@ -297,7 +299,7 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
 .ai-badge svg{width:10px;height:10px}
 
 /* ── ACTIONABLES PANEL ────────────────────────────── */
-.act-panel{position:fixed;right:0;top:52px;height:calc(100vh - 52px);width:360px;
+.act-panel{position:fixed;right:0;top:52px;height:calc(100vh - 52px);width:440px;
   background:var(--white);border-left:1px solid var(--gray-border);z-index:210;
   transform:translateX(100%);transition:transform .32s cubic-bezier(.4,0,.2,1);
   display:flex;flex-direction:column;overflow:hidden;box-shadow:-6px 0 20px rgba(0,0,0,.07)}
@@ -484,7 +486,84 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
 .act-bar-count{font-size:11px;font-weight:700;color:var(--black);width:32px;text-align:right;flex-shrink:0}
 .act-sentiment-driver{padding:9px 11px;background:var(--gray-bg);border-radius:7px;border:1px solid var(--gray-border);font-size:11.5px;color:var(--gray-dark);line-height:1.6}
 
-/* ── CHANNEL FILTER NOTE ─────────────────────────── */
+/* ── HEADER ICON BUTTONS ─────────────────────────── */
+.hdr-icon-btn{position:relative;display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:none;background:none;cursor:pointer;border-radius:7px;transition:background .2s;color:var(--black);flex-shrink:0}
+.hdr-icon-btn:hover{background:var(--gray-bg)}
+.hdr-icon-btn svg{width:18px;height:18px}
+.hdr-icon-badge{position:absolute;top:1px;right:1px;min-width:15px;height:15px;background:var(--red);color:var(--white);font-size:9px;font-weight:800;border-radius:8px;display:none;align-items:center;justify-content:center;padding:0 3px;line-height:1}
+.hdr-icon-badge.show{display:flex}
+
+/* ── GLOBAL CENTER MODALS (Anomalies + Alerts) ───── */
+.glob-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.glob-modal-bg.open{display:flex}
+.glob-modal{background:var(--white);border-radius:14px;width:580px;max-width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.22);overflow:hidden}
+.glob-modal-head{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--gray-border);flex-shrink:0}
+.glob-modal-icon{width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:9px;flex-shrink:0}
+.glob-modal-icon.anomalies-ic{background:#FEF3C7}
+.glob-modal-icon.alerts-ic{background:#FEE2E2}
+.glob-modal-icon svg{width:20px;height:20px}
+.glob-modal-info{flex:1}
+.glob-modal-info h3{font-size:15px;font-weight:800;color:var(--black)}
+.glob-modal-info p{font-size:11px;color:var(--gray-light);margin-top:1px}
+.glob-modal-close{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;border-radius:6px;font-size:18px;color:var(--gray-mid);transition:background .2s;flex-shrink:0}
+.glob-modal-close:hover{background:var(--gray-bg)}
+.glob-modal-body{flex:1;overflow-y:auto;padding:0}
+.glob-modal-section{padding:14px 20px;border-bottom:1px solid var(--gray-border)}
+.glob-modal-section:last-child{border-bottom:none}
+.glob-section-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-light);margin-bottom:10px}
+/* Summary pills */
+.glob-summary{display:flex;gap:8px;flex-wrap:wrap}
+.glob-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1px solid var(--gray-border)}
+.glob-pill-count{font-size:18px;font-weight:800;letter-spacing:-0.5px}
+.glob-pill-label{font-size:12px;color:var(--gray-mid)}
+/* Urgent items */
+.urgent-item{padding:10px 0;border-bottom:1px solid var(--gray-border)}
+.urgent-item:last-child{border-bottom:none}
+.urgent-item-head{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+.urgent-badge{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.urgent-badge.critical{background:#FEE2E2;color:var(--red)}
+.urgent-badge.warning{background:#FEF3C7;color:#D97706}
+.urgent-title{font-size:12px;font-weight:700;color:var(--black);flex:1;min-width:0}
+.urgent-time{font-size:10px;color:var(--gray-light);flex-shrink:0}
+.urgent-desc{font-size:11px;color:var(--gray-dark);line-height:1.45}
+/* Pattern items */
+.pattern-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--gray-border)}
+.pattern-item:last-child{border-bottom:none}
+.pattern-icon{width:28px;height:28px;background:var(--gray-bg);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+.pattern-content{flex:1;min-width:0}
+.pattern-title{font-size:12px;font-weight:700;color:var(--black);margin-bottom:2px}
+.pattern-detail{font-size:11px;color:var(--gray-dark);line-height:1.4}
+.pattern-tag{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 6px;border-radius:3px;background:var(--accent-bg);color:var(--accent);margin-top:4px}
+/* Root cause */
+.root-cause-box{background:var(--gray-bg);border-radius:8px;padding:12px 14px;border:1px solid var(--gray-border)}
+.root-cause-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gray-light);margin-bottom:6px}
+.root-cause-text{font-size:12px;color:var(--gray-dark);line-height:1.55}
+.root-cause-chain{display:flex;align-items:center;gap:5px;margin-top:10px;flex-wrap:wrap}
+.rcc-step{font-size:11px;font-weight:600;padding:3px 9px;background:var(--white);border:1px solid var(--gray-border);border-radius:4px;color:var(--black)}
+.rcc-arrow{font-size:11px;color:var(--gray-light)}
+
+/* ── ANOMALY ITEMS ───────────────────────────────── */
+.anomaly-item{border:1px solid var(--gray-border);border-radius:7px;padding:10px 11px;margin-bottom:7px;border-left:3px solid var(--gray-border);transition:background .15s}
+.anomaly-item:hover{background:var(--gray-bg)}
+.anomaly-item:last-child{margin-bottom:0}
+.anomaly-item.sev-critical{border-left-color:var(--red)}
+.anomaly-item.sev-warning{border-left-color:#F59E0B}
+.anomaly-item.sev-info{border-left-color:var(--accent)}
+.anomaly-item-head{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.anomaly-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.anomaly-dot.sev-critical{background:var(--red)}
+.anomaly-dot.sev-warning{background:#F59E0B}
+.anomaly-dot.sev-info{background:var(--accent)}
+.anomaly-title{font-size:12px;font-weight:700;color:var(--black);flex:1;min-width:0}
+.anomaly-time{font-size:10px;color:var(--gray-light);flex-shrink:0}
+.anomaly-desc{font-size:11px;color:var(--gray-dark);line-height:1.4;margin-bottom:6px}
+.anomaly-footer{display:flex;align-items:center;justify-content:space-between}
+.anomaly-status{font-size:10px;font-weight:700;color:var(--gray-mid);text-transform:uppercase;letter-spacing:.5px}
+.anomaly-metric{font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.5px}
+/* ── FAQ CLICKABLE CONTENT AREA ──────────────────── */
+.faq-content-click{cursor:pointer;transition:background .15s}
+.faq-content-click:hover{background:var(--gray-bg)}
+
 .ch-filter-note{display:none;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:1px 7px;margin-top:6px;text-align:center}
 .ch-filter-note.show{display:block}
 .ch-count-badge{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:3px;padding:0 5px;margin-left:5px;float:right;line-height:1.6}
@@ -702,6 +781,7 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
     <div class="act-tab active" id="aTab-activity" onclick="switchActTab('activity')">Activity</div>
     <div class="act-tab" id="aTab-alerts" onclick="switchActTab('alerts')">Alerts <span class="act-alerts-badge" id="actAlertsBadge"></span></div>
     <div class="act-tab" id="aTab-config" onclick="switchActTab('config')">Configuration</div>
+    <div class="act-tab" id="aTab-anomalies" onclick="switchActTab('anomalies')">Anomalies <span class="act-alerts-badge" id="actAnomaliesBadge"></span></div>
     <div class="act-tab" id="aTab-bobee" onclick="switchActTab('bobee')" title="Ask BOBee" style="padding-left:10px;padding-right:10px">
       <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
         <rect x="12" y="1" width="2" height="2"/><rect x="11" y="0" width="2" height="1"/>
@@ -724,11 +804,55 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
     <div class="act-content active" id="actContent-activity"></div>
     <div class="act-content" id="actContent-alerts"></div>
     <div class="act-content" id="actContent-config"></div>
+    <div class="act-content" id="actContent-anomalies"></div>
     <div class="act-content" id="actContent-bobee"></div>
   </div>
 </div>
 
 <!-- BOBEE MODAL -->
+<!-- ── ANOMALIES MODAL ─────────────────────────────── -->
+<div class="glob-modal-bg" id="anomaliesBg" onclick="anomaliesBgClick(event)">
+  <div class="glob-modal">
+    <div class="glob-modal-head">
+      <div class="glob-modal-icon anomalies-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="12,2 20,11 4,11"/>
+          <polyline points="3,13 7,12 10,14 14,12 17,14 21,13"/>
+          <polyline points="4,15.5 7,14.5 10,16.5 14,14.5 17,16.5 20,15.5"/>
+          <polyline points="5,18 4,22 20,22 19,18"/>
+        </svg>
+      </div>
+      <div class="glob-modal-info">
+        <h3>Anomaly Intelligence</h3>
+        <p>Aggregated anomalies, incidents &amp; issues &mdash; pattern &amp; root cause analysis</p>
+      </div>
+      <button class="glob-modal-close" onclick="closeAnomaliesModal()">&#x2715;</button>
+    </div>
+    <div class="glob-modal-body" id="anomaliesModalBody"></div>
+  </div>
+</div>
+
+<!-- ── ALERTS MODAL ────────────────────────────────── -->
+<div class="glob-modal-bg" id="alertsBg" onclick="alertsBgClick(event)">
+  <div class="glob-modal">
+    <div class="glob-modal-head">
+      <div class="glob-modal-icon alerts-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <rect x="11" y="9" width="2" height="5" rx="1"/>
+          <circle cx="12" cy="17.5" r="0.8" fill="var(--red)" stroke="none"/>
+        </svg>
+      </div>
+      <div class="glob-modal-info">
+        <h3>Alert Intelligence</h3>
+        <p>Aggregated threshold alerts &mdash; pattern &amp; root cause analysis</p>
+      </div>
+      <button class="glob-modal-close" onclick="closeAlertsModal()">&#x2715;</button>
+    </div>
+    <div class="glob-modal-body" id="alertsModalBody"></div>
+  </div>
+</div>
+
 <div class="bobee-bg" id="bobeeBg" onclick="bobeeBgClick(event)">
   <div class="bobee-modal">
     <div class="bobee-mhead">
@@ -825,6 +949,25 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
     <input type="date" id="dateTo">
     <button class="date-apply" onclick="applyDate()">Apply</button>
   </div>
+  <!-- Anomalies header icon -->
+  <button class="hdr-icon-btn" id="hdrAnomaliesBtn" onclick="openAnomaliesModal()" title="Anomalies">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="12,2 20,11 4,11"/>
+      <polyline points="3,13 7,12 10,14 14,12 17,14 21,13"/>
+      <polyline points="4,15.5 7,14.5 10,16.5 14,14.5 17,16.5 20,15.5"/>
+      <polyline points="5,18 4,22 20,22 19,18"/>
+    </svg>
+    <span class="hdr-icon-badge" id="hdrAnomaliesBadge"></span>
+  </button>
+  <!-- Alerts header icon -->
+  <button class="hdr-icon-btn" id="hdrAlertsBtn" onclick="openAlertsModal()" title="Alerts">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      <rect x="11" y="9" width="2" height="5" rx="1"/>
+      <circle cx="12" cy="17.5" r="0.8" fill="currentColor" stroke="none"/>
+    </svg>
+    <span class="hdr-icon-badge" id="hdrAlertsBadge"></span>
+  </button>
   <div class="header-spacer"></div>
   <div class="bobee-btn" onclick="openBobee()">
     <svg width="26" height="26" viewBox="0 0 32 34">
@@ -918,12 +1061,12 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 10c0-4.4-3.6-8-8-8s-8 3.6-8 8"/><path d="M4 10.5v3a1 1 0 001 1h1.5a1 1 0 001-1v-3a1 1 0 00-1-1H5a1 1 0 00-1 1z"/><path d="M20 10.5v3a1 1 0 01-1 1h-1.5a1 1 0 01-1-1v-3a1 1 0 011-1H19a1 1 0 011 1z"/><path d="M20 14.5v1a4 4 0 01-4 4h-2"/></svg>
         </div>
       </div>
-      <div class="stat-row">
-        <div class="stat-lbl"><strong id="lbl-tr">Tiempo</strong> de respuesta</div>
+      <div class="stat-row click" onclick="openActionables('avgtime',getT('tr'),'')">
+        <div class="stat-lbl" id="lbl-tr">Response Time</div>
         <div class="stat-val">2 Min</div><div class="stat-val ai">1 Min</div><div class="stat-val">1 Min</div>
       </div>
-      <div class="stat-row">
-        <div class="stat-lbl"><strong id="lbl-qr">Calidad</strong> de respuesta</div>
+      <div class="stat-row click" onclick="openActionables('quality',getT('qr'),'')">
+        <div class="stat-lbl" id="lbl-qr">Response Quality</div>
         <div class="stat-val">Low</div><div class="stat-val ai">Med</div><div class="stat-val">Med</div>
       </div>
     </div>
@@ -931,13 +1074,18 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
     <div class="faq-box">
       <div class="faq-head">
         <div class="faq-tabs">
-          <span class="faq-tab active" id="ftab-faq" onclick="switchFaqTab('faq')" id="lbl-faq">Preguntas Frecuentes</span>
-          <span class="faq-tab" id="ftab-words" onclick="switchFaqTab('words')">Popular Words</span>
+          <span class="faq-tab active" id="ftab-faq" onclick="switchFaqTab('faq')">
+            <span id="lbl-faq">Preguntas Frecuentes</span>
+          </span>
+          <span class="faq-tab" id="ftab-words" onclick="switchFaqTab('words')">
+            <span id="lbl-words">Palabras Populares</span>
+          </span>
         </div>
-        <span class="faq-chev" id="faqChev" onclick="toggleFaq()">▾</span>
       </div>
-      <div id="faqBody"></div>
-      <div id="wordsBody" style="display:none;padding-bottom:4px"></div>
+      <div class="faq-content-click" onclick="openFaqActionables()">
+        <div id="faqBody"></div>
+        <div id="wordsBody" style="display:none;padding-bottom:4px"></div>
+      </div>
     </div>
   </div>
 </main>
@@ -953,10 +1101,10 @@ let simTimer=null;
 
 // ═══ i18n ════════════════════════════════════════
 const T={
-  es:{int:'INTERACCIONES',cal:'CALIDAD Y EXPERIENCIA',rend:'RENDIMIENTO',ses:'Sesiones',can:'Canales',avg:'Tiempo Prom.',animo:'\u00c1nimo &amp; Sentimiento',acc:'Acciones',tem:'Temas',stats:'Stats',tr:'Tiempo',qr:'Calidad',faq:'Preguntas Frecuentes',now:'Ahora',today:'Hoy',week:'Esta Semana',month:'Este Mes',custom:'Personalizado',sent:['Enojado','Insatisfecho','Satisfecho','Contento','Feliz']},
-  en:{int:'INTERACTIONS',cal:'QUALITY & EXPERIENCE',rend:'PERFORMANCE',ses:'Sessions',can:'Channels',avg:'Avg. Time',animo:'Mood &amp; Sentiment',acc:'Actions',tem:'Themes',stats:'Stats',tr:'Response',qr:'Quality',faq:'Frequent Questions',now:'Now',today:'Today',week:'This Week',month:'This Month',custom:'Custom',sent:['Angry','Unsatisfied','Satisfied','Content','Happy']},
-  fr:{int:'INTERACTIONS',cal:'QUALIT\u00c9 & EXP\u00c9RIENCE',rend:'PERFORMANCE',ses:'Sessions',can:'Canaux',avg:'Temps Moy.',animo:'Humeur &amp; Sentiment',acc:'Actions',tem:'Th\u00e8mes',stats:'Stats',tr:'R\u00e9ponse',qr:'Qualit\u00e9',faq:'Questions Fr\u00e9quentes',now:'Maintenant',today:"Aujourd'hui",week:'Cette Semaine',month:'Ce Mois',custom:'Personnalis\u00e9',sent:['Col\u00e8re','Insatisfait','Satisfait','Content','Heureux']},
-  pt:{int:'INTERA\u00c7\u00d5ES',cal:'QUALIDADE & EXPERI\u00caNCIA',rend:'DESEMPENHO',ses:'Sess\u00f5es',can:'Canais',avg:'Tempo M\u00e9d.',animo:'Humor &amp; Sentimento',acc:'A\u00e7\u00f5es',tem:'Temas',stats:'Stats',tr:'Resposta',qr:'Qualidade',faq:'Perguntas Frequentes',now:'Agora',today:'Hoje',week:'Esta Semana',month:'Este M\u00eas',custom:'Personalizado',sent:['Irritado','Insatisfeito','Satisfeito','Contente','Feliz']},
+  es:{int:'INTERACCIONES',cal:'CALIDAD Y EXPERIENCIA',rend:'RENDIMIENTO',ses:'Sesiones',can:'Canales',avg:'Tiempo Prom.',animo:'&#193;nimo &amp; Sentimiento',acc:'Acciones',tem:'Temas',stats:'Stats',tr:'Tiempo de respuesta',qr:'Calidad de respuesta',faq:'Preguntas Frecuentes',words:'Palabras Populares',now:'Ahora',today:'Hoy',week:'Esta Semana',month:'Este Mes',custom:'Personalizado',sent:['Enojado','Insatisfecho','Satisfecho','Contento','Feliz']},
+  en:{int:'INTERACTIONS',cal:'QUALITY & EXPERIENCE',rend:'PERFORMANCE',ses:'Sessions',can:'Channels',avg:'Avg. Time',animo:'Mood &amp; Sentiment',acc:'Actions',tem:'Themes',stats:'Stats',tr:'Response Time',qr:'Response Quality',faq:'Frequent Questions',words:'Popular Words',now:'Now',today:'Today',week:'This Week',month:'This Month',custom:'Custom',sent:['Angry','Unsatisfied','Satisfied','Content','Happy']},
+  fr:{int:'INTERACTIONS',cal:'QUALIT&#201; & EXP&#201;RIENCE',rend:'PERFORMANCE',ses:'Sessions',can:'Canaux',avg:'Temps Moy.',animo:'Humeur &amp; Sentiment',acc:'Actions',tem:'Th&#232;mes',stats:'Stats',tr:'Temps de r&#233;ponse',qr:'Qualit&#233; de r&#233;ponse',faq:'Questions Fr&#233;quentes',words:'Mots Populaires',now:'Maintenant',today:"Aujourd'hui",week:'Cette Semaine',month:'Ce Mois',custom:'Personnalis&#233;',sent:['Col&#232;re','Insatisfait','Satisfait','Content','Heureux']},
+  pt:{int:'INTERA&#199;&#213;ES',cal:'QUALIDADE & EXPERI&#202;NCIA',rend:'DESEMPENHO',ses:'Sess&#245;es',can:'Canais',avg:'Tempo M&#233;d.',animo:'Humor &amp; Sentimento',acc:'A&#231;&#245;es',tem:'Temas',stats:'Stats',tr:'Tempo de resposta',qr:'Qualidade de resposta',faq:'Perguntas Frequentes',words:'Palavras Populares',now:'Agora',today:'Hoje',week:'Esta Semana',month:'Este M&#234;s',custom:'Personalizado',sent:['Irritado','Insatisfeito','Satisfeito','Contente','Feliz']},
 };
 
 // ═══ INDUSTRY CONTENT ════════════════════════════
@@ -1327,7 +1475,7 @@ function applyIndustryContent(ind,l){
 
 function applyLang(l){
   const t=T[l];
-  const ids={int:'lbl-int',cal:'lbl-cal',rend:'lbl-rend',ses:'lbl-ses',can:'lbl-can',avg:'lbl-avg',animo:'lbl-animo',acc:'lbl-acc',tem:'lbl-tem',stats:'lbl-stats',tr:'lbl-tr',qr:'lbl-qr',faq:'lbl-faq'};
+  const ids={int:'lbl-int',cal:'lbl-cal',rend:'lbl-rend',ses:'lbl-ses',can:'lbl-can',avg:'lbl-avg',animo:'lbl-animo',acc:'lbl-acc',tem:'lbl-tem',stats:'lbl-stats',tr:'lbl-tr',qr:'lbl-qr',faq:'lbl-faq',words:'lbl-words'};
   Object.entries(ids).forEach(([k,id])=>{const el=document.getElementById(id);if(el)el.innerHTML=t[k];});
   const optMap={ahora:t.now,hoy:t.today,semana:t.week,mes:t.month,custom:t.custom};
   const sel=document.getElementById('timeSel');
@@ -1514,12 +1662,12 @@ function renderMetrics(){
 }
 
 const DEFAULT_FAQS={
-  es:['\u00bfEl programa es 100% virtual?','\u00bfQu\u00e9 opciones de pago tienen?','\u00bfEl t\u00edtulo es v\u00e1lido internacionalmente?','\u00bfCu\u00e1ndo puedo comenzar clases?'],
-  en:['Is the program 100% virtual?','What payment options do you have?','Is the degree internationally valid?','When can I start classes?'],
-  fr:['Le programme est-il 100% virtuel?','Quelles options de paiement avez-vous?','Le dipl\u00f4me est-il valide internationalement?','Quand puis-je commencer les cours?'],
-  pt:['O programa \u00e9 100% virtual?','Quais op\u00e7\u00f5es de pagamento?','O t\u00edtulo \u00e9 v\u00e1lido internacionalmente?','Quando posso come\u00e7ar as aulas?'],
+  es:['¿El programa es 100% virtual?','¿Qué opciones de pago tienen?','¿El título es válido internacionalmente?','¿Cuándo puedo comenzar clases?','¿Cómo accedo a la plataforma virtual?','¿Existe algún descuento para grupos?','¿Tienen servicio de atención 24/7?'],
+  en:['Is the program 100% virtual?','What payment options do you have?','Is the degree internationally valid?','When can I start classes?','How do I access the virtual platform?','Are there group discounts available?','Do you have 24/7 customer support?'],
+  fr:['Le programme est-il 100% virtuel?','Quelles options de paiement avez-vous?','Le diplôme est-il valide internationalement?','Quand puis-je commencer les cours?','Comment accéder à la plateforme virtuelle?','Y a-t-il des remises pour les groupes?','Avez-vous un support client 24h/24?'],
+  pt:['O programa é 100% virtual?','Quais opções de pagamento?','O título é válido internacionalmente?','Quando posso começar as aulas?','Como acesso a plataforma virtual?','Existe desconto para grupos?','Vocês têm atendimento 24/7?'],
 };
-const DEFAULT_COUNTS=[300,150,90,30];
+const DEFAULT_COUNTS=[300,150,90,30,22,18,12];
 function renderFAQ(){
   const l=CFG.lang; const qs=DEFAULT_FAQS[l]||DEFAULT_FAQS.es;
   document.getElementById('faqBody').innerHTML=qs.map((q,i)=>`<div class="faq-item"><div class="faq-q">${q}</div><div class="faq-n" id="faq-n-${i}">${DEFAULT_COUNTS[i]}</div></div>`).join('');
@@ -1559,6 +1707,9 @@ const metricCfg={
   des:      {upper:null,lower:null,notifs:[],               peak:false,msg:''},
   der:      {upper:110, lower:null,notifs:['email'],        peak:false,msg:''},
   alu:      {upper:60,  lower:null,notifs:['email','slack'],peak:false,msg:''},
+  quality:  {upper:null,lower:null,notifs:['slack'],        peak:false,msg:''},
+  faq:      {notifs:[],peak:false,msg:'',rules:[]},
+  words:    {notifs:[],peak:false,msg:'',rules:[]},
 };
 
 // ─ Channel behaviour profiles ─────────────────────
@@ -1586,6 +1737,69 @@ const alertLog=[
   {id:3,mid:'avgtime',mname:'Tiempo Prom.',type:'upper',val:18,thresh:15,time:'12:15',sev:'warning', notif:'Slack'},
 ];
 let alertIdCtr=4;
+// ─── BOb API Integration ─────────────────────────────────────────────────────
+const DEMO_ORG_ID='00000000-0000-0000-0000-000000000001';
+
+async function loadAnomalyData(){
+  try{
+    const r=await fetch('/api/anomalies?limit=50');
+    if(!r.ok)return;
+    const rows=await r.json();
+    if(rows.length){
+      ANOMALY_DATA.length=0;
+      rows.forEach(a=>ANOMALY_DATA.push({
+        id:a.id,type:a.type,sev:a.sev,metric:a.metric,
+        title:a.title,desc:a.desc||'',
+        time:a.time||new Date(a.occurred_at).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'}),
+        status:a.status,sigma:a.sigma,baseline:a.baseline,actual:a.actual
+      }));
+      updateAnomaliesBadge();
+    }
+  }catch(e){console.warn('[BOb] anomaly load failed:',e);}
+}
+
+async function loadAlertData(){
+  try{
+    const r=await fetch('/api/alerts?limit=50');
+    if(!r.ok)return;
+    const rows=await r.json();
+    if(rows.length){
+      alertLog.length=0;
+      rows.forEach(a=>alertLog.push({
+        id:a.id,mid:a.metric_id,mname:a.metric_name,
+        type:a.breach_type,val:a.value,thresh:a.threshold,
+        time:a.time||new Date(a.occurred_at).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'}),
+        sev:a.sev,notif:'Email'
+      }));
+      updateAlertsBadge();
+    }
+  }catch(e){console.warn('[BOb] alert load failed:',e);}
+}
+
+function _renderPatternItems(patterns){
+  const iconMap={'time-based':'🔄','causal-chain':'⛓','co-occurrence':'📡','frequency':'🔁'};
+  return patterns.map(p=>`<div class="pattern-item">
+    <div class="pattern-icon">${iconMap[p.type]||'🔍'}</div>
+    <div class="pattern-content">
+      <div class="pattern-title">${p.title}</div>
+      <div class="pattern-detail">${p.detail}</div>
+      <span class="pattern-tag">${p.type.replace('-',' ')}</span>
+    </div></div>`).join('');
+}
+
+function _renderRootCauseHtml(rc){
+  const chain=(rc.chain||[]).map((s,i,arr)=>
+    `<span class="rcc-step">${s}</span>${i<arr.length-1?'<span class="rcc-arrow">→</span>':''}`).join('');
+  return `<div class="root-cause-box">
+    <div class="root-cause-label">Most Probable Root Cause
+      <span style="margin-left:8px;font-size:9px;font-weight:600;color:var(--gray-light)">
+        ${rc.confidence||0}% confidence</span></div>
+    <div class="root-cause-text">${rc.summary||''}</div>
+    <div class="root-cause-chain">${chain}</div>
+  </div>`;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 let actMetricId=null;
 
 // ─ Open / Close / Switch tab ──────────────────────
@@ -1612,11 +1826,18 @@ function closeActionables(){
   actMetricId=null;
 }
 function switchActTab(tab){
-  ['activity','alerts','config','bobee'].forEach(t=>{
+  ['activity','alerts','config','anomalies','bobee'].forEach(t=>{
     document.getElementById(`actContent-${t}`)?.classList.toggle('active',t===tab);
     document.getElementById(`aTab-${t}`)?.classList.toggle('active',t===tab);
   });
   if(tab==='bobee') renderActBobeeTab();
+  if(tab==='anomalies') renderAnomaliesTab(actMetricId);
+}
+
+// ─ Open FAQ actionables from content area ─────────
+function openFaqActionables(){
+  const mid=faqActiveTab==='words'?'words':'faq';
+  openActionables(mid,getT(mid),'');
 }
 
 // ─ Activity tab ───────────────────────────────────
@@ -1628,8 +1849,50 @@ function renderActivityTab(metricId){
     case 'sentiment': renderSentimentActivity();break;
     case 'acciones':  renderActionsActivity();break;
     case 'temas':     renderTemasActivity();break;
+    case 'faq':       renderFaqActivity();break;
+    case 'words':     renderWordsActivity();break;
     default:          renderGenericActivity(metricId);
   }
+}
+
+function renderFaqActivity(){
+  const items=[...document.querySelectorAll('#faqBody .faq-item')];
+  if(!items.length){renderGenericActivity('faq');return;}
+  const data=items.map(el=>({
+    q:el.querySelector('.faq-q')?.textContent||'',
+    n:parseInt(el.querySelector('.faq-n')?.textContent)||0
+  })).filter(d=>d.q);
+  const maxN=Math.max(...data.map(d=>d.n),1);
+  const bars=data.map(d=>{
+    const w=Math.round(d.n/maxN*100);
+    return`<div class="act-bar-item"><div class="act-bar-label">${d.q}</div><div class="act-bar-track"><div class="act-bar-fill" style="width:${w}%"></div></div><div class="act-bar-count">${d.n}</div></div>`;
+  }).join('');
+  document.getElementById('actContent-activity').innerHTML=`
+    <div class="act-section-hd">Question Frequency</div>
+    <div class="act-bar-list">${bars}</div>
+    <div class="act-section-hd mt">Pattern Insight</div>
+    <div class="pattern-box">${patternInsight('faq')}</div>`;
+}
+
+function renderWordsActivity(){
+  // Ensure words are rendered first
+  if(!document.querySelector('.word-tag')) renderPopularWords();
+  const tags=[...document.querySelectorAll('.word-tag')];
+  if(!tags.length){renderGenericActivity('words');return;}
+  const data=tags.map(el=>({
+    w:el.childNodes[0]?.textContent?.trim()||'',
+    n:parseInt(el.querySelector('.word-count')?.textContent)||0
+  })).filter(d=>d.w).sort((a,b)=>b.n-a.n).slice(0,12);
+  const maxN=Math.max(...data.map(d=>d.n),1);
+  const bars=data.map(d=>{
+    const w=Math.round(d.n/maxN*100);
+    return`<div class="act-bar-item"><div class="act-bar-label">${d.w}</div><div class="act-bar-track"><div class="act-bar-fill" style="width:${w}%"></div></div><div class="act-bar-count">${d.n}</div></div>`;
+  }).join('');
+  document.getElementById('actContent-activity').innerHTML=`
+    <div class="act-section-hd">Word Frequency</div>
+    <div class="act-bar-list">${bars}</div>
+    <div class="act-section-hd mt">Pattern Insight</div>
+    <div class="pattern-box">${patternInsight('words')}</div>`;
 }
 
 function renderSessionsActivity(){
@@ -1846,9 +2109,13 @@ function renderConfigTab(metricId){
   switch(metricId){
     case 'sessions':  renderSessionsConfig();break;
     case 'avgtime':   renderAvgTimeConfig();break;
+    case 'quality':   renderQualityConfig();break;
     case 'sentiment': renderSentimentConfig();break;
-    case 'acciones':  renderItemsConfig('acciones','#accList li','Action');break;
-    case 'temas':     renderItemsConfig('temas','#temList li','Theme');break;
+    case 'acciones':  renderKeywordConfig('acciones','Actions');break;
+    case 'temas':     renderKeywordConfig('temas','Themes');break;
+    case 'nps':       renderKeywordConfig('nps','Frequent Questions');break;
+    case 'faq':       renderKeywordConfig('faq','Frequent Questions');break;
+    case 'words':     renderKeywordConfig('words','Popular Words');break;
     default:          renderMetricColConfig(metricId);
   }
 }
@@ -2064,58 +2331,172 @@ function saveSentimentConfig(){
 }
 
 // ── Actions / Themes config (shared) ─────────────
-function renderItemsConfig(mid,selector,label){
-  const items=[...document.querySelectorAll(selector)]
-    .map(li=>li.textContent.replace(/^\d+\./,'').trim()).filter(Boolean);
-  if(!items.length){
-    document.getElementById('actContent-config').innerHTML=
-      `<div style="font-size:12px;color:var(--gray-light);padding:12px 0;text-align:center">Apply a Business Context first to generate ${label.toLowerCase()} to configure.</div>`;
-    return;
-  }
-  const cfg=metricCfg[mid]; if(!cfg.items)cfg.items={};
-  const cards=items.map((name,i)=>{
-    const ic=cfg.items[`i${i}`]||{keywords:'',upper:null,lower:null,notifs:[]};
+// ── Keyword-rule config (Actions, Themes, Frequent Questions) ─
+function renderKeywordConfig(mid, label){
+  if(!metricCfg[mid])metricCfg[mid]={notifs:[],peak:false,msg:''};
+  if(!metricCfg[mid].rules)metricCfg[mid].rules=[];
+  // Ensure at least one empty rule exists
+  if(!metricCfg[mid].rules.length)
+    metricCfg[mid].rules.push({phrase:'',topN:5,notifs:[]});
+  renderKeywordRules(mid,label);
+}
+
+function renderKeywordRules(mid,label){
+  const cfg=metricCfg[mid];
+  const totalItems=mid==='acciones'?[...document.querySelectorAll('#accList li')].length
+                  :mid==='temas'?[...document.querySelectorAll('#temList li')].length
+                  :[...document.querySelectorAll('#faqBody .faq-item')].length||8;
+  const maxPos=Math.max(totalItems,4);
+
+  const ruleCards=cfg.rules.map((rule,i)=>{
     const chips=NOTIF_DEFS.map(n=>{
-      const on=(ic.notifs||[]).includes(n.id);
-      return`<div class="notif-chip ${on?'on':''}" onclick="_toggleN('${mid}','i${i}','${n.id}',this)">${n.svg}<span>${n.label}</span></div>`;
+      const on=(rule.notifs||[]).includes(n.id);
+      return`<div class="notif-chip ${on?'on':''}" onclick="toggleKwNotif('${mid}',${i},'${n.id}',this)">${n.svg}<span>${n.label}</span></div>`;
     }).join('');
-    return`<div class="cfg-item-card">
-      <div class="cfg-item-name">${name}</div>
-      <input class="cfg-kw-input" type="text" id="cfg-kw-${mid}-${i}" value="${ic.keywords||''}" placeholder="Keywords to monitor (e.g. cancel, urgent, complaint)">
-      <div class="cfg-item-thresh">
-        <label class="cfg-toggle"><input type="checkbox" id="cfg-upper-chk-${mid}-${i}" ${ic.upper!==null?'checked':''} onchange="toggleItemThresh('${mid}',${i},'upper',this.checked)"><span>Alert above</span></label>
-        <input type="number" class="cfg-num" id="cfg-upper-val-${mid}-${i}" value="${ic.upper??''}" placeholder="—" ${ic.upper===null?'disabled':''} min="0" style="width:56px">
-        <label class="cfg-toggle" style="margin-left:8px"><input type="checkbox" id="cfg-lower-chk-${mid}-${i}" ${ic.lower!==null?'checked':''} onchange="toggleItemThresh('${mid}',${i},'lower',this.checked)"><span>Alert below</span></label>
-        <input type="number" class="cfg-num" id="cfg-lower-val-${mid}-${i}" value="${ic.lower??''}" placeholder="—" ${ic.lower===null?'disabled':''} min="0" style="width:56px">
-        <span class="cfg-thresh-hint">interactions</span>
+    return`<div class="cfg-item-card" id="kw-rule-${mid}-${i}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--gray-light);letter-spacing:1px;text-transform:uppercase">Rule ${i+1}</div>
+        ${cfg.rules.length>1?`<button onclick="removeKwRule('${mid}',${i},'${label}')" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--gray-light);padding:0 4px;line-height:1" title="Remove rule">&times;</button>`:''}
+      </div>
+      <div class="cfg-group" style="margin-bottom:8px">
+        <span class="cfg-lbl">Keyword, term or phrase to monitor</span>
+        <input class="cfg-kw-input" type="text" id="cfg-kw-${mid}-${i}"
+          value="${rule.phrase||''}"
+          placeholder="e.g. cancel account, urgent, refund request">
+      </div>
+      <div class="cfg-group" style="margin-bottom:8px">
+        <span class="cfg-lbl">Alert if this keyword appears in the top</span>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <input type="number" class="cfg-num" id="cfg-topn-${mid}-${i}"
+            value="${rule.topN||5}" min="1" max="${maxPos}" style="width:56px">
+          <span class="cfg-thresh-hint">of ${maxPos} positions</span>
+          <span class="cfg-thresh-hint" style="color:var(--gray-light)">(1 = most frequent)</span>
+        </div>
       </div>
       <div class="notif-grid" style="grid-template-columns:repeat(4,1fr)">${chips}</div>
     </div>`;
   }).join('');
+
   document.getElementById('actContent-config').innerHTML=`
-    <div class="act-section-hd">${label} Configuration</div>
-    ${cards}
-    ${_saveBtn(`saveItemsConfig('${mid}','${selector}')`)}`;
+    <div class="act-section-hd">${label} — Keyword Monitoring</div>
+    <div style="font-size:11px;color:var(--gray-mid);margin-bottom:12px;line-height:1.5">
+      Set keywords or phrases to watch for. An alert fires when a matching ${label.toLowerCase().replace('frequent questions','question')} appears within the top N positions of the live list.
+    </div>
+    ${ruleCards}
+    <button onclick="addKwRule('${mid}','${label}')"
+      style="width:100%;padding:9px;margin-top:8px;background:var(--gray-bg);border:1.5px dashed var(--gray-border);border-radius:8px;font-family:var(--font);font-size:12px;font-weight:600;color:var(--gray-mid);cursor:pointer;transition:all .2s"
+      onmouseover="this.style.borderColor='var(--black)';this.style.color='var(--black)'"
+      onmouseout="this.style.borderColor='var(--gray-border)';this.style.color='var(--gray-mid)'">
+      + Add Rule
+    </button>
+    <div class="cfg-divider" style="margin-top:12px"></div>
+    ${_peakRow(mid,cfg)}
+    <div class="cfg-divider"></div>
+    ${_msgRow(mid,cfg)}
+    ${_saveBtn(`saveKeywordConfig('${mid}')`)}`;
 }
-function toggleItemThresh(mid,i,type,enabled){
-  const inp=document.getElementById(`cfg-${type}-val-${mid}-${i}`);
-  if(inp)inp.disabled=!enabled;
+
+function addKwRule(mid,label){
+  if(!metricCfg[mid])metricCfg[mid]={rules:[],notifs:[],peak:false,msg:''};
+  if(!metricCfg[mid].rules)metricCfg[mid].rules=[];
+  // Save current state before adding
+  _saveKwRulesInPlace(mid);
+  metricCfg[mid].rules.push({phrase:'',topN:5,notifs:[]});
+  renderKeywordRules(mid,label);
 }
-function saveItemsConfig(mid,selector){
-  const items=[...document.querySelectorAll(selector)]
-    .map(li=>li.textContent.replace(/^\d+\./,'').trim()).filter(Boolean);
-  if(!metricCfg[mid])metricCfg[mid]={items:{}};
-  if(!metricCfg[mid].items)metricCfg[mid].items={};
-  items.forEach((_,i)=>{
-    const key=`i${i}`;
-    if(!metricCfg[mid].items[key])metricCfg[mid].items[key]={notifs:[]};
-    const ic=metricCfg[mid].items[key];
-    ic.keywords=document.getElementById(`cfg-kw-${mid}-${i}`)?.value||'';
-    ic.upper=document.getElementById(`cfg-upper-chk-${mid}-${i}`)?.checked?(parseInt(document.getElementById(`cfg-upper-val-${mid}-${i}`)?.value)||null):null;
-    ic.lower=document.getElementById(`cfg-lower-chk-${mid}-${i}`)?.checked?(parseInt(document.getElementById(`cfg-lower-val-${mid}-${i}`)?.value)||null):null;
+
+function removeKwRule(mid,i,label){
+  _saveKwRulesInPlace(mid);
+  metricCfg[mid].rules.splice(i,1);
+  if(!metricCfg[mid].rules.length)
+    metricCfg[mid].rules.push({phrase:'',topN:5,notifs:[]});
+  renderKeywordRules(mid,label);
+}
+
+function toggleKwNotif(mid,i,ch,el){
+  if(!metricCfg[mid]?.rules?.[i])return;
+  const notifs=metricCfg[mid].rules[i].notifs;
+  const idx=notifs.indexOf(ch);
+  if(idx>=0){notifs.splice(idx,1);el.classList.remove('on');}
+  else{notifs.push(ch);el.classList.add('on');}
+}
+
+function _saveKwRulesInPlace(mid){
+  // Read current DOM values back into rules array before re-rendering
+  if(!metricCfg[mid]?.rules)return;
+  metricCfg[mid].rules.forEach((rule,i)=>{
+    const ph=document.getElementById(`cfg-kw-${mid}-${i}`);
+    const tn=document.getElementById(`cfg-topn-${mid}-${i}`);
+    if(ph)rule.phrase=ph.value;
+    if(tn)rule.topN=parseInt(tn.value)||5;
   });
+}
+
+function saveKeywordConfig(mid){
+  _saveKwRulesInPlace(mid);
+  if(metricCfg[mid]){
+    metricCfg[mid].peak=document.getElementById(`cfg-peak-${mid}`)?.checked||false;
+    metricCfg[mid].msg=document.getElementById(`cfg-msg-${mid}`)?.value||'';
+  }
   toast('Configuration saved');
 }
+
+// ── Quality config ────────────────────────────────
+function renderQualityConfig(){
+  const cfg=metricCfg.quality||{upper:null,lower:null,notifs:[],peak:false,msg:''};
+  const qualityLevels=['Low','Medium','High'];
+  const chips=NOTIF_DEFS.map(n=>{
+    const on=cfg.notifs.includes(n.id);
+    return`<div class="notif-chip ${on?'on':''}" onclick="toggleNotif('quality','${n.id}',this)">${n.svg}<span>${n.label}</span></div>`;
+  }).join('');
+  document.getElementById('actContent-config').innerHTML=`
+    <div class="act-section-hd">Response Quality Thresholds</div>
+    <div class="cfg-group">
+      <span class="cfg-lbl">Alert when AI quality falls to or below</span>
+      <div class="cfg-thresh-row" style="margin-top:4px">
+        <label class="cfg-toggle"><input type="checkbox" id="cfg-lower-chk-quality" ${cfg.lower!==null?'checked':''} onchange="toggleThreshInput('quality','lower',this.checked)"><span>Enabled</span></label>
+        <select class="sb-select" id="cfg-lower-val-quality" ${cfg.lower===null?'disabled':''} style="width:120px;padding:6px 10px">
+          <option value="0" ${cfg.lower===0?'selected':''}>Low</option>
+          <option value="1" ${cfg.lower===1?'selected':''}>Medium</option>
+          <option value="2" ${cfg.lower===2?'selected':''}>High</option>
+        </select>
+      </div>
+    </div>
+    <div class="cfg-group">
+      <span class="cfg-lbl">Alert when Human quality falls to or below</span>
+      <div class="cfg-thresh-row" style="margin-top:4px">
+        <label class="cfg-toggle"><input type="checkbox" id="cfg-human-chk-quality" ${cfg.humanLower!==null?'checked':''} onchange="toggleHumanQuality(this.checked)"><span>Enabled</span></label>
+        <select class="sb-select" id="cfg-human-val-quality" ${cfg.humanLower===null||cfg.humanLower===undefined?'disabled':''} style="width:120px;padding:6px 10px">
+          <option value="0" ${cfg.humanLower===0?'selected':''}>Low</option>
+          <option value="1" ${cfg.humanLower===1?'selected':''}>Medium</option>
+          <option value="2" ${cfg.humanLower===2?'selected':''}>High</option>
+        </select>
+      </div>
+    </div>
+    <div class="cfg-divider"></div>
+    <div class="cfg-group"><span class="cfg-lbl">Notification Channels</span>
+      <div class="notif-grid">${chips}</div></div>
+    <div class="cfg-divider"></div>
+    ${_peakRow('quality',cfg)}
+    <div class="cfg-divider"></div>
+    ${_msgRow('quality',cfg)}
+    ${_saveBtn('saveQualityConfig()')}`;
+}
+function toggleHumanQuality(enabled){
+  const el=document.getElementById('cfg-human-val-quality');
+  if(el)el.disabled=!enabled;
+}
+function saveQualityConfig(){
+  const cfg=metricCfg.quality;
+  cfg.lower=document.getElementById('cfg-lower-chk-quality')?.checked
+    ?(parseInt(document.getElementById('cfg-lower-val-quality')?.value)??null):null;
+  cfg.humanLower=document.getElementById('cfg-human-chk-quality')?.checked
+    ?(parseInt(document.getElementById('cfg-human-val-quality')?.value)??null):null;
+  cfg.peak=document.getElementById('cfg-peak-quality')?.checked||false;
+  cfg.msg=document.getElementById('cfg-msg-quality')?.value||'';
+  toast('Quality configuration saved');
+}
+
 
 // ── Performance metric config (res/aba/des/der/alu/nps) ──
 function renderMetricColConfig(metricId){
@@ -2443,23 +2824,15 @@ function runConvListen(inputId,sendFn,btnId,statusId){
 function setActor(idx){[0,1,2].forEach(i=>document.getElementById(`act-${i}`)?.classList.toggle('active',i===idx));}
 function onTimeChange(v){document.getElementById('drWrap').classList.toggle('show',v==='custom');}
 function applyDate(){const f=document.getElementById('dateFrom').value,t=document.getElementById('dateTo').value;if(!f||!t){toast('Please select both dates');return;}toast(`Range: ${f} \u2192 ${t}`);}
-let faqOpen=true;
-function toggleFaq(){
-  faqOpen=!faqOpen;
-  document.getElementById('faqBody').style.display=faqOpen?'':'none';
-  document.getElementById('wordsBody').style.display=faqOpen&&faqActiveTab==='words'?'':'none';
-  document.getElementById('faqChev').style.transform=faqOpen?'':'rotate(-90deg)';
-}
-
 // ─ FAQ tabs ───────────────────────────────────────
 let faqActiveTab='faq';
 function switchFaqTab(tab){
   faqActiveTab=tab;
   document.getElementById('ftab-faq').classList.toggle('active',tab==='faq');
   document.getElementById('ftab-words').classList.toggle('active',tab==='words');
-  document.getElementById('faqBody').style.display=tab==='faq'&&faqOpen?'':'none';
+  document.getElementById('faqBody').style.display=tab==='faq'?'':'none';
   const wb=document.getElementById('wordsBody');
-  if(tab==='words'&&faqOpen){renderPopularWords();wb.style.display='';}
+  if(tab==='words'){renderPopularWords();wb.style.display='';}
   else wb.style.display='none';
 }
 function renderPopularWords(){
@@ -2610,6 +2983,84 @@ async function sendActBobeeChat(){
   }finally{btn.disabled=false;input?.focus();}
 }
 
+// ═══ ANOMALIES ════════════════════════════════════
+
+let ANOMALY_DATA=[
+  // ── Anomalies (statistical deviations from baseline) ──
+  {type:'anomaly',sev:'warning', metric:'sessions',title:'Session volume deviation',    desc:'Volume 2.3σ above 7-day baseline during off-peak window. Possible viral campaign or external referral spike.',time:'14:23',status:'active'},
+  {type:'anomaly',sev:'critical',metric:'aba',     title:'Abandonment rate spike',      desc:'Abandonment rate exceeds predicted upper bound by 3.1σ. WhatsApp channel most affected.',                        time:'14:31',status:'active'},
+  {type:'anomaly',sev:'warning', metric:'avgtime', title:'Response time drift',         desc:'Avg response time tracking 1.8σ above seasonal baseline. AI agent resolution times normal — human agent lag.',   time:'13:55',status:'active'},
+  {type:'anomaly',sev:'info',    metric:'sentiment',title:'Positive sentiment surge',   desc:'Happy + Content sentiment 1.4σ above baseline — correlates with recent product update rollout.',                  time:'13:10',status:'resolved'},
+
+  // ── Incidents (critical events requiring action) ──
+  {type:'incident',sev:'critical',metric:'alu',   title:'Hallucination rate critical',  desc:'AI hallucination rate crossed critical threshold on WhatsApp channel. Likely caused by out-of-scope product queries.',time:'14:15',status:'open'},
+  {type:'incident',sev:'warning', metric:'der',   title:'Escalation cluster detected',  desc:'Unusual escalation pattern on Voice channel — 4 escalations in 12 min. Possible IVR routing issue.',            time:'13:48',status:'open'},
+  {type:'incident',sev:'critical',metric:'aba',   title:'Abandonment cascade — Forms',  desc:'Web Forms channel abandonment reached 78% in last 15 min. Possible form rendering issue on mobile.',             time:'14:38',status:'investigating'},
+
+  // ── Issues (grouped / root-cause aggregated) ──
+  {type:'issue',sev:'warning', metric:'des',  title:'Disambiguation loop pattern',      desc:'3 related disambiguation anomalies on BOT channel in 2 hours — probable intent coverage gap in NLU model.',      time:'13:20',status:'investigating'},
+  {type:'issue',sev:'critical',metric:'aba',  title:'Multi-channel abandonment pattern',desc:'2 incidents (WhatsApp + Voice) grouped — root cause identified: upstream CRM latency >4s causing timeouts.',     time:'12:55',status:'escalated'},
+  {type:'issue',sev:'warning', metric:'avgtime',title:'Peak-hour response degradation', desc:'Response time incidents on Voice and Forms correlated with peak load 09:00–11:00. Recurring 3 days.',            time:'12:10',status:'open'},
+];
+
+function renderAnomaliesTab(metricId){
+  const el=document.getElementById('actContent-anomalies');
+  if(!el)return;
+
+  // Filter by metric when specific Actionables is open
+  let data=ANOMALY_DATA;
+  if(metricId){
+    const filtered=ANOMALY_DATA.filter(a=>a.metric===metricId);
+    if(filtered.length) data=filtered;
+  }
+
+  const byType={
+    anomaly: data.filter(a=>a.type==='anomaly'),
+    incident:data.filter(a=>a.type==='incident'),
+    issue:   data.filter(a=>a.type==='issue'),
+  };
+
+  const statusColors={active:'var(--accent)',open:'var(--red)',investigating:'#F59E0B',escalated:'var(--red)',resolved:'var(--green)'};
+  const statusLabel={active:'Active',open:'Open',investigating:'Investigating',escalated:'Escalated',resolved:'Resolved'};
+
+  function group(items,label,icon){
+    const count=items.length;
+    const hd=`<div class="act-section-hd" style="margin-top:10px">${icon}&nbsp;${label}<span style="color:var(--gray-mid);font-size:10px;font-weight:700;margin-left:6px">${count}</span></div>`;
+    if(!count) return hd+`<div style="font-size:11px;color:var(--gray-light);padding:6px 0 4px">No ${label.toLowerCase()} for this metric.</div>`;
+    return hd+items.map(a=>`
+      <div class="anomaly-item sev-${a.sev}">
+        <div class="anomaly-item-head">
+          <span class="anomaly-dot sev-${a.sev}"></span>
+          <span class="anomaly-title">${a.title}</span>
+          <span class="anomaly-time">${a.time}</span>
+        </div>
+        <div class="anomaly-desc">${a.desc}</div>
+        <div class="anomaly-footer">
+          <span class="anomaly-status" style="color:${statusColors[a.status]||'var(--gray-mid)'}">${statusLabel[a.status]||a.status}</span>
+          <span class="anomaly-metric">${a.metric.toUpperCase()}</span>
+        </div>
+      </div>`).join('');
+  }
+
+  el.innerHTML=`
+    <div style="font-size:11px;color:var(--gray-mid);padding:2px 0 6px">
+      ${data.length} signal${data.length!==1?'s':''} detected${metricId?' for this metric':' across all metrics'}
+    </div>
+    ${group(byType.anomaly,'Anomalies','〜')}
+    ${group(byType.incident,'Incidents','⚡')}
+    ${group(byType.issue,'Issues','⊕')}`;
+}
+
+function updateAnomaliesBadge(){
+  const active=ANOMALY_DATA.filter(a=>a.status!=='resolved').length;
+  // Actionables tab badge
+  const el=document.getElementById('actAnomaliesBadge');
+  if(el){el.textContent=active>0?active:'';el.style.display=active>0?'':'none';}
+  // Header icon badge
+  const hb=document.getElementById('hdrAnomaliesBadge');
+  if(hb){hb.textContent=active>0?active:'';hb.classList.toggle('show',active>0);}
+}
+
 // ═══ SIMULATION ═══════════════════════════════════
 function jitter(val,range){return Math.max(0,val+Math.round((Math.random()-.45)*range));}
 function rebalance(){
@@ -2712,13 +3163,169 @@ function checkThresholds(){
 }
 
 function updateAlertsBadge(){
+  const count=alertLog.length;
+  // Actionables tab badge
   const badge=document.getElementById('actAlertsBadge');
-  if(!badge)return;
-  if(alertLog.length){badge.textContent=alertLog.length;badge.classList.add('show');}
-  else badge.classList.remove('show');
+  if(badge){if(count){badge.textContent=count;badge.classList.add('show');}else badge.classList.remove('show');}
+  // Header icon badge
+  const hb=document.getElementById('hdrAlertsBadge');
+  if(hb){hb.textContent=count>0?count:'';hb.classList.toggle('show',count>0);}
 }
 
-// ═══ EXPORT / IMPORT CONFIGURATION ══════════════
+// ═══ GLOBAL MODALS — ANOMALIES & ALERTS ══════════
+
+// ─ Anomalies Modal ────────────────────────────────
+function openAnomaliesModal(){
+  renderAnomaliesModal();
+  document.getElementById('anomaliesBg').classList.add('open');
+}
+function closeAnomaliesModal(){
+  document.getElementById('anomaliesBg').classList.remove('open');
+}
+function anomaliesBgClick(e){
+  if(e.target===document.getElementById('anomaliesBg')) closeAnomaliesModal();
+}
+async function renderAnomaliesModal(){
+  const byType={
+    anomaly:ANOMALY_DATA.filter(a=>a.type==='anomaly'),
+    incident:ANOMALY_DATA.filter(a=>a.type==='incident'),
+    issue:ANOMALY_DATA.filter(a=>a.type==='issue'),
+  };
+  const urgent=[...ANOMALY_DATA].filter(a=>a.status!=='resolved')
+    .sort((a,b)=>(a.sev==='critical'?0:1)-(b.sev==='critical'?0:1)).slice(0,3);
+
+  const summary=`<div class="glob-summary">
+    <div class="glob-pill" style="border-color:var(--accent)"><span class="glob-pill-count" style="color:var(--accent)">${byType.anomaly.length}</span><span class="glob-pill-label">Anomalies</span></div>
+    <div class="glob-pill" style="border-color:var(--red)"><span class="glob-pill-count" style="color:var(--red)">${byType.incident.length}</span><span class="glob-pill-label">Incidents</span></div>
+    <div class="glob-pill" style="border-color:#F59E0B"><span class="glob-pill-count" style="color:#D97706">${byType.issue.length}</span><span class="glob-pill-label">Issues</span></div>
+    <div class="glob-pill"><span class="glob-pill-count" style="color:var(--green)">${ANOMALY_DATA.filter(a=>a.status==='resolved').length}</span><span class="glob-pill-label">Resolved</span></div>
+  </div>`;
+
+  const urgentHtml=urgent.map(a=>`<div class="urgent-item">
+    <div class="urgent-item-head">
+      <span class="urgent-badge ${a.sev}">${a.sev.toUpperCase()} &middot; ${a.type.toUpperCase()}</span>
+      <span class="urgent-title">${a.title}</span>
+      <span class="urgent-time">${a.time}</span>
+    </div>
+    <div class="urgent-desc">${a.desc}</div>
+  </div>`).join('');
+
+  const patterns=[
+    {icon:'🔄',title:'Recurring abandonment spike',detail:'Abandonment anomaly detected 3&times; this week, consistently between 14:00–15:30, always on WhatsApp channel. 87% pattern confidence.',tag:'Time-based pattern'},
+    {icon:'⛓',title:'Hallucination → Escalation chain',detail:'AI hallucination incidents are followed by an escalation within 8 min in 73% of cases — customer frustration at incorrect AI responses.',tag:'Causal chain'},
+    {icon:'📡',title:'WhatsApp &amp; Forms co-occurrence',detail:'Abandonment anomalies on WhatsApp and Forms co-occur in 4 of last 5 incidents — suggesting a shared upstream dependency.',tag:'Co-occurrence'},
+  ];
+  const patternsHtml=patterns.map(p=>`<div class="pattern-item">
+    <div class="pattern-icon">${p.icon}</div>
+    <div class="pattern-content">
+      <div class="pattern-title">${p.title}</div>
+      <div class="pattern-detail">${p.detail}</div>
+      <span class="pattern-tag">${p.tag}</span>
+    </div>
+  </div>`).join('');
+
+  const rootHtml=`<div class="root-cause-box">
+    <div class="root-cause-label">Most Probable Root Cause</div>
+    <div class="root-cause-text">Upstream CRM service latency (&gt;4s response time) is causing timeout cascades across WhatsApp and Forms channels, resulting in abandonment spikes and triggering escalations to human agents.</div>
+    <div class="root-cause-chain">
+      <span class="rcc-step">CRM Latency &gt;4s</span><span class="rcc-arrow">→</span>
+      <span class="rcc-step">Channel timeout</span><span class="rcc-arrow">→</span>
+      <span class="rcc-step">Abandonment spike</span><span class="rcc-arrow">→</span>
+      <span class="rcc-step">Escalation surge</span>
+    </div>
+  </div>`;
+
+  const loadingRow='<div style="font-size:12px;color:var(--gray-light);padding:8px 0">Analyzing…</div>';
+  document.getElementById('anomaliesModalBody').innerHTML=`
+    <div class="glob-modal-section"><div class="glob-section-title">Summary</div>${summary}</div>
+    <div class="glob-modal-section"><div class="glob-section-title">Most Urgent</div>${urgentHtml}</div>
+    <div class="glob-modal-section" id="_anomPat"><div class="glob-section-title">Pattern Recognition</div>${loadingRow}</div>
+    <div class="glob-modal-section" id="_anomRC"><div class="glob-section-title">Root Cause Analysis</div>${loadingRow}</div>`;
+  try{
+    const[pr,rcr]=await Promise.all([fetch('/api/patterns/anomalies'),fetch('/api/rootcause/anomalies')]);
+    if(pr.ok){const d=await pr.json();const el=document.getElementById('_anomPat');
+      if(el&&d.length)el.innerHTML='<div class="glob-section-title">Pattern Recognition</div>'+_renderPatternItems(d);}
+    if(rcr.ok){const d=await rcr.json();const el=document.getElementById('_anomRC');
+      if(el&&d.summary)el.innerHTML='<div class="glob-section-title">Root Cause Analysis</div>'+_renderRootCauseHtml(d);}
+  }catch(e){}
+}
+
+// ─ Alerts Modal ───────────────────────────────────
+function openAlertsModal(){
+  renderAlertsModal();
+  document.getElementById('alertsBg').classList.add('open');
+}
+function closeAlertsModal(){
+  document.getElementById('alertsBg').classList.remove('open');
+}
+function alertsBgClick(e){
+  if(e.target===document.getElementById('alertsBg')) closeAlertsModal();
+}
+async function renderAlertsModal(){
+  const critical=alertLog.filter(a=>a.sev==='critical');
+  const warning=alertLog.filter(a=>a.sev==='warning');
+  const urgent=alertLog.slice(0,3);
+
+  const summary=`<div class="glob-summary">
+    <div class="glob-pill" style="border-color:var(--red)"><span class="glob-pill-count" style="color:var(--red)">${critical.length}</span><span class="glob-pill-label">Critical</span></div>
+    <div class="glob-pill" style="border-color:#F59E0B"><span class="glob-pill-count" style="color:#D97706">${warning.length}</span><span class="glob-pill-label">Warning</span></div>
+    <div class="glob-pill"><span class="glob-pill-count">${alertLog.length}</span><span class="glob-pill-label">Total</span></div>
+  </div>`;
+
+  const urgentHtml=urgent.length?urgent.map(a=>`<div class="urgent-item">
+    <div class="urgent-item-head">
+      <span class="urgent-badge ${a.sev}">${a.sev.toUpperCase()}</span>
+      <span class="urgent-title">${a.mname}</span>
+      <span class="urgent-time">${a.time}</span>
+    </div>
+    <div class="urgent-desc">${a.type==='upper'?'Exceeded upper threshold':'Fell below lower threshold'}: current <strong>${a.val}</strong> vs threshold ${a.thresh}.</div>
+  </div>`).join(''):`<div style="font-size:12px;color:var(--gray-light);padding:8px 0">No active alerts yet. Thresholds will trigger alerts as data updates.</div>`;
+
+  // Derive top metric from alertLog
+  const metricCounts={};
+  alertLog.forEach(a=>{metricCounts[a.mname]=(metricCounts[a.mname]||0)+1;});
+  const topEntry=Object.entries(metricCounts).sort((a,b)=>b[1]-a[1])[0]||['Abandonment',3];
+
+  const patterns=[
+    {icon:'🔁',title:`${topEntry[0]} — highest frequency`,detail:`${topEntry[0]} has triggered ${topEntry[1]} alert${topEntry[1]!==1?'s':''} — the most frequent metric. Consistently breaching upper threshold during peak hours.`,tag:'Frequency pattern'},
+    {icon:'⏰',title:'Peak-hour alert cluster',detail:'67% of all critical alerts fire between 09:00–11:00 and 14:00–16:00. Consider peak-hour threshold adjustment or additional AI capacity during these windows.',tag:'Time-based pattern'},
+    {icon:'🔗',title:'Abandonment → Escalation correlation',detail:'In 4 of 5 cases an Abandonment alert is followed by an Escalation alert within 15 minutes — unresolved abandoned interactions returning as escalations.',tag:'Causal chain'},
+  ];
+  const patternsHtml=patterns.map(p=>`<div class="pattern-item">
+    <div class="pattern-icon">${p.icon}</div>
+    <div class="pattern-content">
+      <div class="pattern-title">${p.title}</div>
+      <div class="pattern-detail">${p.detail}</div>
+      <span class="pattern-tag">${p.tag}</span>
+    </div>
+  </div>`).join('');
+
+  const rootHtml=`<div class="root-cause-box">
+    <div class="root-cause-label">Most Probable Root Cause</div>
+    <div class="root-cause-text">Peak-hour interaction volume consistently exceeds configured thresholds on Abandonment and Escalation metrics. The primary driver is insufficient AI agent capacity during 09:00–11:00, causing queue buildup and sequential threshold breaches.</div>
+    <div class="root-cause-chain">
+      <span class="rcc-step">Peak-hour volume</span><span class="rcc-arrow">→</span>
+      <span class="rcc-step">AI queue saturation</span><span class="rcc-arrow">→</span>
+      <span class="rcc-step">Abandonment breach</span><span class="rcc-arrow">→</span>
+      <span class="rcc-step">Escalation cascade</span>
+    </div>
+  </div>`;
+
+  const loadingRow='<div style="font-size:12px;color:var(--gray-light);padding:8px 0">Analyzing…</div>';
+  document.getElementById('alertsModalBody').innerHTML=`
+    <div class="glob-modal-section"><div class="glob-section-title">Summary</div>${summary}</div>
+    <div class="glob-modal-section"><div class="glob-section-title">Most Urgent</div>${urgentHtml}</div>
+    <div class="glob-modal-section" id="_altPat"><div class="glob-section-title">Pattern Recognition</div>${loadingRow}</div>
+    <div class="glob-modal-section" id="_altRC"><div class="glob-section-title">Root Cause Analysis</div>${loadingRow}</div>`;
+  try{
+    const[pr,rcr]=await Promise.all([fetch('/api/patterns/alerts'),fetch('/api/rootcause/alerts')]);
+    if(pr.ok){const d=await pr.json();const el=document.getElementById('_altPat');
+      if(el&&d.length)el.innerHTML='<div class="glob-section-title">Pattern Recognition</div>'+_renderPatternItems(d);}
+    if(rcr.ok){const d=await rcr.json();const el=document.getElementById('_altRC');
+      if(el&&d.summary)el.innerHTML='<div class="glob-section-title">Root Cause Analysis</div>'+_renderRootCauseHtml(d);}
+  }catch(e){}
+}
+
 
 function buildConfigSnapshot(){
   // Read live dashboard content from DOM
@@ -2847,6 +3454,7 @@ function applyConfigSnapshot(data){
 
 // ═══ INIT ═════════════════════════════════════════
 function init(){
+  applyLang(CFG.lang); // apply language first so all labels are correct from load
   renderChannelDisplay(); renderLollipops(); renderMetrics(); renderFAQ(); renderAccTemas();
   const today=new Date().toISOString().split('T')[0];
   document.getElementById('dateTo').value=today;
@@ -2854,11 +3462,19 @@ function init(){
   document.getElementById('dateFrom').value=from.toISOString().split('T')[0];
   restartSim();
   updateAlertsBadge();
+  updateAnomaliesBadge();
   document.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){ closeBobee(); closeActionables(); }
+    if(e.key==='Escape'){ closeBobee(); closeActionables(); closeAnomaliesModal(); closeAlertsModal(); }
   });
 }
 init();
+
+// ── API startup ────────────────────────────────────────────────────
+loadAnomalyData();
+loadAlertData();
+setInterval(loadAnomalyData, 30000);
+setInterval(loadAlertData,   30000);
+
 </script>
 </body>
 </html>
