@@ -40,7 +40,10 @@ create table if not exists anomalies (
   resolved_at timestamptz
 );
 
-create table if not exists alerts (
+-- Drop old alerts table (original had different columns — no metric_id/occurred_at)
+drop table if exists alerts cascade;
+
+create table alerts (
   id          uuid primary key default gen_random_uuid(),
   metric_id   text not null,
   metric_name text not null,
