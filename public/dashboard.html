@@ -94,7 +94,7 @@ input[type="file"]{display:none}
 .ch-item{display:flex;align-items:center;gap:10px;padding:8px 10px;
   border:1px solid var(--gray-border);border-radius:7px;background:var(--gray-bg)}
 .ch-item-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:var(--black);flex-shrink:0}
-.ch-item-icon svg{width:18px;height:18px}.ch-item-icon img{width:18px;height:18px;object-fit:contain}
+.ch-item-icon svg{width:18px;height:18px}
 .ch-item-name{flex:1;font-size:12px;font-weight:600;color:var(--black)}
 .ch-remove{width:22px;height:22px;display:flex;align-items:center;justify-content:center;
   border:none;background:none;cursor:pointer;color:var(--gray-light);font-size:16px;
@@ -210,7 +210,7 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
 .stats-box{overflow:hidden}
 .stats-head{display:grid;grid-template-columns:1fr 52px 58px 52px;padding:10px 12px 8px;border-bottom:1px solid var(--gray-border);align-items:center;gap:4px}
 .actor-icon-cell{display:flex;align-items:center;justify-content:center;height:36px;border-radius:7px;color:var(--gray-light)}
-.actor-icon-cell svg{width:22px;height:22px}.actor-icon-cell img{width:22px;height:22px;object-fit:contain}
+.actor-icon-cell svg{width:22px;height:22px}
 .actor-icon-cell.active{background:var(--accent-bg);color:var(--accent)}
 .avg-unit{font-size:20px;font-weight:400;color:var(--gray-mid);letter-spacing:0}
 .stat-row{display:grid;grid-template-columns:1fr 52px 58px 52px;padding:8px 12px;align-items:center;border-bottom:1px solid var(--gray-border);gap:4px}
@@ -226,7 +226,7 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
 .m-row:last-child{border-bottom:none}
 .m-row:hover{background:var(--gray-bg)}
 .m-icon{width:26px;height:26px;display:flex;align-items:center;justify-content:center}
-.m-icon svg{width:20px;height:20px}.m-icon img{width:20px;height:20px;object-fit:contain}
+.m-icon svg{width:20px;height:20px}
 .m-name{font-size:11.5px;color:var(--gray-dark)}
 .m-total{font-size:13px;font-weight:800;color:var(--black);text-align:right}
 .m-pct{font-size:11px;color:var(--gray-mid);text-align:center;font-weight:500;transition:color .3s;padding:2px 4px;border-radius:4px}
@@ -308,6 +308,7 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
 .act-meta{flex:1;min-width:0}
 .act-meta-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-light);margin-bottom:2px}
 .act-metric-name{font-size:14px;font-weight:800;color:var(--black);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act-tf-badge{font-size:10px;color:var(--gray-mid);font-weight:600;letter-spacing:.3px;margin-left:7px;padding:1px 7px;border:1px solid var(--gray-border);border-radius:4px;display:inline-block;vertical-align:middle;flex-shrink:0}
 .act-metric-val{font-size:20px;font-weight:800;color:var(--black);flex-shrink:0;padding:0 6px}
 .act-close{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;border-radius:6px;color:var(--gray-mid);font-size:18px;transition:background .2s;flex-shrink:0}
 .act-close:hover{background:var(--gray-bg)}
@@ -564,6 +565,14 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
 .faq-content-click{cursor:pointer;transition:background .15s}
 .faq-content-click:hover{background:var(--gray-bg)}
 
+/* ── RANK ARROWS (dynamic lists) ─────────────────── */
+.rank-arrow{font-size:9px;font-weight:800;margin-left:4px;transition:opacity .4s;display:inline-block}
+.rank-arrow.up{color:var(--black)}
+.rank-arrow.down{color:var(--gray-light)}
+/* ── TIME LABEL ──────────────────────────────────── */
+.time-lbl{font-size:12px;color:var(--gray-mid);font-weight:500;white-space:nowrap;padding:0 6px;flex-shrink:0}
+/* Static view — dim the trend arrow to signal no live updates */
+.static-view #trendArr{opacity:.35}
 .ch-filter-note{display:none;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:1px 7px;margin-top:6px;text-align:center}
 .ch-filter-note.show{display:block}
 .ch-count-badge{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:3px;padding:0 5px;margin-left:5px;float:right;line-height:1.6}
@@ -772,7 +781,10 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
   <div class="act-head">
     <div class="act-meta">
       <div class="act-meta-label">Actionables</div>
-      <div class="act-metric-name" id="actMetricName">—</div>
+      <div style="display:flex;align-items:center;min-width:0">
+        <div class="act-metric-name" id="actMetricName">—</div>
+        <span class="act-tf-badge" id="actTimeframe">Now</span>
+      </div>
     </div>
     <div class="act-metric-val" id="actMetricVal"></div>
     <button class="act-close" onclick="closeActionables()">&#x2715;</button>
@@ -783,7 +795,21 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
     <div class="act-tab" id="aTab-config" onclick="switchActTab('config')">Configuration</div>
     <div class="act-tab" id="aTab-anomalies" onclick="switchActTab('anomalies')">Anomalies <span class="act-alerts-badge" id="actAnomaliesBadge"></span></div>
     <div class="act-tab" id="aTab-bobee" onclick="switchActTab('bobee')" title="Ask BOBee" style="padding-left:10px;padding-right:10px">
-      <img src="/icon/BOb - Bee 1.png" width="16" height="16" style="object-fit:contain">
+      <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
+        <rect x="12" y="1" width="2" height="2"/><rect x="11" y="0" width="2" height="1"/>
+        <rect x="18" y="1" width="2" height="2"/><rect x="19" y="0" width="2" height="1"/>
+        <rect x="13" y="3" width="2" height="4"/>
+        <rect x="17" y="3" width="2" height="4"/>
+        <rect x="0" y="8" width="9" height="8" rx="3"/>
+        <rect x="23" y="8" width="9" height="8" rx="3"/>
+        <rect x="9" y="6" width="14" height="20" rx="6"/>
+        <rect x="12" y="12" width="2" height="7" fill="white"/>
+        <rect x="12" y="12" width="5" height="1.5" fill="white"/>
+        <rect x="12" y="15.5" width="5" height="1.5" fill="white"/>
+        <rect x="12" y="18.5" width="5" height="1.5" fill="white"/>
+        <rect x="16.5" y="13.5" width="1" height="2" fill="white"/>
+        <rect x="16.5" y="16.5" width="1" height="2" fill="white"/>
+      </svg>
     </div>
   </div>
   <div class="act-body">
@@ -843,7 +869,19 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
   <div class="bobee-modal">
     <div class="bobee-mhead">
       <div class="bobee-bee-wrap">
-        <img src="/icon/BOb - Bee 1.png" width="38" height="38" style="object-fit:contain">
+        <svg width="38" height="38" viewBox="0 0 32 32">
+          <rect x="11" y="3" width="10" height="2" fill="#111"/><rect x="9" y="5" width="14" height="2" fill="#111"/>
+          <rect x="7" y="7" width="18" height="3" fill="#F5C400"/><rect x="5" y="10" width="22" height="3" fill="#111"/>
+          <rect x="5" y="13" width="22" height="3" fill="#F5C400"/><rect x="5" y="16" width="22" height="3" fill="#111"/>
+          <rect x="7" y="19" width="18" height="2" fill="#F5C400"/><rect x="9" y="21" width="14" height="2" fill="#111"/>
+          <rect x="11" y="23" width="10" height="2" fill="#111"/>
+          <rect x="1" y="8" width="6" height="9" rx="2" fill="#00B4D0" opacity="0.75"/>
+          <rect x="25" y="8" width="6" height="9" rx="2" fill="#00B4D0" opacity="0.75"/>
+          <rect x="13" y="11" width="2" height="7" fill="#fff"/>
+          <rect x="15" y="11" width="4" height="1.5" fill="#fff"/><rect x="15" y="14" width="4" height="1.5" fill="#fff"/>
+          <rect x="15" y="17" width="4" height="1.5" fill="#fff"/>
+          <rect x="19" y="12.5" width="1.5" height="2" fill="#fff"/><rect x="19" y="15.5" width="1.5" height="2" fill="#fff"/>
+        </svg>
       </div>
       <div class="bobee-minfo">
         <h3>BOBee Intelligence</h3>
@@ -880,11 +918,11 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
         Listening&hellip; speak now
       </div>
       <div class="bobee-input-row">
-        <button class="bobee-voice" id="bobeeVoiceBtn" onclick="startVoiceInput('bobeeInput',this)" title="Voice input">
+        <button class="bobee-voice" id="bobeeVoiceBtn" onmousedown="startHoldVoice('bobeeInput',this)" onmouseup="stopHoldVoice('bobeeInput',this)" ontouchstart="startHoldVoice('bobeeInput',this)" ontouchend="stopHoldVoice('bobeeInput',this)" title="Hold to speak" title="Voice input">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0014 0M12 21v-4M8 21h8"/></svg>
         </button>
         <button class="bobee-conv" id="bobeeConvBtn" onclick="toggleConversation('bobeeInput',sendBobeeChat,'bobeeConvBtn','bobeeConvStatus')" title="Conversation mode">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 18v-6a9 9 0 0118 0v6"/><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="10" x2="4" y2="14"/><line x1="8" y1="6" x2="8" y2="18"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="16" y1="6" x2="16" y2="18"/><line x1="20" y1="10" x2="20" y2="14"/></svg>
         </button>
         <input class="bobee-input" id="bobeeInput" type="text" placeholder="Ask BOBee anything&hellip;" onkeydown="if(event.key==='Enter')sendBobeeChat()">
         <button class="bobee-send" id="bobeeSendBtn" onclick="sendBobeeChat()">Send</button>
@@ -918,6 +956,12 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
       <option value="custom">Personalizado</option>
     </select>
   </div>
+  <span id="timeLbl" class="time-lbl"></span>
+  <button class="hdr-icon-btn" id="downloadBtn" onclick="downloadReport()" title="Download PDF Report" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+  </button>
   <div class="date-range-wrap" id="drWrap">
     <input type="date" id="dateFrom"><span class="date-sep">&#x2192;</span>
     <input type="date" id="dateTo">
@@ -944,7 +988,26 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
   </button>
   <div class="header-spacer"></div>
   <div class="bobee-btn" onclick="openBobee()">
-    <img src="/icon/BOb - Bee 1.png" width="26" height="26" style="object-fit:contain">
+    <svg width="26" height="26" viewBox="0 0 32 34">
+      <rect x="9" y="0" width="2" height="2" fill="#111"/><rect x="8" y="1" width="2" height="1" fill="#111"/>
+      <rect x="21" y="0" width="2" height="2" fill="#111"/><rect x="22" y="1" width="2" height="1" fill="#111"/>
+      <rect x="11" y="2" width="2" height="4" fill="#111"/>
+      <rect x="19" y="2" width="2" height="4" fill="#111"/>
+      <rect x="9" y="5" width="14" height="9" rx="3" fill="#111"/>
+      <rect x="11" y="7" width="3" height="5" fill="white"/>
+      <rect x="18" y="7" width="3" height="5" fill="white"/>
+      <rect x="0" y="7" width="10" height="9" rx="4" fill="#111"/>
+      <rect x="22" y="7" width="10" height="9" rx="4" fill="#111"/>
+      <rect x="10" y="12" width="12" height="16" rx="5" fill="#111"/>
+      <rect x="13" y="15" width="2" height="9" fill="white"/>
+      <rect x="13" y="15" width="5" height="2" fill="white"/>
+      <rect x="13" y="19" width="5" height="2" fill="white"/>
+      <rect x="13" y="22" width="5" height="2" fill="white"/>
+      <rect x="17" y="17" width="1" height="2" fill="white"/>
+      <rect x="17" y="20" width="1" height="2" fill="white"/>
+      <rect x="13" y="27" width="6" height="5" rx="3" fill="#111"/>
+      <rect x="14" y="31" width="4" height="3" rx="2" fill="#111"/>
+    </svg>
     <span>BOb</span>
   </div>
 </header>
@@ -1007,13 +1070,13 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
       <div class="stats-head">
         <div class="metric-header" id="lbl-stats">Stats</div>
         <div class="actor-icon-cell" id="act-0" title="Customer">
-          <img src="/icon/user.png" width="22" height="22" style="object-fit:contain">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
         </div>
         <div class="actor-icon-cell active" id="act-1" title="AI Agent">
-          <img src="/icon/Ia chip.png" width="22" height="22" style="object-fit:contain">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M9 7V4M12 7V4M15 7V4M9 17v3M12 17v3M15 17v3M7 9H4M7 12H4M7 15H4M17 9h3M17 12h3M17 15h3"/></svg>
         </div>
         <div class="actor-icon-cell" id="act-2" title="Human Agent">
-          <img src="/icon/support.png" width="22" height="22" style="object-fit:contain">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 10c0-4.4-3.6-8-8-8s-8 3.6-8 8"/><path d="M4 10.5v3a1 1 0 001 1h1.5a1 1 0 001-1v-3a1 1 0 00-1-1H5a1 1 0 00-1 1z"/><path d="M20 10.5v3a1 1 0 01-1 1h-1.5a1 1 0 01-1-1v-3a1 1 0 011-1H19a1 1 0 011 1z"/><path d="M20 14.5v1a4 4 0 01-4 4h-2"/></svg>
         </div>
       </div>
       <div class="stat-row click" onclick="openActionables('avgtime',getT('tr'),'')">
@@ -1119,10 +1182,10 @@ const INDUSTRY={
 // ═══ CHANNEL LIBRARY ══════════════════════════════
 const CH_LIBRARY=[
   {id:'bot',name:'BOT / AI Chat',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="8" width="18" height="12" rx="2.5"/><circle cx="9" cy="14" r="1.5" fill="currentColor" stroke="none"/><circle cx="15" cy="14" r="1.5" fill="currentColor" stroke="none"/><path d="M9 8V5M15 8V5M9 5h6"/></svg>'},
-  {id:'whatsapp',name:'WhatsApp',svg:'<img src="/icon/whatsapp 1.png" width="20" height="20" style="object-fit:contain">'},
-  {id:'voice',name:'Voice / Phone',svg:'<img src="/icon/call-center 1.png" width="20" height="20" style="object-fit:contain">'},
-  {id:'app',name:'Mobile App',svg:'<img src="/icon/mobile-phone 1.png" width="20" height="20" style="object-fit:contain">'},
-  {id:'forms',name:'Web Forms',svg:'<img src="/icon/contact-form 1.png" width="20" height="20" style="object-fit:contain">'},
+  {id:'whatsapp',name:'WhatsApp',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>'},
+  {id:'voice',name:'Voice / Phone',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="10" x2="4" y2="14"/><line x1="8" y1="6" x2="8" y2="18"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="16" y1="6" x2="16" y2="18"/><line x1="20" y1="10" x2="20" y2="14"/></svg>'},
+  {id:'app',name:'Mobile App',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>'},
+  {id:'forms',name:'Web Forms',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>'},
   {id:'email',name:'Email',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>'},
   {id:'social',name:'Social Media',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>'},
   {id:'retail',name:'Physical Retail',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'},
@@ -1163,11 +1226,11 @@ const metrics=[
   {id:'alu',es:'Alucinaciones',en:'Hallucinations',fr:'Hallucinations',pt:'Alucina\u00e7\u00f5es',total:53,pcts:[12,23,65],icon:'halluc'},
 ];
 const mIcons={
-  check:'<img src="/icon/Resueltos.png" width="20" height="20" style="opacity:.85;display:block">',
-  abandon:'<img src="/icon/Abandonos.png" width="20" height="20" style="opacity:.85;display:block">',
-  disambig:'<img src="/icon/desanbigauación.png" width="20" height="20" style="opacity:.85;display:block">',
-  escalate:'<img src="/icon/Derivaciones.png" width="20" height="20" style="opacity:.85;display:block">',
-  halluc:'<img src="/icon/Alucinaciones.png" width="20" height="20" style="opacity:.85;display:block">',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M7.5 12l3 3 6-6" stroke-linecap="round"/></svg>',
+  abandon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12a9 9 0 109-9M3 3v9h9" stroke-linecap="round"/></svg>',
+  disambig:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>',
+  escalate:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>',
+  halluc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
 };
 
 // ═══ CONTEXT PREVIEW ═════════════════════════════
@@ -1297,7 +1360,7 @@ Rules:
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
       system: 'You are a business intelligence data generator for the BOb platform by Boss.Technology. Return ONLY valid JSON. No markdown code fences. No preamble. No explanation.',
       messages: [{role:'user', content:prompt}]
@@ -1623,9 +1686,87 @@ const DEFAULT_FAQS={
   pt:['O programa é 100% virtual?','Quais opções de pagamento?','O título é válido internacionalmente?','Quando posso começar as aulas?','Como acesso a plataforma virtual?','Existe desconto para grupos?','Vocês têm atendimento 24/7?'],
 };
 const DEFAULT_COUNTS=[300,150,90,30,22,18,12];
+// ═══ DYNAMIC LIST RANKINGS ════════════════════════
+const dynState={
+  acc:{items:[],trends:{},bolded:new Set()},
+  tem:{items:[],trends:{},bolded:new Set()},
+  faq:{items:[],trends:{},bolded:new Set()},
+  words:{items:[],counts:{},bolded:new Set()},
+};
+
+function initDynList(key,items){
+  dynState[key].items=[...items];
+  dynState[key].trends={};
+  dynState[key].bolded=new Set();
+  items.forEach(item=>{ dynState[key].trends[item]='stable'; });
+}
+
+function tickDynLists(){
+  const speed=CFG.speed;
+  if(Math.random()>(speed/5)*0.5) return;
+
+  const key=['acc','tem','faq'][Math.floor(Math.random()*3)];
+  const state=dynState[key];
+  if(!state.items||state.items.length<3) return;
+
+  const maxI=Math.min(state.items.length-2,5);
+  const i=Math.floor(Math.random()*(maxI+1));
+  const a=state.items[i], b=state.items[i+1];
+  state.items[i]=b; state.items[i+1]=a;
+  state.trends[b]='up'; state.trends[a]='down';
+  state.bolded.add(b); state.bolded.add(a); // bold on movement
+
+  const clearMs=SPD_MS[CFG.speed-1]*4;
+  setTimeout(()=>{
+    if(state.trends[b]==='up')   state.trends[b]='stable';
+    if(state.trends[a]==='down') state.trends[a]='stable';
+    // Remove bold only if item has settled (not trending again)
+    const settleMs=SPD_MS[CFG.speed-1]*2;
+    setTimeout(()=>{
+      if(!['up','down'].includes(state.trends[b])) state.bolded.delete(b);
+      if(!['up','down'].includes(state.trends[a])) state.bolded.delete(a);
+      renderDynList(key);
+    },settleMs);
+    renderDynList(key);
+  },clearMs);
+
+  renderDynList(key);
+}
+
+function arrowFor(trend){
+  if(trend==='up')   return ' <span class="rank-arrow up">↑</span>';
+  if(trend==='down') return ' <span class="rank-arrow down">↓</span>';
+  return '';
+}
+
+function renderDynList(key){
+  const state=dynState[key];
+  if(!state.items.length) return;
+  const bold=(item)=>state.bolded?.has(item)?'font-weight:700':'';
+  if(key==='acc'){
+    const el=document.getElementById('accList'); if(!el) return;
+    el.innerHTML=state.items.map((item,i)=>
+      `<li style="${bold(item)}"><span class="at-n">${i+1}.</span>${item}${arrowFor(state.trends[item]||'stable')}</li>`
+    ).join('');
+  } else if(key==='tem'){
+    const el=document.getElementById('temList'); if(!el) return;
+    el.innerHTML=state.items.map((item,i)=>
+      `<li style="${bold(item)}"><span class="at-n">${i+1}.</span>${item}${arrowFor(state.trends[item]||'stable')}</li>`
+    ).join('');
+  } else if(key==='faq'){
+    const el=document.getElementById('faqBody'); if(!el) return;
+    el.innerHTML=state.items.map((q,i)=>{
+      const countEl=document.getElementById(`faq-n-${i}`);
+      const count=countEl?parseInt(countEl.textContent)||DEFAULT_COUNTS[i]:DEFAULT_COUNTS[i];
+      return`<div class="faq-item"><div class="faq-q" style="${bold(q)}">${q}${arrowFor(state.trends[q]||'stable')}</div><div class="faq-n" id="faq-n-${i}">${count}</div></div>`;
+    }).join('');
+  }
+}
+
 function renderFAQ(){
   const l=CFG.lang; const qs=DEFAULT_FAQS[l]||DEFAULT_FAQS.es;
   document.getElementById('faqBody').innerHTML=qs.map((q,i)=>`<div class="faq-item"><div class="faq-q">${q}</div><div class="faq-n" id="faq-n-${i}">${DEFAULT_COUNTS[i]}</div></div>`).join('');
+  initDynList('faq',qs);
 }
 
 const DEFAULT_ACC={es:['Solicita informaci\u00f3n sobre programa espec\u00edfico','Completa formulario de contacto','Inicia conversaci\u00f3n por WhatsApp','Atiende llamada con asesor','Solicita detalles de financiamiento','Comparte documentos requeridos','Agenda llamada o seguimiento','Realiza proceso de matr\u00edcula'],en:['Requests info on specific program','Completes contact form','Initiates WhatsApp conversation','Attends advisor call','Requests financing details','Shares required documents','Schedules follow-up call','Completes enrollment process'],fr:['Demande des infos sur un programme','Remplit le formulaire','Initie une conversation WhatsApp','Participe \u00e0 un appel conseiller','Demande des d\u00e9tails financement','Partage les documents requis','Planifie un suivi','Finalise le processus d\'inscription'],pt:['Solicita informa\u00e7\u00f5es sobre programa','Preenche formul\u00e1rio de contato','Inicia conversa no WhatsApp','Atende chamada com assessor','Solicita detalhes de financiamento','Compartilha documentos','Agenda chamada de acompanhamento','Realiza processo de matr\u00edcula']};
@@ -1635,6 +1776,8 @@ function renderAccTemas(){
   const aData=DEFAULT_ACC[l]||DEFAULT_ACC.es; const tData=DEFAULT_TEM[l]||DEFAULT_TEM.es;
   document.getElementById('accList').innerHTML=aData.map((a,i)=>`<li><span class="at-n">${i+1}.</span>${a}</li>`).join('');
   document.getElementById('temList').innerHTML=tData.map((t,i)=>`<li><span class="at-n">${i+1}.</span>${t}</li>`).join('');
+  initDynList('acc',aData);
+  initDynList('tem',tData);
 }
 
 // ═══ ACTIONABLES PANEL ═══════════════════════════
@@ -1692,76 +1835,16 @@ const alertLog=[
   {id:3,mid:'avgtime',mname:'Tiempo Prom.',type:'upper',val:18,thresh:15,time:'12:15',sev:'warning', notif:'Slack'},
 ];
 let alertIdCtr=4;
-// ─── BOb API Integration ─────────────────────────────────────────────────────
-const DEMO_ORG_ID='00000000-0000-0000-0000-000000000001';
-
-async function loadAnomalyData(){
-  try{
-    const r=await fetch('/api/anomalies?limit=50');
-    if(!r.ok)return;
-    const rows=await r.json();
-    if(rows.length){
-      ANOMALY_DATA.length=0;
-      rows.forEach(a=>ANOMALY_DATA.push({
-        id:a.id,type:a.type,sev:a.sev,metric:a.metric,
-        title:a.title,desc:a.description||a.desc||'',
-        time:a.time||new Date(a.occurred_at).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'}),
-        status:a.status,sigma:a.sigma,baseline:a.baseline,actual:a.actual
-      }));
-      updateAnomaliesBadge();
-    }
-  }catch(e){console.warn('[BOb] anomaly load failed:',e);}
-}
-
-async function loadAlertData(){
-  try{
-    const r=await fetch('/api/alerts?limit=50');
-    if(!r.ok)return;
-    const rows=await r.json();
-    if(rows.length){
-      alertLog.length=0;
-      rows.forEach(a=>alertLog.push({
-        id:a.id,mid:a.metric_id,mname:a.metric_name,
-        type:a.breach_type,val:a.value,thresh:a.threshold,
-        time:a.time||new Date(a.occurred_at).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'}),
-        sev:a.sev,notif:'Email'
-      }));
-      updateAlertsBadge();
-    }
-  }catch(e){console.warn('[BOb] alert load failed:',e);}
-}
-
-function _renderPatternItems(patterns){
-  const iconMap={'time-based':'🔄','causal-chain':'⛓','co-occurrence':'📡','frequency':'🔁'};
-  return patterns.map(p=>`<div class="pattern-item">
-    <div class="pattern-icon">${iconMap[p.type]||'🔍'}</div>
-    <div class="pattern-content">
-      <div class="pattern-title">${p.title}</div>
-      <div class="pattern-detail">${p.detail}</div>
-      <span class="pattern-tag">${p.type.replace('-',' ')}</span>
-    </div></div>`).join('');
-}
-
-function _renderRootCauseHtml(rc){
-  const chain=(rc.chain||[]).map((s,i,arr)=>
-    `<span class="rcc-step">${s}</span>${i<arr.length-1?'<span class="rcc-arrow">→</span>':''}`).join('');
-  return `<div class="root-cause-box">
-    <div class="root-cause-label">Most Probable Root Cause
-      <span style="margin-left:8px;font-size:9px;font-weight:600;color:var(--gray-light)">
-        ${rc.confidence||0}% confidence</span></div>
-    <div class="root-cause-text">${rc.summary||''}</div>
-    <div class="root-cause-chain">${chain}</div>
-  </div>`;
-}
-// ─────────────────────────────────────────────────────────────────────────────
-
 let actMetricId=null;
 
 // ─ Open / Close / Switch tab ──────────────────────
 function openActionables(metricId,name,val){
   actMetricId=metricId;
-  document.getElementById('actMetricName').innerHTML=name;  // innerHTML renders HTML entities
+  document.getElementById('actMetricName').innerHTML=name;
   document.getElementById('actMetricVal').textContent=val||'';
+  // Set timeframe badge
+  const tfEl=document.getElementById('actTimeframe');
+  if(tfEl) tfEl.textContent=getTimeLabelShort(CFG_TIMEFRAME);
   // Reset BObee tab so it re-initialises for the new metric
   const bobeeEl=document.getElementById('actContent-bobee');
   if(bobeeEl) bobeeEl.dataset.mid='';
@@ -2026,8 +2109,9 @@ function patternInsight(metricId){
 function renderAlertsTab(metricId){
   const filtered=alertLog.filter(a=>a.mid===metricId);
   const badge=document.getElementById('actAlertsBadge');
-  if(alertLog.length){badge.textContent=alertLog.length;badge.classList.add('show');}
-  else badge.classList.remove('show');
+  // Badge shows only alerts FOR THIS METRIC — never the global total
+  if(filtered.length){badge.textContent=filtered.length;badge.classList.add('show');}
+  else{badge.textContent='';badge.classList.remove('show');}
   const el=document.getElementById('actContent-alerts');
   if(!filtered.length){
     el.innerHTML=`<div class="alert-empty">
@@ -2627,7 +2711,7 @@ Return ONLY valid JSON — no markdown, no code fences, no explanation:
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
         system: 'You are BOBee, the AI intelligence assistant for the BOb platform by Boss.Technology. Return ONLY valid JSON. No markdown fences. No preamble. No explanation outside the JSON.',
         messages: [{role:'user', content: prompt}]
@@ -2685,7 +2769,7 @@ async function sendBobeeChat() {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
         system: `You are BOBee (Bobby), the AI intelligence assistant for BOb (Business Observer) by Boss.Technology. Answer questions about the business dashboard concisely in 2-3 sentences. Be specific and reference actual numbers from the data.
 
@@ -2700,9 +2784,10 @@ ${ctx}`,
     bobeeChatHistory.push({role:'assistant', content: reply});
     typingEl.remove();
     appendBobeeMsg('bobby', reply);
+    speakBobee(reply); // speak aloud in conversation mode
   } catch(err) {
     typingEl.remove();
-    bobeeChatHistory.pop(); // remove the failed user message from history
+    bobeeChatHistory.pop();
     appendBobeeMsg('bobby', 'Something went wrong — please try again.');
   } finally {
     sendBtn.disabled = false;
@@ -2744,13 +2829,13 @@ let convRecognition=null;
 function toggleConversation(inputId,sendFn,btnId,statusId){
   if(conversationActive){
     conversationActive=false;
+    window.speechSynthesis?.cancel();
     if(convRecognition){try{convRecognition.stop();}catch(e){}convRecognition=null;}
     document.getElementById(btnId)?.classList.remove('active');
     document.getElementById(statusId)?.classList.remove('show');
   }else{
-    if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){
-      toast('Conversation mode is not supported in this browser');return;
-    }
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){ toast('Voice not supported — update your browser'); return; }
     conversationActive=true;
     document.getElementById(btnId)?.classList.add('active');
     document.getElementById(statusId)?.classList.add('show');
@@ -2759,25 +2844,117 @@ function toggleConversation(inputId,sendFn,btnId,statusId){
 }
 
 function runConvListen(inputId,sendFn,btnId,statusId){
-  if(!conversationActive)return;
+  if(!conversationActive) return;
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR) return;
+  let resultFired=false; // prevent double-restart from onend + onresult
   convRecognition=new SR();
   convRecognition.lang={es:'es-ES',en:'en-US',fr:'fr-FR',pt:'pt-BR'}[CFG.lang]||'en-US';
+  convRecognition.interimResults=false;
   convRecognition.onresult=async e=>{
+    resultFired=true;
     const transcript=e.results[0][0].transcript;
-    document.getElementById(inputId).value=transcript;
+    const inp=document.getElementById(inputId);
+    if(inp) inp.value=transcript;
+    document.getElementById(statusId)?.classList.remove('show');
     await sendFn();
-    if(conversationActive) setTimeout(()=>runConvListen(inputId,sendFn,btnId,statusId),800);
+    if(conversationActive){
+      document.getElementById(statusId)?.classList.add('show');
+      setTimeout(()=>runConvListen(inputId,sendFn,btnId,statusId),600);
+    }
   };
-  convRecognition.onerror=()=>{
-    if(conversationActive) setTimeout(()=>runConvListen(inputId,sendFn,btnId,statusId),1000);
+  convRecognition.onerror=e=>{
+    if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+      toast('Microphone access denied — allow in browser settings');
+      conversationActive=false;
+      document.getElementById(btnId)?.classList.remove('active');
+      document.getElementById(statusId)?.classList.remove('show');
+    } else if(e.error!=='aborted'&&conversationActive){
+      setTimeout(()=>runConvListen(inputId,sendFn,btnId,statusId),800);
+    }
   };
-  try{convRecognition.start();}catch(e){}
+  convRecognition.onend=()=>{
+    // Only restart from onend if onresult never fired (silence / timeout)
+    if(!resultFired&&conversationActive)
+      setTimeout(()=>runConvListen(inputId,sendFn,btnId,statusId),400);
+  };
+  try{ convRecognition.start(); }catch(e){
+    if(conversationActive) setTimeout(()=>runConvListen(inputId,sendFn,btnId,statusId),500);
+  }
 }
 
 // ═══ INTERACTIVITY ════════════════════════════════
 function setActor(idx){[0,1,2].forEach(i=>document.getElementById(`act-${i}`)?.classList.toggle('active',i===idx));}
-function onTimeChange(v){document.getElementById('drWrap').classList.toggle('show',v==='custom');}
+function onTimeChange(v){
+  CFG_TIMEFRAME=v;
+  document.getElementById('drWrap').classList.toggle('show',v==='custom');
+  updateTimeLabel(v);
+  applyTimeframe(v);
+  // Update Actionables timeframe badge if panel is open
+  const tfEl=document.getElementById('actTimeframe');
+  if(tfEl) tfEl.textContent=getTimeLabelShort(v);
+  // Show download button for non-dynamic views
+  const dlBtn=document.getElementById('downloadBtn');
+  if(dlBtn) dlBtn.style.display=isDynamicView()?'none':'flex';
+  // Toggle static-view class on body to adjust visual indicators
+  document.body.classList.toggle('static-view',!isDynamicView());
+}
+
+// ─ Timeframe state ────────────────────────────────
+let CFG_TIMEFRAME='ahora';
+const MONTHS_SHORT=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function getTimeLabelShort(v){
+  const now=new Date();
+  const yr=`'${String(now.getFullYear()).slice(2)}`;
+  const M=d=>MONTHS_SHORT[d.getMonth()];
+  const D=d=>d.getDate();
+  if(!v||v==='ahora'||v==='now') return 'Now';
+  if(v==='hoy'||v==='today') return `${M(now)} ${D(now)}, ${yr}`;
+  if(v==='semana'||v==='week'){
+    const s=new Date(now); s.setDate(now.getDate()-now.getDay());
+    if(s.getMonth()===now.getMonth()) return `${M(now)} ${D(s)}–${D(now)}, ${yr}`;
+    return `${M(s)} ${D(s)} – ${M(now)} ${D(now)}, ${yr}`;
+  }
+  if(v==='mes'||v==='month') return `${M(now)} 1–${D(now)}, ${yr}`;
+  return '';
+}
+
+function updateTimeLabel(v){
+  const lbl=document.getElementById('timeLbl'); if(!lbl)return;
+  lbl.textContent=v==='ahora'||v==='now'?'':getTimeLabelShort(v);
+}
+
+// Timeframe multipliers for session/metric scaling
+const TF_MULT={ahora:1,now:1,hoy:8,today:8,semana:40,week:40,mes:160,month:160};
+
+function applyTimeframe(v){
+  const mult=TF_MULT[v]||1;
+  // Scale channel live counts
+  const base=180; // base per-channel session count
+  activeChannels.forEach(c=>{ if(c.on) c.live=Math.round(base*mult*(0.6+Math.random()*.8)); });
+  renderChannelDisplay();
+  updateSesDisplay(activeChannels.filter(c=>c.on).reduce((s,c)=>s+c.live,0));
+  // Scale FAQ counts
+  const qs=DEFAULT_FAQS[CFG.lang]||DEFAULT_FAQS.es;
+  qs.forEach((_,i)=>{
+    const el=document.getElementById(`faq-n-${i}`);
+    if(el){ const scaled=Math.round(DEFAULT_COUNTS[i]*mult); el.textContent=scaled; el.dataset.base=scaled; }
+  });
+  // Scale metric totals
+  if(window._mBase){
+    const modMap={res:1.1,aba:0.9,der:0.95,alu:0.85,des:1.0};
+    metrics.forEach(m=>{
+      const base=window._mBase[m.id]?.total||m.total;
+      m.total=Math.round(base*mult*((modMap[m.id]||1)));
+    });
+    renderMetrics();
+  }
+  // Scale avgTime slightly
+  avgTimeVal=Math.max(4,Math.min(22,Math.round(avgTimeVal*(0.85+Math.random()*.3))));
+  document.getElementById('avgTimeNum').textContent=avgTimeVal;
+  window._baseAvgTime=null; // reset channel-filter base
+}
 function applyDate(){const f=document.getElementById('dateFrom').value,t=document.getElementById('dateTo').value;if(!f||!t){toast('Please select both dates');return;}toast(`Range: ${f} \u2192 ${t}`);}
 // ─ FAQ tabs ───────────────────────────────────────
 let faqActiveTab='faq';
@@ -2791,22 +2968,61 @@ function switchFaqTab(tab){
   else wb.style.display='none';
 }
 function renderPopularWords(){
-  const acc=[...document.querySelectorAll('#accList li')].map(li=>li.textContent.replace(/^\d+\./,'').trim()).filter(Boolean);
-  const tem=[...document.querySelectorAll('#temList li')].map(li=>li.textContent.replace(/^\d+\./,'').trim()).filter(Boolean);
+  const acc=[...document.querySelectorAll('#accList li')].map(li=>li.textContent.replace(/^\d+\./,'').replace(/[↑↓]/g,'').trim()).filter(Boolean);
+  const tem=[...document.querySelectorAll('#temList li')].map(li=>li.textContent.replace(/^\d+\./,'').replace(/[↑↓]/g,'').trim()).filter(Boolean);
   const stop=new Set(['de','la','el','en','y','a','los','las','un','una','es','por','con','se','su','del','the','and','or','in','of','to','for','is','are','at','on','how','do','you','have','what','its','their','can','i']);
   const wordCounts={};
   [...acc,...tem].join(' ').toLowerCase().replace(/[¿?¡!.,;:]/g,'').split(/\s+/).forEach(w=>{
     if(w.length>3&&!stop.has(w)) wordCounts[w]=(wordCounts[w]||0)+Math.floor(15+Math.random()*60);
   });
-  const tags=Object.entries(wordCounts).sort((a,b)=>b[1]-a[1]).slice(0,22);
-  document.getElementById('wordsBody').innerHTML=
-    `<div class="words-cloud">${tags.map(([w,c])=>`<span class="word-tag">${w}<span class="word-count">${c}</span></span>`).join('')}</div>`;
+  // Init dynState.words for live updating
+  dynState.words.items=Object.keys(wordCounts);
+  dynState.words.counts={...wordCounts};
+  renderWordCloud();
 }
 
-// ─ Number formatter ───────────────────────────────
+function renderWordCloud(){
+  const wb=document.getElementById('wordsBody');
+  if(!wb||wb.style.display==='none'||!dynState.words.items.length) return;
+  const sorted=[...dynState.words.items]
+    .sort((a,b)=>dynState.words.counts[b]-dynState.words.counts[a]).slice(0,22);
+  wb.innerHTML=`<div class="words-cloud">${sorted.map(w=>{
+    const c=dynState.words.counts[w]||0;
+    const bold=dynState.words.bolded?.has(w)?'font-weight:700;':'';
+    return`<span class="word-tag" style="${bold}">${w}<span class="word-count">${formatNum(c)}</span></span>`;
+  }).join('')}</div>`;
+}
+
+function tickWords(){
+  if(!dynState.words.items.length) return;
+  const wb=document.getElementById('wordsBody');
+  if(!wb||wb.style.display==='none') return;
+  // Jitter counts
+  dynState.words.items.forEach(w=>{
+    dynState.words.counts[w]=Math.max(5,jitter(dynState.words.counts[w]||20,CFG.vol));
+  });
+  // Occasionally swap two adjacent word counts (makes cloud re-rank)
+  if(Math.random()>0.35){
+    const sorted=[...dynState.words.items].sort((a,b)=>dynState.words.counts[b]-dynState.words.counts[a]);
+    const i=Math.floor(Math.random()*Math.min(sorted.length-2,12));
+    const wa=sorted[i], wb2=sorted[i+1];
+    const tmp=dynState.words.counts[wa];
+    dynState.words.counts[wa]=dynState.words.counts[wb2];
+    dynState.words.counts[wb2]=tmp;
+    // Bold the swapped words
+    dynState.words.bolded.add(wa); dynState.words.bolded.add(wb2);
+    const clearMs=SPD_MS[CFG.speed-1]*5;
+    setTimeout(()=>{ dynState.words.bolded.delete(wa); dynState.words.bolded.delete(wb2); }, clearMs);
+  }
+  renderWordCloud();
+}
+
+// ─ Number formatter (with K/M abbreviation) ──────
 function formatNum(n){
-  if(n>=10000) return(n/1000).toFixed(0)+'K';
-  if(n>=1000)  return(n/1000).toFixed(1).replace(/\.0$/,'')+'K';
+  n=Math.round(n||0);
+  if(n>=1000000) return(n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
+  if(n>=10000)   return(n/1000).toFixed(0)+'K';
+  if(n>=1000)    return(n/1000).toFixed(1).replace(/\.0$/,'')+'K';
   return n.toString();
 }
 function updateSesDisplay(n){
@@ -2862,21 +3078,70 @@ function renderNpsActivity(){
 
 // ─ Actionables BObee tab ─────────────────────────
 // ─ Voice input ─────────────────────────────────────
-function startVoiceInput(inputId,btnEl){
-  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){
-    toast('Voice input not supported in this browser');return;
-  }
+// ─ Press-and-hold voice input ────────────────────
+let _holdRec=null;
+async function startHoldVoice(inputId,btnEl){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ toast('Voice requires Chrome, Edge or Firefox'); return; }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    stream.getTracks().forEach(t=>t.stop());
+  }catch(err){ toast('Microphone access denied — allow in browser settings'); return; }
+  btnEl?.classList.add('listening');
+  _holdRec=new SR();
+  _holdRec.lang={es:'es-ES',en:'en-US',fr:'fr-FR',pt:'pt-BR'}[CFG.lang]||'en-US';
+  _holdRec.continuous=true;
+  _holdRec.interimResults=true;
+  _holdRec.onresult=e=>{
+    let txt='';
+    for(let i=e.resultIndex;i<e.results.length;i++) txt+=e.results[i][0].transcript;
+    const inp=document.getElementById(inputId); if(inp) inp.value=txt;
+  };
+  _holdRec.onerror=()=>{ btnEl?.classList.remove('listening'); _holdRec=null; };
+  try{ _holdRec.start(); }catch(e){}
+}
+function stopHoldVoice(inputId,btnEl){
+  if(_holdRec){ try{_holdRec.stop();}catch(e){} _holdRec=null; }
+  btnEl?.classList.remove('listening');
+}
+
+async function startVoiceInput(inputId,btnEl){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ toast('Voice input requires Chrome or Edge browser'); return; }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    stream.getTracks().forEach(t=>t.stop());
+  }catch(err){
+    toast(err.name==='NotAllowedError'?'Microphone access denied — allow in browser settings':'Microphone unavailable');
+    return;
+  }
   const rec=new SR();
   rec.lang={es:'es-ES',en:'en-US',fr:'fr-FR',pt:'pt-BR'}[CFG.lang]||'en-US';
+  rec.interimResults=false; rec.maxAlternatives=1;
   rec.onstart=()=>btnEl?.classList.add('listening');
   rec.onresult=e=>{
-    document.getElementById(inputId).value=e.results[0][0].transcript;
+    const txt=e.results[0][0].transcript;
+    const inp=document.getElementById(inputId);
+    if(inp){ inp.value=txt; inp.focus(); }
     btnEl?.classList.remove('listening');
   };
-  rec.onerror=()=>{toast('Voice input error');btnEl?.classList.remove('listening');};
+  rec.onerror=e=>{
+    const msgs={'not-allowed':'Microphone access denied','no-speech':'No speech detected','network':'Network error'};
+    toast(msgs[e.error]||'Voice error: '+e.error);
+    btnEl?.classList.remove('listening');
+  };
   rec.onend=()=>btnEl?.classList.remove('listening');
-  rec.start();
+  try{ rec.start(); }catch(e){ toast('Could not start voice input'); }
+}
+
+// TTS — BOBee speaks responses aloud in conversation mode
+function speakBobee(text){
+  if(!conversationActive||!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utt=new SpeechSynthesisUtterance(text.replace(/<[^>]*>/g,'').substring(0,280));
+  utt.lang={es:'es-ES',en:'en-US',fr:'fr-FR',pt:'pt-BR'}[CFG.lang]||'en-US';
+  utt.rate=1.05; utt.pitch=1.1; utt.volume=0.9;
+  window.speechSynthesis.speak(utt);
 }
 
 let actBobeeHistory=[];
@@ -2896,11 +3161,11 @@ function renderActBobeeTab(){
       Listening&hellip; speak now
     </div>
     <div class="act-bobee-row">
-      <button class="bobee-voice" id="actBobeeVoiceBtn" onclick="startVoiceInput('actBobeeInput',this)" title="Voice input">
+      <button class="bobee-voice" id="actBobeeVoiceBtn" onmousedown="startHoldVoice('actBobeeInput',this)" onmouseup="stopHoldVoice('actBobeeInput',this)" ontouchstart="startHoldVoice('actBobeeInput',this)" ontouchend="stopHoldVoice('actBobeeInput',this)" title="Hold to speak" title="Voice input">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0014 0M12 21v-4M8 21h8"/></svg>
       </button>
       <button class="bobee-conv" id="actBobeeConvBtn" onclick="toggleConversation('actBobeeInput',sendActBobeeChat,'actBobeeConvBtn','actBobeeConvStatus')" title="Conversation mode">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 18v-6a9 9 0 0118 0v6"/><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="10" x2="4" y2="14"/><line x1="8" y1="6" x2="8" y2="18"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="16" y1="6" x2="16" y2="18"/><line x1="20" y1="10" x2="20" y2="14"/></svg>
       </button>
       <input class="bobee-input" id="actBobeeInput" type="text" placeholder="Ask about this metric…" onkeydown="if(event.key==='Enter')sendActBobeeChat()">
       <button class="bobee-send" id="actBobeeSendBtn" onclick="sendActBobeeChat()">Send</button>
@@ -2921,7 +3186,7 @@ async function sendActBobeeChat(){
     const name=document.getElementById('actMetricName').textContent;
     const resp=await fetch('/api/ai',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
         system:`You are BOBee, focused on the "${name}" metric for BOb (Business Observer). Answer in 2-3 sentences with specific data references.\n\nDashboard:\n${buildBobeeContext()}`,
         messages:actBobeeHistory})
     });
@@ -2931,6 +3196,7 @@ async function sendActBobeeChat(){
     tDiv.remove();
     const bDiv=document.createElement('div');bDiv.className='bmsg bobby';bDiv.textContent=reply;
     msgs.appendChild(bDiv);msgs.scrollTop=msgs.scrollHeight;
+    speakBobee(reply); // speak aloud in conversation mode
   }catch(e){
     tDiv.remove();actBobeeHistory.pop();
     const eDiv=document.createElement('div');eDiv.className='bmsg bobby';eDiv.textContent='Something went wrong. Please try again.';
@@ -2940,7 +3206,7 @@ async function sendActBobeeChat(){
 
 // ═══ ANOMALIES ════════════════════════════════════
 
-let ANOMALY_DATA=[
+const ANOMALY_DATA=[
   // ── Anomalies (statistical deviations from baseline) ──
   {type:'anomaly',sev:'warning', metric:'sessions',title:'Session volume deviation',    desc:'Volume 2.3σ above 7-day baseline during off-peak window. Possible viral campaign or external referral spike.',time:'14:23',status:'active'},
   {type:'anomaly',sev:'critical',metric:'aba',     title:'Abandonment rate spike',      desc:'Abandonment rate exceeds predicted upper bound by 3.1σ. WhatsApp channel most affected.',                        time:'14:31',status:'active'},
@@ -3026,21 +3292,45 @@ function rebalance(){
   sentiment[3].pct=Math.max(5,sentiment[3].pct+(100-sum));
 }
 let avgTimeVal=10;
+// ─ Dynamic vs. static view ────────────────────────
+function isDynamicView(){
+  return CFG_TIMEFRAME==='ahora'||CFG_TIMEFRAME==='now'||
+         CFG_TIMEFRAME==='hoy'||CFG_TIMEFRAME==='today';
+}
+
 function tick(){
   const volRange=[0,1,2,4,7][CFG.vol-1];
-  activeChannels.forEach(c=>{
-    if(!c.on)return; c.live=jitter(c.live,volRange);
-    const el=document.getElementById(`chcount-${c.id}`);if(el)el.textContent=c.live;
-  });
-  updateSesDisplay(activeChannels.filter(c=>c.on).reduce((s,c)=>s+c.live,0));
-  const prev=avgTimeVal; avgTimeVal=Math.max(5,Math.min(20,jitter(avgTimeVal,1)));
-  document.getElementById('avgTimeNum').textContent=avgTimeVal;
-  const arr=document.getElementById('trendArr');
-  if(avgTimeVal>prev){arr.textContent='\u2191';arr.className='trend up';}
-  else if(avgTimeVal<prev){arr.textContent='\u2193';arr.className='trend down';}
-  rebalance(); sentiment.forEach(s=>updateLollipop(s));
-  for(let i=0;i<4;i++){const el=document.getElementById(`faq-n-${i}`);if(el)el.textContent=jitter(parseInt(el.textContent)||100,CFG.vol);}
-  checkThresholds();
+
+  if(isDynamicView()){
+    // ── DYNAMIC (Now / Today) — full real-time simulation ──
+    activeChannels.forEach(c=>{
+      if(!c.on)return; c.live=jitter(c.live,volRange);
+      const el=document.getElementById(`chcount-${c.id}`);if(el)el.textContent=formatNum(c.live);
+    });
+    updateSesDisplay(activeChannels.filter(c=>c.on).reduce((s,c)=>s+c.live,0));
+    const prev=avgTimeVal; avgTimeVal=Math.max(5,Math.min(20,jitter(avgTimeVal,1)));
+    document.getElementById('avgTimeNum').textContent=avgTimeVal;
+    const arr=document.getElementById('trendArr');
+    if(avgTimeVal>prev){arr.textContent='\u2191';arr.className='trend up';}
+    else if(avgTimeVal<prev){arr.textContent='\u2193';arr.className='trend down';}
+    rebalance(); sentiment.forEach(s=>updateLollipop(s));
+    for(let i=0;i<7;i++){const el=document.getElementById(`faq-n-${i}`);if(el)el.textContent=formatNum(jitter(parseInt(el.textContent)||DEFAULT_COUNTS[i]||10,CFG.vol));}
+    tickDynLists();
+    tickWords();
+    checkThresholds();
+  } else {
+    // ── STATIC (Week / Month / Custom) — stable summarised view ──
+    // Channels show accumulated totals — no jitter
+    activeChannels.forEach(c=>{
+      const el=document.getElementById(`chcount-${c.id}`);if(el)el.textContent=formatNum(c.live);
+    });
+    updateSesDisplay(activeChannels.filter(c=>c.on).reduce((s,c)=>s+c.live,0));
+    // Occasionally nudge FAQ counts very gently (reflects slow long-period accumulation)
+    if(Math.random()>0.85){
+      for(let i=0;i<7;i++){const el=document.getElementById(`faq-n-${i}`);if(el)el.textContent=formatNum(jitter(parseInt(el.textContent)||DEFAULT_COUNTS[i]||10,1));}
+    }
+    // No rank shuffles, no threshold alerts, no sentiment jitter in static view
+  }
 }
 function restartSim(){if(simTimer)clearInterval(simTimer);simTimer=setInterval(tick,SPD_MS[CFG.speed-1]);}
 
@@ -3140,7 +3430,7 @@ function closeAnomaliesModal(){
 function anomaliesBgClick(e){
   if(e.target===document.getElementById('anomaliesBg')) closeAnomaliesModal();
 }
-async function renderAnomaliesModal(){
+function renderAnomaliesModal(){
   const byType={
     anomaly:ANOMALY_DATA.filter(a=>a.type==='anomaly'),
     incident:ANOMALY_DATA.filter(a=>a.type==='incident'),
@@ -3190,19 +3480,11 @@ async function renderAnomaliesModal(){
     </div>
   </div>`;
 
-  const loadingRow='<div style="font-size:12px;color:var(--gray-light);padding:8px 0">Analyzing…</div>';
   document.getElementById('anomaliesModalBody').innerHTML=`
     <div class="glob-modal-section"><div class="glob-section-title">Summary</div>${summary}</div>
     <div class="glob-modal-section"><div class="glob-section-title">Most Urgent</div>${urgentHtml}</div>
-    <div class="glob-modal-section" id="_anomPat"><div class="glob-section-title">Pattern Recognition</div>${loadingRow}</div>
-    <div class="glob-modal-section" id="_anomRC"><div class="glob-section-title">Root Cause Analysis</div>${loadingRow}</div>`;
-  try{
-    const[pr,rcr]=await Promise.all([fetch('/api/patterns/anomalies'),fetch('/api/rootcause/anomalies')]);
-    if(pr.ok){const d=await pr.json();const el=document.getElementById('_anomPat');
-      if(el&&d.length)el.innerHTML='<div class="glob-section-title">Pattern Recognition</div>'+_renderPatternItems(d);}
-    if(rcr.ok){const d=await rcr.json();const el=document.getElementById('_anomRC');
-      if(el&&d.summary)el.innerHTML='<div class="glob-section-title">Root Cause Analysis</div>'+_renderRootCauseHtml(d);}
-  }catch(e){}
+    <div class="glob-modal-section"><div class="glob-section-title">Pattern Recognition</div>${patternsHtml}</div>
+    <div class="glob-modal-section"><div class="glob-section-title">Root Cause Analysis</div>${rootHtml}</div>`;
 }
 
 // ─ Alerts Modal ───────────────────────────────────
@@ -3216,7 +3498,7 @@ function closeAlertsModal(){
 function alertsBgClick(e){
   if(e.target===document.getElementById('alertsBg')) closeAlertsModal();
 }
-async function renderAlertsModal(){
+function renderAlertsModal(){
   const critical=alertLog.filter(a=>a.sev==='critical');
   const warning=alertLog.filter(a=>a.sev==='warning');
   const urgent=alertLog.slice(0,3);
@@ -3266,19 +3548,11 @@ async function renderAlertsModal(){
     </div>
   </div>`;
 
-  const loadingRow='<div style="font-size:12px;color:var(--gray-light);padding:8px 0">Analyzing…</div>';
   document.getElementById('alertsModalBody').innerHTML=`
     <div class="glob-modal-section"><div class="glob-section-title">Summary</div>${summary}</div>
     <div class="glob-modal-section"><div class="glob-section-title">Most Urgent</div>${urgentHtml}</div>
-    <div class="glob-modal-section" id="_altPat"><div class="glob-section-title">Pattern Recognition</div>${loadingRow}</div>
-    <div class="glob-modal-section" id="_altRC"><div class="glob-section-title">Root Cause Analysis</div>${loadingRow}</div>`;
-  try{
-    const[pr,rcr]=await Promise.all([fetch('/api/patterns/alerts'),fetch('/api/rootcause/alerts')]);
-    if(pr.ok){const d=await pr.json();const el=document.getElementById('_altPat');
-      if(el&&d.length)el.innerHTML='<div class="glob-section-title">Pattern Recognition</div>'+_renderPatternItems(d);}
-    if(rcr.ok){const d=await rcr.json();const el=document.getElementById('_altRC');
-      if(el&&d.summary)el.innerHTML='<div class="glob-section-title">Root Cause Analysis</div>'+_renderRootCauseHtml(d);}
-  }catch(e){}
+    <div class="glob-modal-section"><div class="glob-section-title">Pattern Recognition</div>${patternsHtml}</div>
+    <div class="glob-modal-section"><div class="glob-section-title">Root Cause Analysis</div>${rootHtml}</div>`;
 }
 
 
@@ -3407,6 +3681,204 @@ function applyConfigSnapshot(data){
   restartSim();
 }
 
+// ═══ PDF REPORT ═══════════════════════════════════
+function downloadReport(){
+  toast('Preparing report…');
+  if(typeof window.jspdf!=='undefined'){ generatePDF(); return; }
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  s.onload=()=>generatePDF();
+  s.onerror=()=>toast('Could not load PDF library — check connection');
+  document.head.appendChild(s);
+}
+
+function generatePDF(){
+  try{
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const BK=[17,17,17],GR=[107,107,107],AC=[0,180,208],WH=[255,255,255],LG=[228,228,228],BG=[247,247,247],RD=[224,82,82],AM=[245,158,11];
+    const lm=18,rm=192,pw=rm-lm;
+    let y=0;
+
+    // ── Header bar ───────────────────────────────────
+    doc.setFillColor(...BK); doc.rect(0,0,210,20,'F');
+    doc.setTextColor(...WH); doc.setFontSize(13); doc.setFont('helvetica','bold');
+    doc.text('BOb — Business Observability Report',lm,13);
+    doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text('Boss.Technology',rm,13,{align:'right'});
+
+    // ── Timeframe + generated ───────────────────────
+    y=28;
+    const tfLabel=getTimeLabelShort(CFG_TIMEFRAME)||'Custom';
+    doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(...BK);
+    doc.text('Timeframe:',lm,y);
+    doc.setFont('helvetica','normal'); doc.setTextColor(...GR);
+    doc.text(tfLabel,lm+24,y);
+    doc.setTextColor(...GR);
+    doc.text('Generated: '+new Date().toLocaleString(),rm,y,{align:'right'});
+    y+=3; doc.setDrawColor(...LG); doc.setLineWidth(0.3); doc.line(lm,y,rm,y); y+=8;
+
+    const chkPg=()=>{ if(y>272){doc.addPage();y=18;} };
+
+    const secTitle=(title)=>{
+      chkPg();
+      doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(...BK);
+      doc.text(title,lm,y); y+=2;
+      doc.setFillColor(...AC); doc.rect(lm,y,pw,0.8,'F'); y+=7;
+    };
+
+    // ── Summary tiles ────────────────────────────────
+    secTitle('Summary');
+    const sessions=activeChannels.filter(c=>c.on).reduce((s,c)=>s+c.live,0);
+    const tiles=[
+      ['Sessions',formatNum(sessions)],
+      ['Avg Response',avgTimeVal+' min'],
+      ['Channels',activeChannels.filter(c=>c.on).length+'/'+activeChannels.length],
+      ['Anomalies Active',ANOMALY_DATA.filter(a=>a.status!=='resolved').length],
+    ];
+    const tw=(pw-6)/2, th=14;
+    tiles.forEach(([lbl,val],i)=>{
+      const cx=lm+(i%2)*(tw+6), cy=y+Math.floor(i/2)*(th+4);
+      doc.setFillColor(...BG); doc.roundedRect(cx,cy,tw,th,1.5,1.5,'F');
+      doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...GR);
+      doc.text(lbl.toUpperCase(),cx+3,cy+5);
+      doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(...BK);
+      doc.text(String(val),cx+3,cy+12);
+    });
+    y+=Math.ceil(tiles.length/2)*(th+4)+6;
+
+    // ── Performance metrics ──────────────────────────
+    secTitle('Performance Metrics');
+    const mCols=[58,22,34,34,34],mHdr=['Metric','Total','Customer','AI Agent','Human'];
+    let mx=lm;
+    doc.setFillColor(...BK); doc.rect(lm,y,pw,6.5,'F');
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...WH);
+    mHdr.forEach((h,i)=>{ doc.text(h,mx+1.5,y+4.5); mx+=mCols[i]; });
+    y+=6.5;
+    metrics.forEach((m,mi)=>{
+      chkPg();
+      if(mi%2===0){doc.setFillColor(...BG);doc.rect(lm,y,pw,6,'F');}
+      mx=lm;
+      doc.setFontSize(8); doc.setFont('helvetica','normal');
+      const vals=[m[CFG.lang]||m.es,formatNum(m.total),m.pcts[0]+'%',m.pcts[1]+'%',m.pcts[2]+'%'];
+      vals.forEach((v,vi)=>{
+        doc.setTextColor(vi===3?AC[0]:BK[0],vi===3?AC[1]:BK[1],vi===3?AC[2]:BK[2]);
+        doc.text(String(v),mx+1.5,y+4); mx+=mCols[vi];
+      });
+      y+=6;
+    });
+    y+=6;
+
+    // ── Channel breakdown ────────────────────────────
+    secTitle('Channel Breakdown');
+    const onChs=activeChannels.filter(c=>c.on).sort((a,b)=>b.live-a.live);
+    const totLive=onChs.reduce((s,c)=>s+c.live,0)||1;
+    doc.setFillColor(...BK); doc.rect(lm,y,pw,6.5,'F');
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...WH);
+    doc.text('Channel',lm+1.5,y+4.5); doc.text('Sessions',lm+105,y+4.5); doc.text('Share',lm+140,y+4.5);
+    y+=6.5;
+    onChs.forEach((c,ci)=>{
+      chkPg();
+      const def=CH_LIBRARY.find(x=>x.id===c.id);
+      if(ci%2===0){doc.setFillColor(...BG);doc.rect(lm,y,pw,5.5,'F');}
+      doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...BK);
+      doc.text(def?.name||c.id,lm+1.5,y+4); doc.text(formatNum(c.live),lm+105,y+4);
+      doc.text(Math.round(c.live/totLive*100)+'%',lm+140,y+4);
+      y+=5.5;
+    });
+    y+=6;
+
+    // ── Sentiment ────────────────────────────────────
+    secTitle('Sentiment Distribution');
+    const sentLbls=T[CFG.lang]?.sent||T.es.sent;
+    const sColors=[[224,82,82],[245,158,11],BK,[34,197,94],[21,128,61]];
+    sentiment.forEach((s,si)=>{
+      chkPg();
+      doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...GR);
+      doc.text(sentLbls[si],lm,y+3.5);
+      const bx=lm+45,bw=pw-55;
+      doc.setFillColor(...LG); doc.roundedRect(bx,y,bw,5,1,1,'F');
+      doc.setFillColor(...sColors[si]); doc.roundedRect(bx,y,Math.max(1,bw*s.pct/100),5,1,1,'F');
+      doc.setFontSize(8); doc.setTextColor(...BK); doc.text(s.pct+'%',rm,y+3.5,{align:'right'});
+      y+=7;
+    });
+    y+=4;
+
+    // ── Top Actions ──────────────────────────────────
+    secTitle('Top Actions');
+    const acts=[...document.querySelectorAll('#accList li')]
+      .map(li=>li.textContent.replace(/^\d+\./,'').replace(/[↑↓]/g,'').trim()).filter(Boolean).slice(0,8);
+    acts.forEach((a,ai)=>{
+      chkPg();
+      doc.setFontSize(8); doc.setTextColor(...GR); doc.text(`${ai+1}.`,lm,y+3);
+      doc.setTextColor(...BK); doc.text(a,lm+7,y+3); y+=5.5;
+    });
+    y+=4;
+
+    // ── Top Themes ───────────────────────────────────
+    secTitle('Top Themes');
+    const tems=[...document.querySelectorAll('#temList li')]
+      .map(li=>li.textContent.replace(/^\d+\./,'').replace(/[↑↓]/g,'').trim()).filter(Boolean).slice(0,8);
+    tems.forEach((t,ti)=>{
+      chkPg();
+      doc.setFontSize(8); doc.setTextColor(...GR); doc.text(`${ti+1}.`,lm,y+3);
+      doc.setTextColor(...BK); doc.text(t,lm+7,y+3); y+=5.5;
+    });
+    y+=4;
+
+    // ── Alerts ───────────────────────────────────────
+    secTitle('Alerts Summary');
+    const crit=alertLog.filter(a=>a.sev==='critical').length;
+    const warn=alertLog.filter(a=>a.sev==='warning').length;
+    doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(...BK);
+    doc.text(`Total: ${alertLog.length}`,lm,y+4); doc.text(`Critical: ${crit}`,lm+50,y+4); doc.text(`Warning: ${warn}`,lm+90,y+4);
+    y+=10;
+    alertLog.slice(0,5).forEach((a,ai)=>{
+      chkPg();
+      const col=a.sev==='critical'?RD:AM;
+      doc.setFillColor(...col); doc.circle(lm+2,y+2.5,1.5,'F');
+      doc.setFontSize(7.5); doc.setFont('helvetica','normal'); doc.setTextColor(...BK);
+      const txt=`${a.mname} — ${a.type==='upper'?'Upper':'Lower'} breach: ${a.val} (threshold: ${a.thresh}) · ${a.time}`;
+      doc.text(txt,lm+6,y+3.5); y+=5.5;
+    });
+    y+=4;
+
+    // ── Anomalies ─────────────────────────────────────
+    chkPg(); secTitle('Anomalies Summary');
+    const actAnom=ANOMALY_DATA.filter(a=>a.status!=='resolved');
+    doc.setFontSize(9); doc.setTextColor(...BK);
+    doc.text(`Active signals: ${actAnom.length}`,lm,y+4);
+    doc.text(`Incidents: ${actAnom.filter(a=>a.type==='incident').length}`,lm+60,y+4);
+    doc.text(`Issues: ${actAnom.filter(a=>a.type==='issue').length}`,lm+110,y+4);
+    y+=10;
+    actAnom.slice(0,4).forEach((a,ai)=>{
+      chkPg();
+      const col=a.sev==='critical'?RD:AM;
+      doc.setFillColor(...col); doc.circle(lm+2,y+2.5,1.5,'F');
+      doc.setFontSize(7.5); doc.setFont('helvetica','normal'); doc.setTextColor(...BK);
+      doc.text(`[${a.type.toUpperCase()}] ${a.title} · ${a.time}`,lm+6,y+3.5); y+=5.5;
+    });
+
+    // ── Footer on every page ─────────────────────────
+    const pages=doc.internal.getNumberOfPages();
+    for(let p=1;p<=pages;p++){
+      doc.setPage(p);
+      doc.setFillColor(...BG); doc.rect(0,287,210,10,'F');
+      doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...GR);
+      doc.text('BOb — Business Observer by Boss.Technology',lm,293);
+      doc.text(`Page ${p} of ${pages}`,rm,293,{align:'right'});
+    }
+
+    // ── Save ─────────────────────────────────────────
+    const slug=(getTimeLabelShort(CFG_TIMEFRAME)||'report').replace(/[^a-zA-Z0-9]/g,'-').replace(/-+/g,'-');
+    doc.save(`bob-report-${slug}-${new Date().toISOString().split('T')[0]}.pdf`);
+    toast('✦ Report downloaded');
+  }catch(err){
+    console.error('PDF error:',err);
+    toast('PDF generation error — check console');
+  }
+}
+
 // ═══ INIT ═════════════════════════════════════════
 function init(){
   applyLang(CFG.lang); // apply language first so all labels are correct from load
@@ -3423,13 +3895,6 @@ function init(){
   });
 }
 init();
-
-// ── API startup ────────────────────────────────────────────────────
-loadAnomalyData();
-loadAlertData();
-setInterval(loadAnomalyData, 30000);
-setInterval(loadAlertData,   30000);
-
 </script>
 </body>
 </html>
