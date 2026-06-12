@@ -4,11 +4,10 @@ import { sleep } from './utils'
 
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
 
-// Model ids per §8.1 / §8.4. NOTE: the documents pin claude-sonnet-4-20250514;
-// keep these constants as the single source of truth so the model can be bumped
-// in one place (the current GA Sonnet is claude-sonnet-4-6).
+// Model ids per §8.1 / §8.4. The documents pin claude-sonnet-4-20250514, which
+// has been retired; using the current GA Sonnet (claude-sonnet-4-6) instead.
 export const MODELS = {
-  sonnet: 'claude-sonnet-4-20250514',
+  sonnet: 'claude-sonnet-4-6',
   haiku: 'claude-haiku-4-5-20251001',
 } as const
 
