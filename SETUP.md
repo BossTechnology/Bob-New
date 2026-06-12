@@ -134,8 +134,8 @@ npm run dev      # http://localhost:3000  → redirige a /dashboard.html
    genera el PDF en cliente (jsPDF), que es suficiente para el demo. Falta enchufar un
    renderer server-side si lo quieres como PDF en el backend.
 
-4. **Modelo Claude.** El doc fija `claude-sonnet-4-20250514` (en `lib/claude.ts` → `MODELS`).
-   El GA vigente es `claude-sonnet-4-6`; cámbialo en un solo sitio si lo prefieres.
+4. **Modelo Claude.** El doc fija `claude-sonnet-4-20250514`, que ya fue retirado.
+   `lib/claude.ts` → `MODELS` y `public/dashboard.html` usan el GA vigente `claude-sonnet-4-6`.
 
 ---
 
