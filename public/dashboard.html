@@ -666,6 +666,9 @@ main{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 52px)}
         <option value="ecommerce">&#x1F6D2; E-Commerce</option>
         <option value="tech">&#x1F4BB; Technology &amp; SaaS</option>
         <option value="insurance">&#x1F6E1; Insurance</option>
+        <option value="vending">&#x1F964; Vending Machines</option>
+        <option value="ports">&#x2693; Ports</option>
+        <option value="logistics">&#x1F69A; Shipping &amp; Logistics</option>
       </select>
       <label class="sb-label">Primary Service Activity</label>
       <select class="sb-select" id="activitySelect">
@@ -1146,6 +1149,21 @@ const INDUSTRY={
     temas:{es:['Coberturas y exclusiones de p\u00f3liza','Proceso de reclamaci\u00f3n paso a paso','Primas y opciones de pago','Tiempos de respuesta a siniestros','Documentos requeridos para cobros','Renovaci\u00f3n y cambios de plan','Red de prestadores y cl\u00ednicas','Seguros complementarios'],en:['Policy coverage and exclusions','Step-by-step claims process','Premiums and payment options','Claim response times','Documents required for claims','Renewal and plan changes','Provider and clinic network','Supplementary insurance']},
     faqs:{es:['\u00bfC\u00f3mo reporto un siniestro?','\u00bfCu\u00e1nto tarda el pago de un reclamo?','\u00bfQu\u00e9 est\u00e1 cubierto en mi p\u00f3liza?','\u00bfPuedo pagar mi prima en cuotas?'],en:['How do I report a claim?','How long does claim payment take?','What is covered in my policy?','Can I pay my premium in installments?']},
   },
+  vending:{
+    acciones:{es:['Reporta m\u00e1quina fuera de servicio','Solicita reembolso por producto no dispensado','Reporta cobro duplicado o incorrecto','Solicita t\u00e9cnico para reparaci\u00f3n urgente','Consulta ubicaci\u00f3n de m\u00e1quinas cercanas','Reporta producto atascado o da\u00f1ado','Solicita recarga de stock','Confirma recepci\u00f3n de reembolso'],en:['Reports machine out of service','Requests refund for undispensed product','Reports duplicate or incorrect charge','Requests urgent technician repair','Checks location of nearby machines','Reports jammed or damaged product','Requests stock restock','Confirms refund received']},
+    temas:{es:['M\u00e1quina no dispensa producto','Cobro duplicado o incorrecto','M\u00e1quina apagada o sin respuesta','Tiempo de respuesta t\u00e9cnica','Disponibilidad de stock','M\u00e9todos de pago aceptados','Ubicaci\u00f3n e instalaci\u00f3n de m\u00e1quinas','Mantenimiento preventivo'],en:['Machine not dispensing product','Duplicate or incorrect charge','Machine powered off or unresponsive','Technical response time','Stock availability','Accepted payment methods','Machine location and installation','Preventive maintenance']},
+    faqs:{es:['\u00bfC\u00f3mo reporto una m\u00e1quina averiada?','\u00bfC\u00f3mo solicito un reembolso?','\u00bfQu\u00e9 m\u00e9todos de pago aceptan las m\u00e1quinas?','\u00bfCu\u00e1nto tarda la reparaci\u00f3n t\u00e9cnica?'],en:['How do I report a broken machine?','How do I request a refund?','What payment methods do the machines accept?','How long does a technical repair take?']},
+  },
+  ports:{
+    acciones:{es:['Consulta estado de carga en puerto','Solicita cita para descarga de contenedor','Reporta demora en atraque de nave','Solicita documentaci\u00f3n aduanera','Consulta tarifas portuarias','Reporta incidente de carga da\u00f1ada','Solicita permiso de acceso a terminal','Realiza seguimiento de contenedor'],en:['Checks cargo status at port','Requests appointment for container unloading','Reports vessel berthing delay','Requests customs documentation','Checks port tariffs','Reports damaged cargo incident','Requests terminal access permit','Tracks container status']},
+    temas:{es:['Tiempos de atraque y descarga','Tarifas y costos portuarios','Documentaci\u00f3n aduanera y permisos','Seguimiento de contenedores','Disponibilidad de espacio en terminal','Incidentes de carga da\u00f1ada o extraviada','Coordinaci\u00f3n con agentes navieros','Normativas de seguridad portuaria'],en:['Berthing and unloading times','Port tariffs and costs','Customs documentation and permits','Container tracking','Terminal space availability','Damaged or lost cargo incidents','Coordination with shipping agents','Port safety regulations']},
+    faqs:{es:['\u00bfCu\u00e1l es el tiempo estimado de descarga?','\u00bfQu\u00e9 documentos necesito para retirar mi carga?','\u00bfC\u00f3mo rastreo mi contenedor?','\u00bfCu\u00e1les son las tarifas portuarias actuales?'],en:['What is the estimated unloading time?','What documents do I need to pick up my cargo?','How do I track my container?','What are the current port tariffs?']},
+  },
+  logistics:{
+    acciones:{es:['Rastrea estado de su env\u00edo','Solicita cotizaci\u00f3n de flete','Reporta env\u00edo retrasado','Programa recogida de mercanc\u00eda','Solicita cambio de direcci\u00f3n de entrega','Reporta paquete da\u00f1ado o perdido','Consulta restricciones de env\u00edo internacional','Solicita comprobante de entrega'],en:['Tracks shipment status','Requests freight quote','Reports delayed shipment','Schedules cargo pickup','Requests delivery address change','Reports damaged or lost package','Checks international shipping restrictions','Requests proof of delivery']},
+    temas:{es:['Estado y ubicaci\u00f3n del env\u00edo','Tiempos de tr\u00e1nsito y entrega','Tarifas de flete y cotizaciones','Env\u00edos internacionales y aduanas','Paquetes da\u00f1ados o extraviados','Capacidad de carga y rutas','Seguimiento en tiempo real','Documentaci\u00f3n de transporte'],en:['Shipment status and location','Transit and delivery times','Freight rates and quotes','International shipping and customs','Damaged or lost packages','Cargo capacity and routes','Real-time tracking','Shipping documentation']},
+    faqs:{es:['\u00bfC\u00f3mo rastreo mi env\u00edo?','\u00bfCu\u00e1nto tiempo tarda la entrega?','\u00bfHacen env\u00edos internacionales?','\u00bfQu\u00e9 hago si mi paquete lleg\u00f3 da\u00f1ado?'],en:['How do I track my shipment?','How long does delivery take?','Do you ship internationally?','What do I do if my package arrived damaged?']},
+  },
 };
 
 // ═══ CHANNEL LIBRARY ══════════════════════════════
@@ -1207,7 +1225,7 @@ function onIndustryChange(){
   const ind=document.getElementById('industrySelect').value;
   const prev=document.getElementById('contextPreview');
   if(!ind){prev.classList.remove('show');return;}
-  const labels={education:'Education & University',retail:'Fashion & Retail',banking:'Banking & Financial Services',healthcare:'Healthcare',hospitality:'Hospitality & Hotels',telecom:'Telecommunications',fnb:'Food & Beverage',ecommerce:'E-Commerce',tech:'Technology & SaaS',insurance:'Insurance'};
+  const labels={education:'Education & University',retail:'Fashion & Retail',banking:'Banking & Financial Services',healthcare:'Healthcare',hospitality:'Hospitality & Hotels',telecom:'Telecommunications',fnb:'Food & Beverage',ecommerce:'E-Commerce',tech:'Technology & SaaS',insurance:'Insurance',vending:'Vending Machines',ports:'Ports',logistics:'Shipping & Logistics'};
   prev.classList.add('show');
   prev.innerHTML=`<strong>Industry detected:</strong> ${labels[ind]}<br>When you click Apply, BOb will call the Anthropic API to generate contextually accurate Actions, Themes, FAQs, sentiment distribution, and session volume — all calibrated to this industry. Add free text above for even more specific results.`;
 }
@@ -1369,24 +1387,30 @@ function applyAIData(data) {
   }
   // Actions
   if (Array.isArray(data.actions) && data.actions.length) {
+    const aItems = data.actions.slice(0,8);
     document.getElementById('accList').innerHTML =
-      data.actions.slice(0,8).map((a,i) =>
+      aItems.map((a,i) =>
         `<li><span class="at-n">${i+1}.</span>${a}</li>`).join('');
+    initDynList('acc', aItems);
   }
   // Themes
   if (Array.isArray(data.themes) && data.themes.length) {
+    const tItems = data.themes.slice(0,8);
     document.getElementById('temList').innerHTML =
-      data.themes.slice(0,8).map((t,i) =>
+      tItems.map((t,i) =>
         `<li><span class="at-n">${i+1}.</span>${t}</li>`).join('');
+    initDynList('tem', tItems);
   }
   // FAQs
   if (Array.isArray(data.faqs) && data.faqs.length) {
+    const fItems = data.faqs.slice(0,4);
     document.getElementById('faqBody').innerHTML =
-      data.faqs.slice(0,4).map((f,i) =>
+      fItems.map((f,i) =>
         `<div class="faq-item">
            <div class="faq-q">${f.question}</div>
            <div class="faq-n" id="faq-n-${i}">${f.count}</div>
          </div>`).join('');
+    initDynList('faq', fItems.map(f => f.question));
   }
 }
 
@@ -1454,10 +1478,13 @@ function applyIndustryContent(ind,l){
   const fData=data.faqs;
   document.getElementById('accList').innerHTML=aData.map((a,i)=>`<li><span class="at-n">${i+1}.</span>${a}</li>`).join('');
   document.getElementById('temList').innerHTML=tData.map((t,i)=>`<li><span class="at-n">${i+1}.</span>${t}</li>`).join('');
+  initDynList('acc',aData);
+  initDynList('tem',tData);
   const fLang=l==='fr'||l==='pt'?'es':l;
   const fqs=(fData[fLang]||fData.es||fData.en);
   const counts=[Math.floor(200+Math.random()*200),Math.floor(80+Math.random()*120),Math.floor(30+Math.random()*80),Math.floor(10+Math.random()*40)];
   document.getElementById('faqBody').innerHTML=fqs.map((q,i)=>`<div class="faq-item"><div class="faq-q">${q}</div><div class="faq-n" id="faq-n-${i}">${counts[i]}</div></div>`).join('');
+  initDynList('faq',fqs);
 }
 
 function applyLang(l){
