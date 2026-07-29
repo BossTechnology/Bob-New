@@ -114,3 +114,43 @@ export interface AuthContext {
   org_id: string
   role: string
 }
+
+// ── BOb Simulator v3 · config persistence types ────────────────────
+export type NotifChannelType = 'email' | 'sms' | 'call' | 'slack' | 'webhook'
+
+export interface NotificationChannel {
+  id: string
+  org_id: string
+  type: NotifChannelType
+  label: string
+  values: string[]
+}
+
+export interface ResponseRule {
+  id: string
+  org_id: string
+  threshold_id?: string | null
+  anomaly_rule_id?: string | null
+  type: 'alert' | 'alarm' | 'action'
+  name: string
+  channel_ids: string[]
+  subject: string
+  message: string
+  webhook_url?: string | null
+  webhook_method?: string | null
+  webhook_payload?: string | null
+}
+
+// Context passed to the NotificationService when a v3 threshold/anomaly breach
+// fires. Used to render {{metric}} / {{value}} / {{threshold}} / {{severity}} /
+// {{time}} / {{channel}} placeholders in response templates.
+export interface ResponseTriggerCtx {
+  org_id: string
+  metric: string
+  value: number | string
+  threshold: number | string
+  severity: 'info' | 'warning' | 'critical'
+  time?: string
+  channel?: string
+  alert_log_id?: string | null
+}

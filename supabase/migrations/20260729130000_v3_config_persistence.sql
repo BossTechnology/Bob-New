@@ -1,0 +1,146 @@
+-- ═══════════════════════════════════════════════════════════════════
+-- BOb Simulator v3 — Configuration & Alert Persistence
+-- Persists the v3 simulator's client-side structures (metricCfg,
+-- _notifChannels, alertLog, anomRules, textRules) to Supabase.
+-- Additive: does NOT touch the Backend Discovery v1.0 tables
+-- (channels / alerts / notification_rules / anomalies remain unchanged).
+-- Multi-tenant: org_id isolation + RLS on every table, matching the
+-- existing `org_id = (auth.jwt() ->> 'org_id')::uuid` policy pattern.
+-- Created in dependency order: channels + anomaly_rules + threshold_configs
+-- + text_rules first, then response_rules (FKs), then alert_log.
+-- ═══════════════════════════════════════════════════════════════════
+
+-- ── 001 · notification_channels ─────────────────────────────────────
+-- Communication Channels registry. Maps to _notifChannels[].
+CREATE TABLE IF NOT EXISTS notification_channels (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id        UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  type          TEXT NOT NULL CHECK (type IN ('email','sms','call','slack','webhook')),
+  label         TEXT NOT NULL,
+  values        TEXT[] NOT NULL DEFAULT '{}',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_nc_org ON notification_channels(org_id);
+
+-- ── 004 · anomaly_rules ─────────────────────────────────────────────
+-- Known Unknown / Unknown Unknown anomaly rule definitions.
+CREATE TABLE IF NOT EXISTS anomaly_rules (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id         UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  metric_id      TEXT NOT NULL,
+  rule_type      TEXT NOT NULL CHECK (rule_type IN ('known','unknown_critical','unknown_warning')),
+  name           TEXT NOT NULL DEFAULT '',
+  condition      TEXT CHECK (condition IN ('contains','frequency','pattern')),
+  keywords       TEXT,
+  freq_threshold INTEGER,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_ar_org_metric ON anomaly_rules(org_id, metric_id);
+
+-- ── 002 · threshold_configs ─────────────────────────────────────────
+-- One threshold definition per metric per organization. Maps to metricCfg[mid].
+CREATE TABLE IF NOT EXISTS threshold_configs (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id        UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  metric_id     TEXT NOT NULL,
+  upper_bound   NUMERIC,
+  lower_bound   NUMERIC,
+  peak_mode     TEXT NOT NULL DEFAULT 'off' CHECK (peak_mode IN ('manual','observed','off')),
+  peak_windows  JSONB NOT NULL DEFAULT '[]',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(org_id, metric_id)
+);
+CREATE INDEX IF NOT EXISTS idx_tc_org ON threshold_configs(org_id);
+
+-- ── 005 · text_rules ────────────────────────────────────────────────
+-- Content rules for text-based metrics (temas, acciones, faq, words).
+CREATE TABLE IF NOT EXISTS text_rules (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id        UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  metric_id     TEXT NOT NULL CHECK (metric_id IN ('temas','acciones','faq','words')),
+  name          TEXT NOT NULL DEFAULT '',
+  condition     TEXT NOT NULL CHECK (condition IN ('keyword','ranking','frequency','newentry')),
+  value         TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_txr_org_metric ON text_rules(org_id, metric_id);
+
+-- ── 003 · response_rules ────────────────────────────────────────────
+-- Alert / Alarm / Action responses attached to a threshold or anomaly rule.
+-- Depends on threshold_configs (002) and anomaly_rules (004).
+CREATE TABLE IF NOT EXISTS response_rules (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id          UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  threshold_id    UUID REFERENCES threshold_configs(id) ON DELETE CASCADE,
+  anomaly_rule_id UUID REFERENCES anomaly_rules(id) ON DELETE CASCADE,
+  type            TEXT NOT NULL CHECK (type IN ('alert','alarm','action')),
+  name            TEXT NOT NULL DEFAULT '',
+  channel_ids     UUID[] NOT NULL DEFAULT '{}',
+  subject         TEXT NOT NULL DEFAULT '',
+  message         TEXT NOT NULL DEFAULT '',
+  webhook_url     TEXT,
+  webhook_method  TEXT DEFAULT 'POST',
+  webhook_payload TEXT,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_rr_org ON response_rules(org_id);
+CREATE INDEX IF NOT EXISTS idx_rr_threshold ON response_rules(threshold_id);
+CREATE INDEX IF NOT EXISTS idx_rr_anomaly ON response_rules(anomaly_rule_id);
+
+-- ── 006 · alert_log ─────────────────────────────────────────────────
+-- Runtime alert events generated by the threshold engine. Maps to alertLog.
+CREATE TABLE IF NOT EXISTS alert_log (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id          UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  metric_id       TEXT NOT NULL,
+  metric_name     TEXT NOT NULL,
+  alert_type      TEXT NOT NULL CHECK (alert_type IN ('upper','lower','recovery','keyword')),
+  value           NUMERIC,
+  threshold       NUMERIC,
+  severity        TEXT CHECK (severity IN ('info','warning','critical')),
+  responses_fired JSONB DEFAULT '[]',
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_al_org_metric ON alert_log(org_id, metric_id, created_at DESC);
+
+-- ═══════════════════════════════════════════════════════════════════
+-- ROW-LEVEL SECURITY — scope every table to the caller's org_id claim.
+-- ═══════════════════════════════════════════════════════════════════
+ALTER TABLE notification_channels ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anomaly_rules         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE threshold_configs     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE text_rules            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE response_rules        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE alert_log             ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "org_notification_channels" ON notification_channels;
+CREATE POLICY "org_notification_channels" ON notification_channels FOR ALL
+  USING (org_id = (auth.jwt() ->> 'org_id')::uuid)
+  WITH CHECK (org_id = (auth.jwt() ->> 'org_id')::uuid);
+
+DROP POLICY IF EXISTS "org_anomaly_rules" ON anomaly_rules;
+CREATE POLICY "org_anomaly_rules" ON anomaly_rules FOR ALL
+  USING (org_id = (auth.jwt() ->> 'org_id')::uuid)
+  WITH CHECK (org_id = (auth.jwt() ->> 'org_id')::uuid);
+
+DROP POLICY IF EXISTS "org_threshold_configs" ON threshold_configs;
+CREATE POLICY "org_threshold_configs" ON threshold_configs FOR ALL
+  USING (org_id = (auth.jwt() ->> 'org_id')::uuid)
+  WITH CHECK (org_id = (auth.jwt() ->> 'org_id')::uuid);
+
+DROP POLICY IF EXISTS "org_text_rules" ON text_rules;
+CREATE POLICY "org_text_rules" ON text_rules FOR ALL
+  USING (org_id = (auth.jwt() ->> 'org_id')::uuid)
+  WITH CHECK (org_id = (auth.jwt() ->> 'org_id')::uuid);
+
+DROP POLICY IF EXISTS "org_response_rules" ON response_rules;
+CREATE POLICY "org_response_rules" ON response_rules FOR ALL
+  USING (org_id = (auth.jwt() ->> 'org_id')::uuid)
+  WITH CHECK (org_id = (auth.jwt() ->> 'org_id')::uuid);
+
+DROP POLICY IF EXISTS "org_alert_log" ON alert_log;
+CREATE POLICY "org_alert_log" ON alert_log FOR ALL
+  USING (org_id = (auth.jwt() ->> 'org_id')::uuid)
+  WITH CHECK (org_id = (auth.jwt() ->> 'org_id')::uuid);
