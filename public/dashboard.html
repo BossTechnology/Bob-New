@@ -5082,6 +5082,119 @@ function init(){
   });
 }
 init();
+
+// ═══════════════════════════════════════════════════════════════════
+// BOb Backend Bridge (Phase 3) — best-effort persistence to /api/config.
+// Runs inside the main script so it can see metricCfg and the save fns.
+// This increment persists notification channels (full CRUD + hydrate)
+// and thresholds (upper/lower/peakMode/peakWindows, save + hydrate).
+// Responses / anomaly rules / text rules persistence is a follow-up.
+// Fully guarded: never throws into the simulator; if the API is
+// unreachable or the user lacks a write role, the UI keeps working
+// locally and the console shows a [bob-bridge] warning.
+// ═══════════════════════════════════════════════════════════════════
+(function(){
+  const BASE='/api/config';
+  async function api(path,opts){
+    try{
+      const r=await fetch(BASE+path,Object.assign({
+        headers:{'Content-Type':'application/json'},
+        credentials:'same-origin',
+      },opts||{}));
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return await r.json();
+    }catch(e){ console.warn('[bob-bridge]',(opts&&opts.method)||'GET',path,'—',e.message); return null; }
+  }
+  const data=(res)=>res&&res.data!==undefined?res.data:null;
+
+  const Bridge={
+    // ── Notification channels ──────────────────────────────────────
+    async loadChannels(){
+      const d=data(await api('/channels'));
+      const rows=d&&d.channels;
+      if(Array.isArray(rows)&&rows.length){
+        window._notifChannels=rows.map(row=>({
+          id:row.id,_bkid:row.id,type:row.type,label:row.label,values:row.values||[],
+        }));
+      }
+    },
+    async createChannel(ch){
+      const d=data(await api('/channels',{method:'POST',body:JSON.stringify({type:ch.type,label:ch.label,values:ch.values})}));
+      if(d&&d.id){ ch._bkid=d.id; }
+    },
+    async updateChannel(ch){
+      if(!ch._bkid){ return this.createChannel(ch); }
+      await api('/channels/'+ch._bkid,{method:'PUT',body:JSON.stringify({label:ch.label,values:ch.values})});
+    },
+    async deleteChannel(bkid){ if(bkid){ await api('/channels/'+bkid,{method:'DELETE'}); } },
+
+    // ── Thresholds ─────────────────────────────────────────────────
+    async loadThresholds(){
+      const d=data(await api('/thresholds'));
+      const rows=d&&d.thresholds;
+      if(!Array.isArray(rows)) return;
+      rows.forEach(t=>{
+        const m=metricCfg[t.metric_id]; if(!m) return;
+        if(t.upper_bound!=null) m.upper=Number(t.upper_bound);
+        if(t.lower_bound!=null) m.lower=Number(t.lower_bound);
+        if(t.peak_mode) m.peakMode=t.peak_mode;
+        if(Array.isArray(t.peak_windows)&&t.peak_windows.length) m.peakWindows=t.peak_windows;
+        m._bkid=t.id;
+      });
+    },
+    async saveThreshold(mid){
+      const m=metricCfg[mid]; if(!m) return;
+      const d=data(await api('/thresholds/'+encodeURIComponent(mid),{method:'PUT',body:JSON.stringify({
+        upper_bound:m.upper==null?null:m.upper,
+        lower_bound:m.lower==null?null:m.lower,
+        peak_mode:m.peakMode||'off',
+        peak_windows:m.peakWindows||[],
+      })}));
+      if(d&&d.id){ m._bkid=d.id; }
+    },
+  };
+  window.BobBridge=Bridge;
+
+  // ── Wrap the existing save handlers (UI behaviour unchanged) ──────
+  const _saveTCfg=saveTCfg;
+  saveTCfg=function(mid){ const r=_saveTCfg.apply(this,arguments); Bridge.saveThreshold(mid); return r; };
+
+  const _addNC=addNC;
+  addNC=function(){
+    const before=(window._notifChannels||[]).length;
+    const r=_addNC.apply(this,arguments);
+    const after=(window._notifChannels||[]);
+    if(after.length>before){ Bridge.createChannel(after[after.length-1]); }
+    return r;
+  };
+
+  const _saveEditCh=saveEditCh;
+  saveEditCh=function(id){
+    const r=_saveEditCh.apply(this,arguments);
+    const ch=(window._notifChannels||[]).find(c=>c.id===id);
+    if(ch) Bridge.updateChannel(ch);
+    return r;
+  };
+
+  const _doRemoveCh=doRemoveCh;
+  doRemoveCh=function(id){
+    const ch=(window._notifChannels||[]).find(c=>c.id===id);
+    const bkid=ch&&ch._bkid;
+    const r=_doRemoveCh.apply(this,arguments);
+    Bridge.deleteChannel(bkid);
+    return r;
+  };
+
+  // ── Hydrate persisted config shortly after load ──────────────────
+  function hydrate(){
+    Bridge.loadChannels().then(function(){
+      const el=document.getElementById('actContent-config');
+      if(el&&el.dataset.subTab==='channels'&&typeof renderChannelsCfg==='function'){ try{ renderChannelsCfg(); }catch(e){} }
+    });
+    Bridge.loadThresholds();
+  }
+  setTimeout(hydrate,600);
+})();
 </script>
 </body>
 </html>
