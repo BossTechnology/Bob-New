@@ -5152,12 +5152,53 @@ init();
       })}));
       if(d&&d.id){ m._bkid=d.id; }
     },
+
+    // ── Responses (Alert / Alarm / Action) on thresholds ───────────
+    _chUuid(localId){ const ch=(window._notifChannels||[]).find(c=>c.id===localId); return ch&&ch._bkid?ch._bkid:null; },
+    _uuidToLocal(uuid){ const ch=(window._notifChannels||[]).find(c=>(c._bkid||c.id)===uuid); return ch?ch.id:null; },
+    _respBody(r,link){
+      return Object.assign({
+        type:r.type, name:r.name||'',
+        channel_ids:(r.channels||[]).map(id=>this._chUuid(id)).filter(Boolean),
+        subject:r.subject||'', message:r.message||'',
+        webhook_url:r.url||null, webhook_method:r.method||'POST', webhook_payload:r.payload||null,
+      }, link||{});
+    },
+    async persistResponse(r,link){
+      if(r._bkid){ await api('/responses/'+r._bkid,{method:'PUT',body:JSON.stringify(this._respBody(r,{}))}); }
+      else { const d=data(await api('/responses',{method:'POST',body:JSON.stringify(this._respBody(r,link))})); if(d&&d.id){ r._bkid=d.id; } }
+    },
+    async deleteResponse(bkid){ if(bkid){ await api('/responses/'+bkid,{method:'DELETE'}); } },
+    async saveThresholdResponses(mid){
+      const m=metricCfg[mid]; if(!m||!m._bkid) return;
+      for(const r of (m.responses||[])){ await this.persistResponse(r,{threshold_id:m._bkid}); }
+    },
+    async loadThresholdResponses(mid){
+      const m=metricCfg[mid]; if(!m||!m._bkid) return;
+      const d=data(await api('/responses/'+m._bkid));
+      const rows=d&&d.responses; if(!Array.isArray(rows)) return;
+      m.responses=rows.map(row=>({
+        _bkid:row.id, type:row.type, name:row.name||'',
+        channels:(row.channel_ids||[]).map(u=>this._uuidToLocal(u)).filter(Boolean),
+        subject:row.subject||'', message:row.message||'',
+        url:row.webhook_url||'', method:row.webhook_method||'POST', payload:'', _open:false,
+      }));
+    },
   };
   window.BobBridge=Bridge;
 
   // ── Wrap the existing save handlers (UI behaviour unchanged) ──────
   const _saveTCfg=saveTCfg;
-  saveTCfg=function(mid){ const r=_saveTCfg.apply(this,arguments); Bridge.saveThreshold(mid); return r; };
+  saveTCfg=function(mid){ const r=_saveTCfg.apply(this,arguments); Bridge.saveThreshold(mid).then(function(){ return Bridge.saveThresholdResponses(mid); }); return r; };
+
+  const _removeResponse=removeResponse;
+  removeResponse=function(mid,i){
+    const rr=metricCfg[mid]&&metricCfg[mid].responses&&metricCfg[mid].responses[i];
+    const bkid=rr&&rr._bkid;
+    const r=_removeResponse.apply(this,arguments);
+    if(bkid) Bridge.deleteResponse(bkid);
+    return r;
+  };
 
   const _addNC=addNC;
   addNC=function(){
@@ -5186,14 +5227,17 @@ init();
   };
 
   // ── Hydrate persisted config shortly after load ──────────────────
-  function hydrate(){
-    Bridge.loadChannels().then(function(){
-      const el=document.getElementById('actContent-config');
-      if(el&&el.dataset.subTab==='channels'&&typeof renderChannelsCfg==='function'){ try{ renderChannelsCfg(); }catch(e){} }
-    });
-    Bridge.loadThresholds();
+  async function hydrate(){
+    await Bridge.loadChannels();
+    await Bridge.loadThresholds();
+    // Hydrate threshold responses for every metric that has a persisted threshold.
+    const mids=Object.keys(metricCfg).filter(function(k){ return metricCfg[k]&&metricCfg[k]._bkid; });
+    await Promise.all(mids.map(function(k){ return Bridge.loadThresholdResponses(k); }));
+    // Refresh the config tab if it is currently open.
+    const el=document.getElementById('actContent-config');
+    if(el&&typeof renderConfigTab==='function'&&actMetricId){ try{ renderConfigTab(actMetricId); }catch(e){} }
   }
-  setTimeout(hydrate,600);
+  setTimeout(function(){ hydrate().catch(function(e){ console.warn('[bob-bridge] hydrate',e); }); },600);
 })();
 </script>
 </body>
