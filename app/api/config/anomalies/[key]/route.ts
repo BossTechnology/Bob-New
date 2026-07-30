@@ -1,10 +1,16 @@
 // BOb v3 · GET    /api/config/anomalies/:metricId — rules grouped known/unknown.
+//          PUT    /api/config/anomalies/:id        — update an anomaly rule's fields.
 //          DELETE /api/config/anomalies/:id        — delete an anomaly rule.
-// GET treats the path param as a metric_id; DELETE treats it as a rule id.
+// GET treats the path param as a metric_id; PUT/DELETE treat it as a rule id.
+// (Not in the original spec — added so the simulator can persist edits to an
+// existing rule instead of creating a duplicate row on every save.)
 import { NextRequest } from 'next/server'
 import { getRouteClient } from '@/lib/supabase'
 import { requireAuth } from '@/lib/auth'
-import { ok, handle } from '@/lib/api-response'
+import { ok, badReq, handle } from '@/lib/api-response'
+
+const CONDITIONS = ['contains', 'frequency', 'pattern']
+const UPDATABLE = ['name', 'condition', 'keywords', 'freq_threshold']
 
 type Rule = {
   id: string
@@ -55,6 +61,33 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ key: strin
       else if (r.rule_type === 'unknown_warning') unknown.warning.push(enriched)
     }
     return ok({ known, unknown })
+  } catch (e) {
+    return handle(e)
+  }
+}
+
+export async function PUT(request: NextRequest, ctx: { params: Promise<{ key: string }> }) {
+  try {
+    const { org_id } = await requireAuth(['admin', 'analyst'])
+    const { key: id } = await ctx.params
+    const body = await request.json().catch(() => null)
+    if (!body) return badReq('Invalid body')
+    if (body.condition && !CONDITIONS.includes(body.condition)) return badReq('Invalid condition')
+
+    const patch: Record<string, unknown> = {}
+    for (const k of UPDATABLE) if (k in body) patch[k] = body[k]
+    if (!Object.keys(patch).length) return badReq('No updatable fields provided')
+
+    const sb = await getRouteClient()
+    const { data, error } = await sb
+      .from('anomaly_rules')
+      .update(patch)
+      .eq('id', id)
+      .eq('org_id', org_id)
+      .select('id, rule_type, name, condition, keywords, freq_threshold')
+      .single()
+    if (error) throw error
+    return ok(data)
   } catch (e) {
     return handle(e)
   }

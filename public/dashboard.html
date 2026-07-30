@@ -5169,6 +5169,14 @@ init();
       else { const d=data(await api('/responses',{method:'POST',body:JSON.stringify(this._respBody(r,link))})); if(d&&d.id){ r._bkid=d.id; } }
     },
     async deleteResponse(bkid){ if(bkid){ await api('/responses/'+bkid,{method:'DELETE'}); } },
+    _mapResponseRow(row){
+      return{
+        _bkid:row.id, type:row.type, name:row.name||'',
+        channels:(row.channel_ids||[]).map(u=>this._uuidToLocal(u)).filter(Boolean),
+        subject:row.subject||'', message:row.message||'',
+        url:row.webhook_url||'', method:row.webhook_method||'POST', payload:'', _open:false,
+      };
+    },
     async saveThresholdResponses(mid){
       const m=metricCfg[mid]; if(!m||!m._bkid) return;
       for(const r of (m.responses||[])){ await this.persistResponse(r,{threshold_id:m._bkid}); }
@@ -5177,12 +5185,76 @@ init();
       const m=metricCfg[mid]; if(!m||!m._bkid) return;
       const d=data(await api('/responses/'+m._bkid));
       const rows=d&&d.responses; if(!Array.isArray(rows)) return;
-      m.responses=rows.map(row=>({
-        _bkid:row.id, type:row.type, name:row.name||'',
-        channels:(row.channel_ids||[]).map(u=>this._uuidToLocal(u)).filter(Boolean),
-        subject:row.subject||'', message:row.message||'',
-        url:row.webhook_url||'', method:row.webhook_method||'POST', payload:'', _open:false,
-      }));
+      m.responses=rows.map(row=>this._mapResponseRow(row));
+    },
+
+    // ── Anomaly rules (known + unknown critical/warning) ────────────
+    async persistKnownRule(mid,r){
+      const body={metric_id:mid,rule_type:'known',name:r.name||'',condition:r.condition||'contains',keywords:r.keywords||'',freq_threshold:r.freqThresh||null};
+      if(r._bkid){ await api('/anomalies/'+r._bkid,{method:'PUT',body:JSON.stringify(body)}); }
+      else { const d=data(await api('/anomalies',{method:'POST',body:JSON.stringify(body)})); if(d&&d.id){ r._bkid=d.id; } }
+      for(const resp of (r.responses||[])){ await this.persistResponse(resp,{anomaly_rule_id:r._bkid}); }
+    },
+    async deleteKnownRule(bkid){ if(bkid){ await api('/anomalies/'+bkid,{method:'DELETE'}); } },
+    // Unknown critical/warning have no per-rule fields client-side — just a
+    // container row so their responses can attach via anomaly_rule_id.
+    async _ensureUnknownContainer(mid,sev){
+      const rules=metricCfg[mid].anomRules;
+      if(!rules._bkidUnknown) rules._bkidUnknown={};
+      if(rules._bkidUnknown[sev]) return rules._bkidUnknown[sev];
+      const d=data(await api('/anomalies',{method:'POST',body:JSON.stringify({metric_id:mid,rule_type:'unknown_'+sev,name:sev})}));
+      if(d&&d.id){ rules._bkidUnknown[sev]=d.id; return d.id; }
+      return null;
+    },
+    async saveAnomalyRules(mid){
+      const rules=metricCfg[mid]&&metricCfg[mid].anomRules; if(!rules) return;
+      for(const r of (rules.known||[])){ await this.persistKnownRule(mid,r); }
+      for(const sev of ['critical','warning']){
+        const resps=(rules.unknown&&rules.unknown[sev])||[];
+        if(!resps.length) continue;
+        const bkid=await this._ensureUnknownContainer(mid,sev);
+        if(!bkid) continue;
+        for(const resp of resps){ await this.persistResponse(resp,{anomaly_rule_id:bkid}); }
+      }
+    },
+    async loadAnomalyRules(mid){
+      const d=data(await api('/anomalies/'+encodeURIComponent(mid)));
+      if(!d) return;
+      if(!metricCfg[mid]) metricCfg[mid]={};
+      const known=Array.isArray(d.known)?d.known.map(row=>({
+        _bkid:row.id, name:row.name||'', condition:row.condition||'contains',
+        keywords:row.keywords||'', freqThresh:row.freq_threshold||5,
+        responses:(row.responses||[]).map(rr=>this._mapResponseRow(rr)),
+      })):[];
+      const bkidUnknown={};
+      const unknown={critical:[],warning:[]};
+      ['critical','warning'].forEach(sev=>{
+        const rows=(d.unknown&&d.unknown[sev])||[];
+        if(rows.length){ bkidUnknown[sev]=rows[0].id; unknown[sev]=(rows[0].responses||[]).map(rr=>this._mapResponseRow(rr)); }
+      });
+      metricCfg[mid].anomRules={known,unknown,_bkidUnknown:bkidUnknown};
+    },
+    async deleteResponseInUnknown(bkid){ if(bkid){ await api('/responses/'+bkid,{method:'DELETE'}); } },
+
+    // ── Text rules (temas / acciones / faq / words content rules) ───
+    // NOTE: text_rules has no FK on response_rules, so rule responses stay
+    // client-side only for now — only the rule itself (name/condition/value)
+    // is persisted.
+    async persistTextRule(mid,r){
+      const body={metric_id:mid,name:r.name||'',condition:r.condition||'keyword',value:r.value!=null?String(r.value):''};
+      if(r._bkid){ await api('/textrules/'+r._bkid,{method:'PUT',body:JSON.stringify(body)}); }
+      else { const d=data(await api('/textrules',{method:'POST',body:JSON.stringify(body)})); if(d&&d.id){ r._bkid=d.id; } }
+    },
+    async deleteTextRule(bkid){ if(bkid){ await api('/textrules/'+bkid,{method:'DELETE'}); } },
+    async saveTextRulesFor(mid){
+      const rules=metricCfg[mid]&&metricCfg[mid].textRules; if(!Array.isArray(rules)) return;
+      for(const r of rules){ await this.persistTextRule(mid,r); }
+    },
+    async loadTextRules(mid){
+      const d=data(await api('/textrules/'+encodeURIComponent(mid)));
+      const rows=d&&d.rules; if(!Array.isArray(rows)) return;
+      if(!metricCfg[mid]) metricCfg[mid]={};
+      metricCfg[mid].textRules=rows.map(row=>({_bkid:row.id,name:row.name||'',condition:row.condition||'keyword',value:row.value||'',responses:[]}));
     },
   };
   window.BobBridge=Bridge;
@@ -5224,6 +5296,62 @@ init();
     const r=_doRemoveCh.apply(this,arguments);
     Bridge.deleteChannel(bkid);
     return r;
+  };
+
+  const _saveAnomalyCfg=saveAnomalyCfg;
+  saveAnomalyCfg=function(mid){ const r=_saveAnomalyCfg.apply(this,arguments); Bridge.saveAnomalyRules(mid); return r; };
+
+  const _rulesRemoveKnown=rules_removeKnown;
+  rules_removeKnown=function(mid,i){
+    const bkid=metricCfg[mid]&&metricCfg[mid].anomRules&&metricCfg[mid].anomRules.known&&metricCfg[mid].anomRules.known[i]&&metricCfg[mid].anomRules.known[i]._bkid;
+    const r=_rulesRemoveKnown.apply(this,arguments);
+    if(bkid) Bridge.deleteKnownRule(bkid);
+    return r;
+  };
+
+  const _rulesRemoveResp=rules_removeResp;
+  rules_removeResp=function(mid,path,i,ri){
+    let bkid=null;
+    try{
+      if(path==='known'){ bkid=metricCfg[mid].anomRules.known[i].responses[ri]._bkid; }
+      else if(path.startsWith('unknown-')){ const sev=path.replace('unknown-',''); bkid=metricCfg[mid].anomRules.unknown[sev][ri]._bkid; }
+      // textrule- responses have no backend FK yet — nothing to delete server-side.
+    }catch(e){}
+    const r=_rulesRemoveResp.apply(this,arguments);
+    if(bkid) Bridge.deleteResponse(bkid);
+    return r;
+  };
+
+  const _saveTextRules=saveTextRules;
+  saveTextRules=function(mid){ const r=_saveTextRules.apply(this,arguments); Bridge.saveTextRulesFor(mid); return r; };
+
+  const _removeTextRule=removeTextRule;
+  removeTextRule=function(mid,i){
+    const bkid=metricCfg[mid]&&metricCfg[mid].textRules&&metricCfg[mid].textRules[i]&&metricCfg[mid].textRules[i]._bkid;
+    const r=_removeTextRule.apply(this,arguments);
+    if(bkid) Bridge.deleteTextRule(bkid);
+    return r;
+  };
+
+  // Lazy-hydrate anomaly / text rules once per metric, hooked at the panel-
+  // open entry point (renderConfigTab, called once by openActionables)
+  // rather than the per-edit render functions — those redraw on every
+  // keystroke, and hydrating there would race with in-progress edits and
+  // clobber unsaved local state with a stale backend read.
+  const _hydratedAnom={};
+  const _hydratedText={};
+  const _renderConfigTab=renderConfigTab;
+  renderConfigTab=function(metricId){
+    const needAnom=!_hydratedAnom[metricId];
+    const needText=!_hydratedText[metricId]&&TEXT_RULE_METRICS.includes(metricId);
+    if(needAnom||needText){
+      _hydratedAnom[metricId]=true;
+      if(needText) _hydratedText[metricId]=true;
+      const jobs=[Bridge.loadAnomalyRules(metricId)];
+      if(needText) jobs.push(Bridge.loadTextRules(metricId));
+      Promise.all(jobs).then(function(){ try{ _renderConfigTab(metricId); }catch(e){} });
+    }
+    return _renderConfigTab.apply(this,arguments);
   };
 
   // ── Hydrate persisted config shortly after load ──────────────────
