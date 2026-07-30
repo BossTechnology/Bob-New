@@ -5237,13 +5237,11 @@ init();
     async deleteResponseInUnknown(bkid){ if(bkid){ await api('/responses/'+bkid,{method:'DELETE'}); } },
 
     // ── Text rules (temas / acciones / faq / words content rules) ───
-    // NOTE: text_rules has no FK on response_rules, so rule responses stay
-    // client-side only for now — only the rule itself (name/condition/value)
-    // is persisted.
     async persistTextRule(mid,r){
       const body={metric_id:mid,name:r.name||'',condition:r.condition||'keyword',value:r.value!=null?String(r.value):''};
       if(r._bkid){ await api('/textrules/'+r._bkid,{method:'PUT',body:JSON.stringify(body)}); }
       else { const d=data(await api('/textrules',{method:'POST',body:JSON.stringify(body)})); if(d&&d.id){ r._bkid=d.id; } }
+      for(const resp of (r.responses||[])){ await this.persistResponse(resp,{text_rule_id:r._bkid}); }
     },
     async deleteTextRule(bkid){ if(bkid){ await api('/textrules/'+bkid,{method:'DELETE'}); } },
     async saveTextRulesFor(mid){
@@ -5254,7 +5252,10 @@ init();
       const d=data(await api('/textrules/'+encodeURIComponent(mid)));
       const rows=d&&d.rules; if(!Array.isArray(rows)) return;
       if(!metricCfg[mid]) metricCfg[mid]={};
-      metricCfg[mid].textRules=rows.map(row=>({_bkid:row.id,name:row.name||'',condition:row.condition||'keyword',value:row.value||'',responses:[]}));
+      metricCfg[mid].textRules=rows.map(row=>({
+        _bkid:row.id, name:row.name||'', condition:row.condition||'keyword', value:row.value||'',
+        responses:(row.responses||[]).map(rr=>this._mapResponseRow(rr)),
+      }));
     },
   };
   window.BobBridge=Bridge;
@@ -5315,7 +5316,12 @@ init();
     try{
       if(path==='known'){ bkid=metricCfg[mid].anomRules.known[i].responses[ri]._bkid; }
       else if(path.startsWith('unknown-')){ const sev=path.replace('unknown-',''); bkid=metricCfg[mid].anomRules.unknown[sev][ri]._bkid; }
-      // textrule- responses have no backend FK yet — nothing to delete server-side.
+      else if(path.startsWith('textrule-')){
+        // Real metric id comes from the path, not `mid` (which is a decorative
+        // `<mid>_tr` label here) — matches the original function's own parsing.
+        const realMid=path.replace('textrule-','');
+        bkid=metricCfg[realMid].textRules[i].responses[ri]._bkid;
+      }
     }catch(e){}
     const r=_rulesRemoveResp.apply(this,arguments);
     if(bkid) Bridge.deleteResponse(bkid);

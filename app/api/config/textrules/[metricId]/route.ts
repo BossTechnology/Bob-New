@@ -19,14 +19,33 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ metricId: 
     const { org_id } = await requireAuth(['admin', 'analyst', 'viewer'])
     const { metricId } = await ctx.params
     const sb = await getRouteClient()
-    const { data, error } = await sb
+    const { data: rules, error } = await sb
       .from('text_rules')
       .select('id, name, condition, value')
       .eq('org_id', org_id)
       .eq('metric_id', metricId)
       .order('created_at', { ascending: true })
     if (error) throw error
-    return ok({ rules: data ?? [] })
+
+    // Attach responses to each rule (parity with /api/config/anomalies/:metricId).
+    const ids = (rules ?? []).map((r) => r.id)
+    let byRule: Record<string, unknown[]> = {}
+    if (ids.length) {
+      const { data: responses, error: rErr } = await sb
+        .from('response_rules')
+        .select('*')
+        .eq('org_id', org_id)
+        .in('text_rule_id', ids)
+      if (rErr) throw rErr
+      byRule = (responses ?? []).reduce((acc: Record<string, unknown[]>, r) => {
+        const key = (r as { text_rule_id: string }).text_rule_id
+        ;(acc[key] ||= []).push(r)
+        return acc
+      }, {})
+    }
+
+    const enriched = (rules ?? []).map((r) => ({ ...r, responses: byRule[r.id] ?? [] }))
+    return ok({ rules: enriched })
   } catch (e) {
     return handle(e)
   }

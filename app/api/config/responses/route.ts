@@ -1,5 +1,5 @@
 // BOb v3 · POST /api/config/responses — create a response rule attached to a
-// threshold or an anomaly rule.
+// threshold, an anomaly rule, or a text (content) rule.
 import { NextRequest } from 'next/server'
 import { getRouteClient } from '@/lib/supabase'
 import { requireAuth } from '@/lib/auth'
@@ -12,13 +12,14 @@ export async function POST(request: NextRequest) {
     const { org_id } = await requireAuth(['admin', 'analyst'])
     const body = await request.json().catch(() => null)
     if (!body || !TYPES.includes(body.type)) return badReq('Invalid response type')
-    if (!body.threshold_id && !body.anomaly_rule_id) {
-      return badReq('threshold_id or anomaly_rule_id is required')
+    if (!body.threshold_id && !body.anomaly_rule_id && !body.text_rule_id) {
+      return badReq('threshold_id, anomaly_rule_id, or text_rule_id is required')
     }
     const row = {
       org_id,
       threshold_id: body.threshold_id ?? null,
       anomaly_rule_id: body.anomaly_rule_id ?? null,
+      text_rule_id: body.text_rule_id ?? null,
       type: body.type,
       name: body.name ?? '',
       channel_ids: body.channel_ids ?? [],
