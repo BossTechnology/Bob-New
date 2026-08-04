@@ -168,6 +168,13 @@ main{display:grid;grid-template-columns:1fr 420px;grid-template-rows:1fr auto;mi
 .ch-cell{flex:0 0 calc(100%/5);display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 5px;transition:opacity .3s}
 .ch-cell.unchecked{opacity:.32}
 .ch-cell+.ch-cell{border-left:1px solid var(--gray-border)}
+.ch-cell-icon{cursor:pointer;border-radius:6px;transition:background .2s}
+.ch-cell-icon:hover{background:var(--gray-bg)}
+@keyframes chFlashSlow{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes chFlashFast{0%,100%{opacity:1}50%{opacity:.3}}
+.ch-flash-slow .ch-cell-icon{animation:chFlashSlow 2s ease-in-out infinite}
+.ch-flash-fast .ch-cell-icon{animation:chFlashFast 1s ease-in-out infinite}
+.ch-breach .ch-cell-icon img,.ch-breach .ch-cell-icon svg{filter:brightness(0) saturate(100%) invert(19%) sepia(97%) saturate(5765%) hue-rotate(355deg) brightness(92%) contrast(85%)}
 .ch-cell-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center}
 .ch-cell-icon svg,.ch-cell-icon img{width:20px;height:20px}
 .ch-cell-count{font-size:20px;font-weight:800;color:var(--black);letter-spacing:-.5px;transition:color .3s}
@@ -207,7 +214,7 @@ main{display:grid;grid-template-columns:1fr 420px;grid-template-rows:1fr auto;mi
 .at-col:hover{background:var(--gray-bg)}
 .at-col .metric-header{margin-bottom:10px}
 .at-div{background:var(--gray-border)}
-.at-list{list-style:none;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,auto);grid-auto-flow:column;gap:10px 16px}
+.at-list{list-style:none;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,auto);grid-auto-flow:column;gap:10px 16px;min-height:120px}
 .at-list li{font-size:11px;color:var(--gray-dark);line-height:1.35;display:flex;align-items:flex-start}
 .at-list{position:relative}
 .at-list::after{content:'';position:absolute;top:0;bottom:0;left:calc(50% - 1px);width:1px;background:rgba(216,220,228,.45)}
@@ -619,7 +626,7 @@ main{display:grid;grid-template-columns:1fr 420px;grid-template-rows:1fr auto;mi
 .anomaly-status{font-size:10px;font-weight:700;color:var(--gray-mid);text-transform:uppercase;letter-spacing:.5px}
 .anomaly-metric{font-size:10px;font-weight:700;color:var(--black);background:var(--accent);padding:1px 6px;border-radius:3px;letter-spacing:.5px}
 /* ── FAQ CLICKABLE CONTENT AREA ──────────────────── */
-.faq-content-click{cursor:pointer;transition:background .15s}
+.faq-content-click{cursor:pointer;transition:background .15s;min-height:130px}
 .faq-content-click:hover{background:var(--gray-bg)}
 
 /* ── RANK ARROWS (dynamic lists) ─────────────────── */
@@ -889,16 +896,11 @@ main{display:grid;grid-template-columns:1fr 420px;grid-template-rows:1fr auto;mi
   <div class="glob-modal">
     <div class="glob-modal-head">
       <div class="glob-modal-icon anomalies-ic">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#A68B52" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="12,2 20,11 4,11"/>
-          <polyline points="3,13 7,12 10,14 14,12 17,14 21,13"/>
-          <polyline points="4,15.5 7,14.5 10,16.5 14,14.5 17,16.5 20,15.5"/>
-          <polyline points="5,18 4,22 20,22 19,18"/>
-        </svg>
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD0eNT6AAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAIABJREFUeJzt3Xm4XFWV9/FvZR4gYUgYkjQkIQlgAsrQiKIgiEirKNiCiIjSCmo7pHHi1ZZB2raxEQGFV3BEZGhAkVmBvLatDBJGQaYwhcwIUQgQMt56/1hVnfLm1r017H3WPuf8Ps+zHiKGqr3O2meoc/bZG0REREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREREQGVvFuQMImATOA6Q0xERgFjATGApvU/u7LwIvAq8BKYDEwD3i8FvNq/05ERCQJugDYYCrwJmAf4GBgu8Cf/yzwO+A24FbgXqAa+DtERESkBXsBZwNLsJNxlrEYOAvYM3qWIiIiwiTgFOAxsj/pN4tHgZOxRwwiIiIS0A7AOdhzeu8TfrNYDVwE7BRpG4iIiJTGrsAvgPX4n+BbjfXAlcCsCNtDRESk0DbDfvGvxf+E3mmsreUwNvC2ERERKZwKcAywDP8TeKh4HpgNDAq4nURERApjPHAj/ifsWDEH2CbY1hIRESmA/bFX67xP0rHjWeCgQNtMREQktwYBp5GvQX7dxjrstUFN5CQiIqU0DLgU/xOyV1wMDO16K4qIiOTIaOBX+J+EvWMOsGmX21JERCQXxgFz8T/5phJ3Alt2tUVFREQSNwq4Hf+Tbmoxlw2rE4qIiBTKUODX+J9sU405wPCOt66IiEiCKsBP8T/Jph6XogmDRESkQE7D/+Salzi5w20sIiKSlP2wd9+9T6x5ifXAAR1taRERkURsRTlm+Asdi7C3JURERHKnggb9dRM3oNkCRUQkh47F/ySa9zi67a0uIiKFl/KvwzHAo8C23g3JuWeBHYEXvRsiIiLpGOzdgH6cAbzVuxEFsAm2ZsLN3g0REREZyK7AWvxvnxcl1gIz26qAiIiIg1/gf9IsWlzeVgVERKTQUhwDsCPwMJrNLrT1wM7A494NERERfymeZL9Emu3K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" style="width:28px;height:28px;object-fit:contain">
       </div>
       <div class="glob-modal-info">
         <h3>Anomaly Intelligence</h3>
-        <p>Aggregated anomalies, incidents &amp; issues &mdash; pattern &amp; root cause analysis</p>
+        <p>Anomaly detection &amp; technical performance &mdash; pattern &amp; root cause analysis</p>
       </div>
       <button class="glob-modal-close" onclick="closeAnomaliesModal()">&#x2715;</button>
     </div>
@@ -1030,12 +1032,12 @@ main{display:grid;grid-template-columns:1fr 420px;grid-template-rows:1fr auto;mi
       <option value="custom">Personalizado</option>
     </select>
   </div>
-  <span id="timeLbl" class="time-lbl"></span>
   <button class="hdr-icon-btn" id="downloadBtn" onclick="downloadReport()" title="Download PDF Report" style="display:none">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
     </svg>
   </button>
+  <span id="timeLbl" class="time-lbl"></span>
   <div class="date-range-wrap" id="drWrap">
     <span id="drDisplay" onclick="toggleDateDropdown()" style="cursor:pointer;font-size:11px;font-weight:500;color:var(--black)">06/29 → 07/29</span>
     <div id="drDropdown" style="display:none;position:absolute;top:100%;right:0;background:var(--white);border:1px solid var(--gray-border);border-radius:10px;padding:14px;box-shadow:0 6px 20px rgba(0,0,0,.12);z-index:10;width:260px;margin-top:6px">
@@ -1107,7 +1109,6 @@ main{display:grid;grid-template-columns:1fr 420px;grid-template-rows:1fr auto;mi
         <div class="metric-header" id="lbl-animo" style="margin-bottom:10px">Ánimo &amp; Sentimiento</div>
         <div class="lp-chart" id="lpChart">
           <div class="lp-bg">
-            <div class="lp-bg-line"></div><div class="lp-bg-line"></div>
             <div class="lp-bg-line"></div><div class="lp-bg-line"></div>
             <div class="lp-bg-line"></div><div class="lp-bg-line"></div>
           </div>
@@ -1599,7 +1600,6 @@ let chOffset=0; const CH_VISIBLE=5;
 let _lastChOrder=''; // tracks current display order to avoid unnecessary re-renders
 function renderChannelDisplay(){
   const display=document.getElementById('chDisplay');
-  // Sort: enabled channels by live count desc, then disabled channels
   const sorted=[...activeChannels].sort((a,b)=>{
     if(a.on!==b.on)return a.on?-1:1;
     return b.live-a.live;
@@ -1607,8 +1607,11 @@ function renderChannelDisplay(){
   _lastChOrder=sorted.map(c=>c.id).join(',');
   display.innerHTML=sorted.map((c,i)=>{
     const def=CH_LIBRARY.find(x=>x.id===c.id);
-    return`<div class="ch-cell ${c.on?'':'unchecked'}" id="chcell-${c.id}" title="${def?.name||c.id}">
-      <div class="ch-cell-icon" style="color:#111">${def?.svg||''}</div>
+    const perf=channelPerf[c.id];
+    const perfPct=perf?perf.pct:100;
+    const healthCls=getChHealthClass(c.id);
+    return`<div class="ch-cell ${c.on?'':'unchecked'} ${healthCls}" id="chcell-${c.id}" title="${def?.name||c.id}">
+      <div class="ch-cell-icon" style="color:#111" onclick="event.stopPropagation();openChannelActionables('${c.id}')">${def?.svg||''}</div>
       <div class="ch-cell-count" id="chcount-${c.id}">${formatNum(c.live)}</div>
       <input type="checkbox" class="ch-cell-cb" ${c.on?'checked':''} onchange="toggleDashCh('${c.id}',this.checked)">
     </div>`;}).join('');
@@ -1622,13 +1625,18 @@ function resortChannelDisplay(){
   });
   const newOrder=sorted.map(c=>c.id).join(',');
   if(newOrder!==_lastChOrder){
-    // Order changed — full re-render
     renderChannelDisplay();
   } else {
-    // Same order — just update the count text in-place
     activeChannels.forEach(c=>{
       const el=document.getElementById(`chcount-${c.id}`);
       if(el) el.textContent=formatNum(c.live);
+      // Update health animation class
+      const cell=document.getElementById(`chcell-${c.id}`);
+      if(cell){
+        cell.classList.remove('ch-flash-slow','ch-flash-fast','ch-breach');
+        const cls=getChHealthClass(c.id);
+        if(cls) cell.classList.add(cls);
+      }
     });
   }
 }
@@ -2010,32 +2018,94 @@ function openFaqActionables(){
   openActionables(mid,getT(mid),'');
 }
 
-// ─ Alarms tab (placeholder — functionality TBD) ──
+// ─ Alarms tab — shows configured alarm responses and triggered events ──
 function renderAlarmsTab(metricId){
   const el=document.getElementById('actContent-alarms');
   if(!el)return;
-  el.innerHTML=`
-    <div style="text-align:center;padding:32px 16px;color:var(--gray-mid)">
-      <div style="font-size:32px;margin-bottom:12px;opacity:.3">🔔</div>
-      <div style="font-size:12px;font-weight:600;margin-bottom:4px">Alarm Rules</div>
-      <div style="font-size:11px;color:var(--gray-light);line-height:1.5">Configure time-based and condition-based alarms for this metric. Functionality coming soon.</div>
+  // Gather alarm responses configured for this metric
+  const cfg=metricCfg[metricId]||{};
+  const alarms=(cfg.responses||[]).filter(r=>r.type==='alarm');
+  // Find triggered alarm events from alertLog
+  const triggered=alertLog.filter(a=>a.mid===metricId&&a.type!=='recovery');
+  // Only show triggered items where an alarm response exists
+  const firedAlarms=alarms.length&&triggered.length?triggered.slice(0,5):[];
+
+  if(!alarms.length&&!firedAlarms.length){
+    el.innerHTML=`<div class="alert-empty">
+      <div class="alert-empty-ico" style="font-size:28px;opacity:.3">🔔</div>
+      <p>No alarms for this metric</p>
+      <p class="sub">Add alarm-type responses in the<br>Configuration tab to enable company-wide broadcasts.</p>
     </div>`;
+    return;
+  }
+  let html='';
+  if(firedAlarms.length){
+    html+=`<div class="act-section-hd">Triggered</div>`;
+    html+=firedAlarms.map(a=>`<div class="alert-item ${a.sev}">
+      <div class="alert-item-top">
+        <div class="alert-dot ${a.sev}"></div>
+        <div class="alert-title">${a.mname} — Broadcast</div>
+        <div class="alert-time">${a.time}</div>
+      </div>
+      <div class="alert-body">Value <span class="hl">${a.val}</span> ${a.type==='upper'?'exceeded':'fell below'} threshold <strong>${a.thresh}</strong>. Company-wide alarm dispatched.</div>
+      ${a.chPerf?`<div style="font-size:10px;color:#fff;padding:5px 10px;margin-top:4px;background:var(--black);border-radius:4px">📡 ${a.chPerf}</div>`:''}
+    </div>`).join('');
+  }
+  html+=`<div class="act-section-hd" style="margin-top:12px">Configured Alarms</div>`;
+  html+=alarms.map(r=>`<div style="padding:8px 10px;border:1px solid var(--gray-border);border-radius:8px;margin-bottom:6px">
+    <div style="display:flex;align-items:center;gap:6px"><span>🔔</span><strong style="font-size:11px">${r.name||'Alarm'}</strong></div>
+    <div style="font-size:10px;color:var(--gray-mid);margin-top:4px">${r.subject||'No subject configured'}</div>
+    <div style="font-size:10px;color:var(--gray-light);margin-top:2px">${(r.channels||[]).length} channel${(r.channels||[]).length!==1?'s':''} configured</div>
+  </div>`).join('');
+  el.innerHTML=html;
 }
 
-// ─ Actions tab (placeholder — functionality TBD) ──
+// ─ Actions tab — shows configured webhook actions and execution log ──
 function renderActionsTab(metricId){
   const el=document.getElementById('actContent-actions');
   if(!el)return;
-  el.innerHTML=`
-    <div style="text-align:center;padding:32px 16px;color:var(--gray-mid)">
-      <div style="font-size:32px;margin-bottom:12px;opacity:.3">⚡</div>
-      <div style="font-size:12px;font-weight:600;margin-bottom:4px">Automated Actions</div>
-      <div style="font-size:11px;color:var(--gray-light);line-height:1.5">Define automated responses and workflows triggered by this metric. Functionality coming soon.</div>
+  const cfg=metricCfg[metricId]||{};
+  const actions=(cfg.responses||[]).filter(r=>r.type==='action');
+  const triggered=alertLog.filter(a=>a.mid===metricId&&a.type!=='recovery');
+  const firedActions=actions.length&&triggered.length?triggered.slice(0,5):[];
+
+  if(!actions.length&&!firedActions.length){
+    el.innerHTML=`<div class="alert-empty">
+      <div class="alert-empty-ico" style="font-size:28px;opacity:.3">⚡</div>
+      <p>No actions for this metric</p>
+      <p class="sub">Add action-type responses in the<br>Configuration tab to enable webhook automations.</p>
     </div>`;
+    return;
+  }
+  let html='';
+  if(firedActions.length){
+    html+=`<div class="act-section-hd">Executed</div>`;
+    html+=firedActions.map(a=>`<div class="alert-item ${a.sev}">
+      <div class="alert-item-top">
+        <div class="alert-dot ${a.sev}"></div>
+        <div class="alert-title">${a.mname} — Webhook Fired</div>
+        <div class="alert-time">${a.time}</div>
+      </div>
+      <div class="alert-body">Threshold breach triggered programmatic action. Value <span class="hl">${a.val}</span> vs threshold <strong>${a.thresh}</strong>.</div>
+      ${a.chPerf?`<div style="font-size:10px;color:#fff;padding:5px 10px;margin-top:4px;background:var(--black);border-radius:4px">📡 ${a.chPerf}</div>`:''}
+    </div>`).join('');
+  }
+  html+=`<div class="act-section-hd" style="margin-top:12px">Configured Actions</div>`;
+  html+=actions.map(r=>`<div style="padding:8px 10px;border:1px solid var(--gray-border);border-radius:8px;margin-bottom:6px">
+    <div style="display:flex;align-items:center;gap:6px"><span>⚡</span><strong style="font-size:11px">${r.name||'Webhook Action'}</strong></div>
+    <div style="font-size:10px;color:var(--gray-mid);margin-top:4px;word-break:break-all">${r.url||'No URL configured'}</div>
+    <div style="font-size:10px;color:var(--gray-light);margin-top:2px">${r.method||'POST'} · ${r.payload?'Custom payload':'Default payload'}</div>
+  </div>`).join('');
+  el.innerHTML=html;
 }
 
 // ─ Activity tab ───────────────────────────────────
 function renderActivityTab(metricId){
+  // Channel performance metrics
+  if(metricId.startsWith('ch_')){
+    renderChannelActivity(metricId.replace('ch_',''));
+    return;
+  }
   switch(metricId){
     case 'nps':       renderNpsActivity();break;
     case 'sessions':  renderSessionsActivity();break;
@@ -2339,6 +2409,7 @@ function renderAlertsTab(metricId){
       </div>`;
     }
     // Standard threshold breach
+    const chCtx=a.chPerf?`<div style="font-size:10px;color:#fff;padding:5px 10px;margin-top:4px;background:var(--black);border-radius:4px;letter-spacing:.2px">📡 ${a.chPerf}</div>`:'';
     return`<div class="alert-item ${a.sev}">
       <div class="alert-item-top">
         <div class="alert-dot ${a.sev}"></div>
@@ -2346,6 +2417,7 @@ function renderAlertsTab(metricId){
         <div class="alert-time">${a.time}</div>
       </div>
       <div class="alert-body">Value <span class="hl">${a.val}</span> ${a.type==='upper'?'exceeded':'fell below'} configured threshold of <strong>${a.thresh}</strong>.</div>
+      ${chCtx}
       <div class="alert-ch-tag">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
         Sent via ${a.notif}
@@ -2377,6 +2449,11 @@ function _ensureResponses(mid){
 
 function _getThresholdOptions(mid){
   const opts=[];
+  if(mid.startsWith('ch_')){
+    opts.push({key:'lower',label:'Lower — performance falls below minimum'});
+    opts.push({key:'upper',label:'Upper — performance exceeds maximum'});
+    return opts;
+  }
   if(['sessions','avgtime'].includes(mid)){
     opts.push({key:'upper',label:'Upper — exceeds maximum'});
     opts.push({key:'lower',label:'Lower — falls below minimum'});
@@ -2413,7 +2490,7 @@ function renderConfigTab(metricId){
   el.innerHTML=`<div class="cfg-subtabs">
     <div class="cfg-subtab ${sub==='thresholds'?'active':''}" onclick="switchConfigSubTab('thresholds','${metricId}')">Thresholds</div>
     <div class="cfg-subtab ${sub==='anomalies'?'active':''}" onclick="switchConfigSubTab('anomalies','${metricId}')">Anomalies</div>
-    <div class="cfg-subtab ${sub==='channels'?'active':''}" onclick="switchConfigSubTab('channels','${metricId}')">Channels</div>
+    <div class="cfg-subtab ${sub==='channels'?'active':''}" onclick="switchConfigSubTab('channels','${metricId}')">Response Options</div>
   </div><div id="cfgSubContent"></div>`;
   if(sub==='channels') renderChannelsCfg();
   else if(sub==='anomalies') renderAnomaliesCfg(metricId);
@@ -2427,6 +2504,7 @@ function switchConfigSubTab(sub,mid){
 
 // ═══ THRESHOLDS ═════════════════════════════════
 function _threshUnit(mid,key){
+  if(mid.startsWith('ch_')) return '%';
   if(['sessions'].includes(mid)) return 'sessions';
   if(mid==='avgtime') return 'min';
   if(mid==='nps') return key?.includes('promoter')?'%':'score';
@@ -3439,13 +3517,26 @@ function buildBobeeContext() {
   const sLbls  = T[CFG.lang]?.sent || T.es.sent;
   const sentStr= sLbls.map((l, i) => `${l}: ${sentiment[i].pct}%`).join(', ');
   const metStr = metrics.map(m => `${m[CFG.lang]||m.es}: ${m.total}`).join(' | ');
+  // Channel technical performance from BzzzBox
+  const chPerfStr = activeChannels.filter(c => c.on).map(c => {
+    const p = channelPerf[c.id]; if (!p) return null;
+    const def = CH_LIBRARY.find(x => x.id === c.id);
+    const cls = getChHealthClass(c.id);
+    const status = cls === 'ch-breach' ? 'DEGRADED' : cls ? 'WARNING' : 'HEALTHY';
+    return `${def?.name||c.id}: ${p.pct}% [${status}] latency:${p.latency}ms errors:${p.errorRate}% disconnects:${p.disconnects||0}`;
+  }).filter(Boolean).join(' | ');
+  const alertCount = alertLog.filter(a => a.type !== 'recovery').length;
+  const anomalyCount = ANOMALY_DATA.filter(a => a.status !== 'resolved').length;
   return `Industry: ${CFG.industry || 'not specified'}
 Activity type: ${CFG.activity || 'customer support'}
 Active sessions: ${ses}
 Average interaction time: ${avgTimeVal} min
 Channels: ${onChs}
 Sentiment: ${sentStr}
-Metrics: ${metStr}`;
+Metrics: ${metStr}
+Channel Technical Performance: ${chPerfStr || 'all healthy'}
+Active alerts: ${alertCount}
+Active anomalies: ${anomalyCount}`;
 }
 
 // Single API call that returns all three insights as JSON
@@ -3453,15 +3544,17 @@ async function loadBobeeInsights() {
   const ctx = buildBobeeContext();
   const prompt = `You are BOBee, the intelligence agent for BOb (Business Observer) by Boss.Technology.
 Analyze this live business interaction dashboard and generate three concise insights.
+Consider BOTH business metrics AND channel technical performance (from BzzzBox observability).
+If any channel shows DEGRADED or WARNING status, factor infrastructure health into your analysis — business metric changes may be driven by channel technical issues rather than operational causes.
 
 Dashboard snapshot:
 ${ctx}
 
 Return ONLY valid JSON — no markdown, no code fences, no explanation:
 {
-  "explanation": "1-2 sentences: what does the current data mean in plain language for this type of business?",
-  "recommendation": "1-2 sentences: what is the single most actionable thing to do right now based on this data?",
-  "prediction": "1-2 sentences: if current trends continue unchanged, where is this dashboard heading?"
+  "explanation": "1-2 sentences: what does the current data mean, connecting business metrics with channel technical health?",
+  "recommendation": "1-2 sentences: the single most actionable step right now, considering both business and infrastructure state?",
+  "prediction": "1-2 sentences: if current trends continue, where is this heading — include infrastructure risk if channels are degraded?"
 }`;
 
   try {
@@ -3974,24 +4067,139 @@ async function sendActBobeeChat(){
   }finally{btn.disabled=false;input?.focus();}
 }
 
+// ═══ CHANNEL TECHNICAL PERFORMANCE (BzzzBox) ═════
+// Simulates per-channel infrastructure health. In production, fed by BzzzBox observability.
+const channelPerf={};
+function initChannelPerf(){
+  activeChannels.forEach(c=>{
+    channelPerf[c.id]={pct:Math.floor(88+Math.random()*12),trend:'stable',latency:Math.floor(80+Math.random()*120),errorRate:+(Math.random()*1.5).toFixed(1),uptime:99.9,disconnects:0};
+    // Initialize metricCfg entry for channel performance threshold
+    const mid='ch_'+c.id;
+    if(!metricCfg[mid]) metricCfg[mid]={upper:null,lower:70,notifs:[],peak:false,msg:'',responses:[],peakMode:'off',peakWindows:[]};
+  });
+}
+function tickChannelPerf(){
+  activeChannels.forEach(c=>{
+    const p=channelPerf[c.id];if(!p)return;
+    // Occasional degradation event: ~3% chance per tick per channel
+    if(!p._degradeUntil&&Math.random()<0.03){
+      p._degradeUntil=Date.now()+8000+Math.random()*12000; // 8-20 seconds
+      p._degradeTarget=45+Math.random()*25; // drop to 45-70%
+    }
+    let target;
+    if(p._degradeUntil&&Date.now()<p._degradeUntil){
+      target=p._degradeTarget;
+    } else {
+      delete p._degradeUntil; delete p._degradeTarget;
+      target=92+Math.random()*6;
+    }
+    const drift=(target-p.pct)*0.12;
+    const noise=(Math.random()-0.5)*2*CFG.vol;
+    p.pct=Math.max(40,Math.min(100,Math.round(p.pct+drift+noise)));
+    p.latency=Math.max(20,Math.min(800,Math.round(p.latency+(p.pct<75?(Math.random()*30):(Math.random()-0.48)*15))));
+    p.errorRate=Math.max(0,+(p.errorRate+(p.pct<75?(Math.random()*0.5):(Math.random()-0.48)*0.3)).toFixed(1));
+    p.disconnects=p.pct<80?Math.floor(Math.random()*12+3):Math.floor(Math.random()*3);
+    p.trend=drift>0.5?'up':drift<-0.5?'down':'stable';
+    // Evaluate against threshold
+    const mid='ch_'+c.id;
+    const cfg=metricCfg[mid];if(!cfg)return;
+    const def=CH_LIBRARY.find(x=>x.id===c.id);
+    const mname=(def?.name||c.id)+' Performance';
+    const peakEnabled=cfg.peakMode==='manual'||(cfg.peakMode==='observed'&&isInPeakWindow());
+    evaluateBreach(mid,p.pct,cfg.upper,cfg.lower,null,null,mname,cfg,peakEnabled);
+  });
+}
+function getChHealthClass(chId){
+  const p=channelPerf[chId];if(!p)return '';
+  const mid='ch_'+chId;
+  const cfg=metricCfg[mid];if(!cfg)return '';
+  const lower=cfg.lower;if(lower===null||lower===undefined)return '';
+  if(p.pct<=lower) return 'ch-breach';
+  const proximity=(p.pct-lower)/lower;
+  if(proximity<=0.1) return 'ch-flash-fast';
+  if(proximity<=0.2) return 'ch-flash-slow';
+  return '';
+}
+
+// Channel performance context for notification enrichment
+function getChannelPerfContext(){
+  const lines=[];
+  activeChannels.forEach(c=>{
+    const p=channelPerf[c.id];if(!p)return;
+    const def=CH_LIBRARY.find(x=>x.id===c.id);
+    const cls=getChHealthClass(c.id);
+    const status=cls==='ch-breach'?'DEGRADED':cls?'WARNING':'OK';
+    lines.push(`${def?.name||c.id}: ${p.pct}% [${status}] latency:${p.latency}ms err:${p.errorRate}%`);
+  });
+  return lines.join('\n');
+}
+function getChannelPerfForMetric(metricId){
+  const degraded=activeChannels.filter(c=>{const cls=getChHealthClass(c.id);return cls==='ch-breach'||cls==='ch-flash-fast';});
+  if(!degraded.length) return '';
+  return degraded.map(c=>{const p=channelPerf[c.id];return `${p.pct}% · latency: ${p.latency}ms · errors: ${p.errorRate}%`;}).join(' | ');
+}
+
+// Open Actionables for a specific channel's technical performance
+function openChannelActionables(chId){
+  const def=CH_LIBRARY.find(x=>x.id===chId);
+  const p=channelPerf[chId]||{pct:100};
+  openActionables('ch_'+chId,(def?.name||chId)+' Performance',p.pct+'%');
+}
+
+// Render channel-specific Activity tab
+function renderChannelActivity(chId){
+  const el=document.getElementById('actContent-activity');if(!el)return;
+  const p=channelPerf[chId];if(!p)return;
+  const def=CH_LIBRARY.find(x=>x.id===chId);
+  const ch=activeChannels.find(c=>c.id===chId);
+  const cls=getChHealthClass(chId);
+  const statusLabel=cls==='ch-breach'?'<span style="color:var(--red);font-weight:700">DEGRADED</span>':cls==='ch-flash-fast'?'<span style="color:#C4A265;font-weight:700">WARNING</span>':'<span style="color:var(--green);font-weight:700">HEALTHY</span>';
+  el.innerHTML=`
+    <div class="act-section-hd" style="margin-top:4px">Technical Health</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0">
+      <div style="background:var(--gray-bg);padding:10px;border-radius:8px;text-align:center">
+        <div style="font-size:28px;font-weight:800;color:${cls==='ch-breach'?'var(--red)':'var(--black)'}">${p.pct}%</div>
+        <div style="font-size:9px;color:var(--gray-mid);margin-top:2px">Overall Performance</div>
+      </div>
+      <div style="background:var(--gray-bg);padding:10px;border-radius:8px;text-align:center">
+        <div style="font-size:14px;font-weight:700;margin-top:6px">${statusLabel}</div>
+        <div style="font-size:9px;color:var(--gray-mid);margin-top:2px">Channel Status</div>
+      </div>
+    </div>
+    <div class="act-section-hd" style="margin-top:12px">Infrastructure Metrics</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:8px 0">
+      <div style="background:var(--gray-bg);padding:8px;border-radius:6px;text-align:center">
+        <div style="font-size:16px;font-weight:700;color:${p.latency>300?'var(--red)':'var(--black)'}">${p.latency}ms</div>
+        <div style="font-size:8px;color:var(--gray-mid)">Latency</div>
+      </div>
+      <div style="background:var(--gray-bg);padding:8px;border-radius:6px;text-align:center">
+        <div style="font-size:16px;font-weight:700;color:${p.errorRate>2?'var(--red)':'var(--black)'}">${p.errorRate}%</div>
+        <div style="font-size:8px;color:var(--gray-mid)">Error Rate</div>
+      </div>
+      <div style="background:var(--gray-bg);padding:8px;border-radius:6px;text-align:center">
+        <div style="font-size:16px;font-weight:700">${p.uptime}%</div>
+        <div style="font-size:8px;color:var(--gray-mid)">Uptime</div>
+      </div>
+    </div>
+    <div class="act-section-hd" style="margin-top:12px">Business Impact</div>
+    <div style="font-size:11px;color:var(--gray-dark);line-height:1.5;padding:4px 0">
+      ${ch?`<strong>${formatNum(ch.live)}</strong> active interactions on this channel.`:''}
+      ${p.disconnects?`<br><strong style="color:${p.disconnects>5?'var(--red)':'var(--black)'}">${p.disconnects}</strong> disconnections detected this period.`:''}
+      ${cls==='ch-breach'?'<br><span style="color:var(--red)">⚠ Channel degradation may be affecting abandonment and escalation rates.</span>':''}
+      ${cls==='ch-flash-fast'?'<br><span style="color:#C4A265">Channel performance approaching threshold — monitor closely.</span>':''}
+    </div>
+    <div style="margin-top:10px;padding:8px 11px;background:var(--gray-bg);border-radius:7px;border:1px solid var(--gray-border);font-size:11px;color:var(--gray-dark)">
+      <strong>Trend:</strong> ${p.trend==='up'?'↑ Improving':p.trend==='down'?'↓ Declining':'→ Stable'}
+    </div>`;
+}
+
 // ═══ ANOMALIES ════════════════════════════════════
 
 const ANOMALY_DATA=[
-  // ── Anomalies (statistical deviations from baseline) ──
   {type:'anomaly',sev:'warning', metric:'sessions',title:'Session volume deviation',    desc:'Volume 2.3σ above 7-day baseline during off-peak window. Possible viral campaign or external referral spike.',time:'14:23',status:'active'},
   {type:'anomaly',sev:'critical',metric:'aba',     title:'Abandonment rate spike',      desc:'Abandonment rate exceeds predicted upper bound by 3.1σ. WhatsApp channel most affected.',                        time:'14:31',status:'active'},
   {type:'anomaly',sev:'warning', metric:'avgtime', title:'Response time drift',         desc:'Avg response time tracking 1.8σ above seasonal baseline. AI agent resolution times normal — human agent lag.',   time:'13:55',status:'active'},
   {type:'anomaly',sev:'info',    metric:'sentiment',title:'Positive sentiment surge',   desc:'Happy + Content sentiment 1.4σ above baseline — correlates with recent product update rollout.',                  time:'13:10',status:'resolved'},
-
-  // ── Incidents (critical events requiring action) ──
-  {type:'incident',sev:'critical',metric:'alu',   title:'Hallucination rate critical',  desc:'AI hallucination rate crossed critical threshold on WhatsApp channel. Likely caused by out-of-scope product queries.',time:'14:15',status:'open'},
-  {type:'incident',sev:'warning', metric:'der',   title:'Escalation cluster detected',  desc:'Unusual escalation pattern on Voice channel — 4 escalations in 12 min. Possible IVR routing issue.',            time:'13:48',status:'open'},
-  {type:'incident',sev:'critical',metric:'aba',   title:'Abandonment cascade — Forms',  desc:'Web Forms channel abandonment reached 78% in last 15 min. Possible form rendering issue on mobile.',             time:'14:38',status:'investigating'},
-
-  // ── Issues (grouped / root-cause aggregated) ──
-  {type:'issue',sev:'warning', metric:'des',  title:'Disambiguation loop pattern',      desc:'3 related disambiguation anomalies on BOT channel in 2 hours — probable intent coverage gap in NLU model.',      time:'13:20',status:'investigating'},
-  {type:'issue',sev:'critical',metric:'aba',  title:'Multi-channel abandonment pattern',desc:'2 incidents (WhatsApp + Voice) grouped — root cause identified: upstream CRM latency >4s causing timeouts.',     time:'12:55',status:'escalated'},
-  {type:'issue',sev:'warning', metric:'avgtime',title:'Peak-hour response degradation', desc:'Response time incidents on Voice and Forms correlated with peak load 09:00–11:00. Recurring 3 days.',            time:'12:10',status:'open'},
 ];
 
 function renderAnomaliesTab(metricId){
@@ -4005,20 +4213,10 @@ function renderAnomaliesTab(metricId){
     if(filtered.length) data=filtered;
   }
 
-  const byType={
-    anomaly: data.filter(a=>a.type==='anomaly'),
-    incident:data.filter(a=>a.type==='incident'),
-    issue:   data.filter(a=>a.type==='issue'),
-  };
+  const statusColors={active:'var(--accent)',open:'var(--red)',investigating:'#C4A265',resolved:'var(--green)'};
+  const statusLabel={active:'Active',open:'Open',investigating:'Investigating',resolved:'Resolved'};
 
-  const statusColors={active:'var(--accent)',open:'var(--red)',investigating:'#C4A265',escalated:'var(--red)',resolved:'var(--green)'};
-  const statusLabel={active:'Active',open:'Open',investigating:'Investigating',escalated:'Escalated',resolved:'Resolved'};
-
-  function group(items,label,icon){
-    const count=items.length;
-    const hd=`<div class="act-section-hd" style="margin-top:10px">${icon}&nbsp;${label}<span style="color:var(--gray-mid);font-size:10px;font-weight:700;margin-left:6px">${count}</span></div>`;
-    if(!count) return hd+`<div style="font-size:11px;color:var(--gray-light);padding:6px 0 4px">No ${label.toLowerCase()} for this metric.</div>`;
-    return hd+items.map(a=>`
+  const cards=data.length?data.map(a=>`
       <div class="anomaly-item sev-${a.sev}">
         <div class="anomaly-item-head">
           <span class="anomaly-dot sev-${a.sev}"></span>
@@ -4030,16 +4228,9 @@ function renderAnomaliesTab(metricId){
           <span class="anomaly-status" style="color:${statusColors[a.status]||'var(--gray-mid)'}">${statusLabel[a.status]||a.status}</span>
           <span class="anomaly-metric">${a.metric.toUpperCase()}</span>
         </div>
-      </div>`).join('');
-  }
+      </div>`).join(''):'<div style="font-size:11px;color:var(--gray-light);padding:6px 0 4px">No anomalies detected.</div>';
 
-  el.innerHTML=`
-    <div style="font-size:11px;color:var(--gray-mid);padding:2px 0 6px">
-      ${data.length} signal${data.length!==1?'s':''} detected${metricId?' for this metric':' across all metrics'}
-    </div>
-    ${group(byType.anomaly,'Anomalies','〜')}
-    ${group(byType.incident,'Incidents','⚡')}
-    ${group(byType.issue,'Issues','⊕')}`;
+  el.innerHTML=cards;
 }
 
 function updateAnomaliesBadge(){
@@ -4093,6 +4284,7 @@ function tick(){
     for(let i=0;i<5;i++){const el=document.getElementById(`faq-n-${i}`);if(el)el.textContent=formatNum(jitter(parseInt(el.textContent)||DEFAULT_COUNTS[i]||10,CFG.vol));}
     tickDynLists();
     tickWords();
+    tickChannelPerf();
     checkThresholds();
     checkKeywordRules();
   } else {
@@ -4146,7 +4338,8 @@ function logAlert(id,mname,type,val,thresh,cfg,sev){
   const notif=cfg.notifs?.length
     ? cfg.notifs[0].charAt(0).toUpperCase()+cfg.notifs[0].slice(1)
     : 'Email';
-  alertLog.unshift({id:alertIdCtr++,mid:id.split('-')[0],mname,type,val,thresh,time:ts,sev,notif});
+  const chPerfCtx=getChannelPerfForMetric(id.split('-')[0]);
+  alertLog.unshift({id:alertIdCtr++,mid:id.split('-')[0],mname,type,val,thresh,time:ts,sev,notif,chPerf:chPerfCtx||null});
   breachCooldown[id]=Date.now();
   // Track breach frequency for reactive anomalies
   const baseId=id.split('-')[0];
@@ -4393,20 +4586,11 @@ function checkReactiveAnomaly(metricId,mname){
   const now=new Date();
   const ts=`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
   ANOMALY_DATA.unshift({
-    type:'anomaly',sev:'warning',metric:metricId,
+    type:'anomaly',sev:recent.length>=5?'critical':'warning',metric:metricId,
     title:`${mname} — repeated threshold breach`,
     desc:`${mname} has breached its configured threshold ${recent.length} times in the last 5 minutes, suggesting a systematic issue rather than transient fluctuation. Investigate underlying cause.`,
     time:ts,status:'active',_generated:true,_generatedAt:Date.now()
   });
-  // If 5+ breaches, escalate to incident
-  if(recent.length>=5){
-    ANOMALY_DATA.unshift({
-      type:'incident',sev:'critical',metric:metricId,
-      title:`${mname} — persistent breach incident`,
-      desc:`${mname} has triggered ${recent.length} threshold breaches in a 5-minute window. This pattern indicates a persistent issue requiring immediate attention.`,
-      time:ts,status:'open',_generated:true,_generatedAt:Date.now()
-    });
-  }
   updateAnomaliesBadge();
 }
 
@@ -4450,17 +4634,35 @@ function filterAnomalyModal(filter){
   }
   let items=[];
   if(filter==='resolved') items=ANOMALY_DATA.filter(a=>a.status==='resolved');
-  else items=ANOMALY_DATA.filter(a=>a.type===filter);
+  else if(filter==='anomaly') items=ANOMALY_DATA.filter(a=>a.status!=='resolved');
+  else items=ANOMALY_DATA;
   if(!items.length){el.innerHTML='<div style="font-size:11px;color:var(--gray-light);padding:6px 0">No items.</div>';return;}
   el.innerHTML=items.map(a=>`<div class="urgent-item" style="padding:8px 10px;margin-bottom:4px"><div class="urgent-item-head"><span class="urgent-badge ${a.sev}">${(a.sev||'').toUpperCase()}</span><span class="urgent-title">${a.title}</span><span class="urgent-time">${a.time}</span></div><div class="urgent-desc" style="font-size:10px">${a.desc}</div></div>`).join('');
 }
+// Shared channel technical performance section for intelligence modals — only shows degraded/warning channels
+function buildChPerfSection(){
+  const affected=activeChannels.filter(c=>{const cls=getChHealthClass(c.id);return cls==='ch-breach'||cls==='ch-flash-fast'||cls==='ch-flash-slow';});
+  if(!affected.length) return '';
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px">
+    ${affected.map(c=>{
+      const p=channelPerf[c.id];if(!p)return '';
+      const def=CH_LIBRARY.find(x=>x.id===c.id);
+      const cls=getChHealthClass(c.id);
+      const color=cls==='ch-breach'?'var(--red)':'#C4A265';
+      const label=cls==='ch-breach'?'DEGRADED':'WARNING';
+      return `<div style="padding:8px;border:1px solid var(--gray-border);border-radius:6px;text-align:center">
+        <div style="font-size:14px;font-weight:800;color:${color}">${p.pct}%</div>
+        <div style="font-size:8px;color:var(--gray-mid)">${def?.name||c.id}</div>
+        <div style="font-size:7px;font-weight:700;color:${color};margin-top:2px">${label}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
 function renderAnomaliesModal(){
-  const byType={
-    anomaly:ANOMALY_DATA.filter(a=>a.type==='anomaly'),
-    incident:ANOMALY_DATA.filter(a=>a.type==='incident'),
-    issue:ANOMALY_DATA.filter(a=>a.type==='issue'),
-  };
-  const urgent=[...ANOMALY_DATA].filter(a=>a.status!=='resolved')
+  const active=ANOMALY_DATA.filter(a=>a.status!=='resolved');
+  const resolved=ANOMALY_DATA.filter(a=>a.status==='resolved');
+  const urgent=[...active]
     .sort((a,b)=>(a.sev==='critical'?0:1)-(b.sev==='critical'?0:1)).slice(0,3);
 
   const anomRespCount=Object.keys(metricCfg).reduce((s,m)=>{
@@ -4471,28 +4673,37 @@ function renderAnomaliesModal(){
   },0);
 
   const summary=`<div class="glob-summary">
-    <div class="glob-pill" style="border-color:var(--accent)" onclick="filterAnomalyModal('anomaly')"><span class="glob-pill-count" style="color:var(--black)">${byType.anomaly.length}</span><span class="glob-pill-label">Anomalies</span></div>
-    <div class="glob-pill" style="border-color:var(--red)" onclick="filterAnomalyModal('incident')"><span class="glob-pill-count" style="color:var(--red)">${byType.incident.length}</span><span class="glob-pill-label">Incidents</span></div>
-    <div class="glob-pill" style="border-color:#C4A265" onclick="filterAnomalyModal('issue')"><span class="glob-pill-count" style="color:#A68B52">${byType.issue.length}</span><span class="glob-pill-label">Issues</span></div>
-    <div class="glob-pill" onclick="filterAnomalyModal('resolved')"><span class="glob-pill-count" style="color:var(--green)">${ANOMALY_DATA.filter(a=>a.status==='resolved').length}</span><span class="glob-pill-label">Resolved</span></div>
+    <div class="glob-pill" style="border-color:var(--accent)" onclick="filterAnomalyModal('anomaly')"><span class="glob-pill-count" style="color:var(--black)">${active.length}</span><span class="glob-pill-label">Active</span></div>
+    <div class="glob-pill" onclick="filterAnomalyModal('resolved')"><span class="glob-pill-count" style="color:var(--green)">${resolved.length}</span><span class="glob-pill-label">Resolved</span></div>
     <div class="glob-pill" style="border-color:var(--accent)" onclick="filterAnomalyModal('responses')"><span class="glob-pill-count" style="color:var(--accent)">${anomRespCount}</span><span class="glob-pill-label">Responses</span></div>
   </div>
   <div id="anomalyPillDetail" style="margin-top:8px"></div>`;
 
   const urgentHtml=urgent.map(a=>`<div class="urgent-item">
     <div class="urgent-item-head">
-      <span class="urgent-badge ${a.sev}">${a.sev.toUpperCase()} &middot; ${a.type.toUpperCase()}</span>
+      <span class="urgent-badge ${a.sev}">${a.sev.toUpperCase()}</span>
       <span class="urgent-title">${a.title}</span>
       <span class="urgent-time">${a.time}</span>
     </div>
     <div class="urgent-desc">${a.desc}</div>
   </div>`).join('');
 
-  const patterns=[
-    {icon:'🔄',title:'Recurring abandonment spike',detail:'Abandonment anomaly detected 3&times; this week, consistently between 14:00–15:30, always on WhatsApp channel. 87% pattern confidence.',tag:'Time-based pattern'},
-    {icon:'⛓',title:'Hallucination → Escalation chain',detail:'AI hallucination incidents are followed by an escalation within 8 min in 73% of cases — customer frustration at incorrect AI responses.',tag:'Causal chain'},
-    {icon:'📡',title:'WhatsApp &amp; Forms co-occurrence',detail:'Abandonment anomalies on WhatsApp and Forms co-occur in 4 of last 5 incidents — suggesting a shared upstream dependency.',tag:'Co-occurrence'},
-  ];
+  // Dynamic patterns based on current state
+  const degradedChs=activeChannels.filter(c=>getChHealthClass(c.id)==='ch-breach');
+  const warningChs=activeChannels.filter(c=>getChHealthClass(c.id)==='ch-flash-fast'||getChHealthClass(c.id)==='ch-flash-slow');
+  const patterns=[];
+  if(degradedChs.length){
+    const names=degradedChs.map(c=>{const d=CH_LIBRARY.find(x=>x.id===c.id);return d?.name||c.id;}).join(' & ');
+    const perfs=degradedChs.map(c=>channelPerf[c.id]?.pct+'%').join(', ');
+    patterns.push({icon:'📡',title:`Channel degradation — ${names}`,detail:`Technical performance at ${perfs}. Channel instability correlates with elevated abandonment and escalation rates across affected channels.`,tag:'Infrastructure'});
+  }
+  if(active.filter(a=>a.metric==='aba').length)
+    patterns.push({icon:'🔄',title:'Recurring abandonment anomaly',detail:'Abandonment deviations detected multiple times — consistent pattern suggests systemic cause rather than transient spike.',tag:'Time-based pattern'});
+  if(active.filter(a=>a.metric==='alu').length&&active.filter(a=>a.metric==='der').length)
+    patterns.push({icon:'⛓',title:'Hallucination → Escalation chain',detail:'AI hallucination anomalies are followed by escalation increases — customer frustration at incorrect AI responses driving human handoff.',tag:'Causal chain'});
+  if(!patterns.length)
+    patterns.push({icon:'✓',title:'No significant patterns',detail:'Current anomalies appear isolated. Continue monitoring for emerging correlations.',tag:'Status'});
+
   const patternsHtml=patterns.map(p=>`<div class="pattern-item">
     <div class="pattern-icon">${p.icon}</div>
     <div class="pattern-content">
@@ -4502,20 +4713,34 @@ function renderAnomaliesModal(){
     </div>
   </div>`).join('');
 
+  // Dynamic root cause
+  let rootText,rootChain;
+  if(degradedChs.length){
+    const chName=CH_LIBRARY.find(x=>x.id===degradedChs[0].id)?.name||degradedChs[0].id;
+    rootText=`${chName} channel infrastructure degradation (performance at ${channelPerf[degradedChs[0].id]?.pct}%) is causing interaction timeouts, driving abandonment spikes and triggering escalations to human agents.`;
+    rootChain=`<span class="rcc-step">Channel degradation</span><span class="rcc-arrow">→</span>
+      <span class="rcc-step">Increased latency</span><span class="rcc-arrow">→</span>
+      <span class="rcc-step">Customer abandonment</span><span class="rcc-arrow">→</span>
+      <span class="rcc-step">Escalation surge</span>`;
+  } else {
+    rootText='No critical infrastructure issues detected. Business metric anomalies appear operationally driven — review staffing levels and AI model coverage for affected metrics.';
+    rootChain=`<span class="rcc-step">Operational variance</span><span class="rcc-arrow">→</span>
+      <span class="rcc-step">Metric deviation</span><span class="rcc-arrow">→</span>
+      <span class="rcc-step">Monitor &amp; assess</span>`;
+  }
   const rootHtml=`<div class="root-cause-box">
     <div class="root-cause-label">Most Probable Root Cause</div>
-    <div class="root-cause-text">Upstream CRM service latency (&gt;4s response time) is causing timeout cascades across WhatsApp and Forms channels, resulting in abandonment spikes and triggering escalations to human agents.</div>
-    <div class="root-cause-chain">
-      <span class="rcc-step">CRM Latency &gt;4s</span><span class="rcc-arrow">→</span>
-      <span class="rcc-step">Channel timeout</span><span class="rcc-arrow">→</span>
-      <span class="rcc-step">Abandonment spike</span><span class="rcc-arrow">→</span>
-      <span class="rcc-step">Escalation surge</span>
-    </div>
+    <div class="root-cause-text">${rootText}</div>
+    <div class="root-cause-chain">${rootChain}</div>
   </div>`;
+
+  // Channel Technical Performance section
+  const chPerfHtml=buildChPerfSection();
 
   document.getElementById('anomaliesModalBody').innerHTML=`
     <div class="glob-modal-section"><div class="glob-section-title">Summary</div>${summary}</div>
-    <div class="glob-modal-section"><div class="glob-section-title">Most Urgent</div>${urgentHtml}</div>
+    ${chPerfHtml?'<div class="glob-modal-section"><div class="glob-section-title">Channel Technical Performance</div>'+chPerfHtml+'</div>':''}
+    <div class="glob-modal-section"><div class="glob-section-title">Most Urgent</div>${urgentHtml||'<div style="font-size:11px;color:var(--gray-light)">No active anomalies.</div>'}</div>
     <div class="glob-modal-section"><div class="glob-section-title">Pattern Recognition</div>${patternsHtml}</div>
     <div class="glob-modal-section"><div class="glob-section-title">Root Cause Analysis</div>${rootHtml}</div>`;
 }
@@ -4571,10 +4796,11 @@ function renderAlertsModal(){
     <div class="glob-pill" style="border-color:#C4A265" onclick="filterAlertModal('warning')"><span class="glob-pill-count" style="color:#A68B52">${warning.length}</span><span class="glob-pill-label">Warning</span></div>
     ${keywordAlerts.length?`<div class="glob-pill" style="border-color:var(--accent)" onclick="filterAlertModal('keyword')"><span class="glob-pill-count" style="color:var(--black)">${keywordAlerts.length}</span><span class="glob-pill-label">Keyword</span></div>`:''}
     <div class="glob-pill" style="border-color:var(--green)" onclick="filterAlertModal('recovered')"><span class="glob-pill-count" style="color:var(--green)">${recoveries.length}</span><span class="glob-pill-label">Recovered</span></div>
-    <div class="glob-pill" onclick="filterAlertModal('all')"><span class="glob-pill-count">${breachAlerts.length}</span><span class="glob-pill-label">Total</span></div>
     <div class="glob-pill" style="border-color:var(--accent)" onclick="filterAlertModal('responses')"><span class="glob-pill-count" style="color:var(--accent)">${respCount}</span><span class="glob-pill-label">Responses</span></div>
   </div>
   <div id="alertPillDetail" style="margin-top:8px"></div>`;
+
+  const chPerfHtml=buildChPerfSection();
 
   const urgentHtml=urgent.length?urgent.map(a=>{
     if(a.type==='keyword'){
@@ -4627,6 +4853,7 @@ function renderAlertsModal(){
 
   document.getElementById('alertsModalBody').innerHTML=`
     <div class="glob-modal-section"><div class="glob-section-title">Summary</div>${summary}</div>
+    ${chPerfHtml?'<div class="glob-modal-section"><div class="glob-section-title">Channel Technical Performance</div>'+chPerfHtml+'</div>':''}
     <div class="glob-modal-section"><div class="glob-section-title">Most Urgent</div>${urgentHtml}</div>
     <div class="glob-modal-section"><div class="glob-section-title">Pattern Recognition</div>${patternsHtml}</div>
     <div class="glob-modal-section"><div class="glob-section-title">Root Cause Analysis</div>${rootHtml}</div>
@@ -4667,43 +4894,76 @@ function filterGenericModal(containerId,filter,type){
 }
 function renderAlarmsModal(){
   const el=document.getElementById('alarmsModalBody');if(!el)return;
-  const n=Object.keys(metricCfg).reduce((s,m)=>(metricCfg[m]?.responses||[]).filter(r=>r.type==='alarm').length+s,0);
+  const allAlarms=[];
+  Object.keys(metricCfg).forEach(m=>{(metricCfg[m]?.responses||[]).filter(r=>r.type==='alarm').forEach(r=>allAlarms.push({metric:m,resp:r}));});
+  const triggered=alertLog.filter(a=>a.type!=='recovery');
+  const triggeredCount=allAlarms.length?Math.min(triggered.length,allAlarms.length*2):0;
+  const urgentItems=triggered.slice(0,3);
+
+  const urgentHtml=urgentItems.length?urgentItems.map(a=>`<div class="urgent-item">
+    <div class="urgent-item-head">
+      <span class="urgent-badge ${a.sev}">${(a.sev||'').toUpperCase()}</span>
+      <span class="urgent-title">${a.mname} — Broadcast</span>
+      <span class="urgent-time">${a.time}</span>
+    </div>
+    <div class="urgent-desc">Value ${a.val} ${a.type==='upper'?'exceeded':'fell below'} threshold ${a.thresh}. Company-wide alarm dispatched.</div>
+  </div>`).join(''):'<div style="font-size:11px;color:var(--gray-light);padding:6px 0">No alarms triggered this session.</div>';
+
+  // Channel health context for patterns
+  const degraded=activeChannels.filter(c=>getChHealthClass(c.id)==='ch-breach');
+  const patternHtml=degraded.length?`<div class="pattern-item"><div class="pattern-icon">📡</div><div class="pattern-content"><div class="pattern-title">Infrastructure-driven broadcast risk</div><div class="pattern-detail">${degraded.length} channel${degraded.length>1?'s':''} currently degraded. Alarm broadcasts may correlate with channel technical issues rather than operational failures.</div><span class="pattern-tag">Infrastructure</span></div></div>`
+    :`<div class="pattern-item"><div class="pattern-icon">📡</div><div class="pattern-content"><div class="pattern-title">Broadcast readiness</div><div class="pattern-detail">${allAlarms.length} alarm${allAlarms.length!==1?'s':''} configured across ${new Set(allAlarms.map(a=>a.metric)).size} metric${new Set(allAlarms.map(a=>a.metric)).size!==1?'s':''}. All channels healthy.</div><span class="pattern-tag">Status</span></div></div>`;
+
   el.innerHTML=`
     <div class="glob-modal-section"><div class="glob-section-title">Summary</div>
       <div class="glob-summary">
-        <div class="glob-pill" onclick="filterGenericModal('alarmsDetail','configured','alarm')"><span class="glob-pill-count">${n}</span><span class="glob-pill-label">Configured</span></div>
-        <div class="glob-pill" style="border-color:var(--green)" onclick="filterGenericModal('alarmsDetail','triggered','alarm')"><span class="glob-pill-count" style="color:var(--green)">0</span><span class="glob-pill-label">Triggered</span></div>
-        <div class="glob-pill" style="border-color:var(--accent)" onclick="filterGenericModal('alarmsDetail','responses','alarm')"><span class="glob-pill-count" style="color:var(--accent)">${n}</span><span class="glob-pill-label">Responses</span></div>
+        <div class="glob-pill" onclick="filterGenericModal('alarmsDetail','configured','alarm')"><span class="glob-pill-count">${allAlarms.length}</span><span class="glob-pill-label">Configured</span></div>
+        <div class="glob-pill" style="border-color:${triggeredCount?'var(--red)':'var(--green)'}" onclick="filterGenericModal('alarmsDetail','triggered','alarm')"><span class="glob-pill-count" style="color:${triggeredCount?'var(--red)':'var(--green)'}">${triggeredCount}</span><span class="glob-pill-label">Triggered</span></div>
+        <div class="glob-pill" style="border-color:var(--accent)" onclick="filterGenericModal('alarmsDetail','responses','alarm')"><span class="glob-pill-count" style="color:var(--accent)">${allAlarms.length}</span><span class="glob-pill-label">Responses</span></div>
       </div>
       <div id="alarmsDetail" style="margin-top:8px"></div>
     </div>
-    <div class="glob-modal-section"><div class="glob-section-title">Most Urgent</div>
-      <div style="font-size:12px;color:var(--gray-light);padding:8px 0">No alarms triggered this session.</div>
-    </div>
-    <div class="glob-modal-section"><div class="glob-section-title">Pattern Recognition</div>
-      <div class="pattern-item"><div class="pattern-icon">\ud83d\udce1</div><div class="pattern-content"><div class="pattern-title">Broadcast readiness</div><div class="pattern-detail">${n} alarm${n!==1?'s':''} configured. Will broadcast when thresholds fire.</div><span class="pattern-tag">Status</span></div></div>
-    </div>`;
+    <div class="glob-modal-section"><div class="glob-section-title">Most Urgent</div>${urgentHtml}</div>
+    <div class="glob-modal-section"><div class="glob-section-title">Pattern Recognition</div>${patternHtml}</div>`;
+  const chPerfAlarms=buildChPerfSection();
+  if(chPerfAlarms) el.innerHTML+=`<div class="glob-modal-section"><div class="glob-section-title">Channel Technical Performance</div>${chPerfAlarms}</div>`;
 }
 
 function openActionsModal(){document.getElementById('actionsBg').classList.add('open');renderActionsModal();}
 function renderActionsModal(){
   const el=document.getElementById('actionsModalBody');if(!el)return;
-  const n=Object.keys(metricCfg).reduce((s,m)=>(metricCfg[m]?.responses||[]).filter(r=>r.type==='action').length+s,0);
+  const allActions=[];
+  Object.keys(metricCfg).forEach(m=>{(metricCfg[m]?.responses||[]).filter(r=>r.type==='action').forEach(r=>allActions.push({metric:m,resp:r}));});
+  const triggered=alertLog.filter(a=>a.type!=='recovery');
+  const executedCount=allActions.length?Math.min(triggered.length,allActions.length*2):0;
+  const urgentItems=triggered.filter(a=>allActions.some(ac=>ac.metric===a.mid)).slice(0,3);
+
+  const urgentHtml=urgentItems.length?urgentItems.map(a=>`<div class="urgent-item">
+    <div class="urgent-item-head">
+      <span class="urgent-badge ${a.sev}">${(a.sev||'').toUpperCase()}</span>
+      <span class="urgent-title">${a.mname} — Webhook</span>
+      <span class="urgent-time">${a.time}</span>
+    </div>
+    <div class="urgent-desc">Threshold breach triggered programmatic action. Value ${a.val} vs threshold ${a.thresh}.</div>
+  </div>`).join(''):'<div style="font-size:11px;color:var(--gray-light);padding:6px 0">No actions executed this session.</div>';
+
+  const degraded=activeChannels.filter(c=>getChHealthClass(c.id)==='ch-breach');
+  const patternHtml=degraded.length?`<div class="pattern-item"><div class="pattern-icon">📡</div><div class="pattern-content"><div class="pattern-title">Infrastructure-triggered automations</div><div class="pattern-detail">Channel degradation detected. Webhook actions may be firing due to infrastructure issues — verify upstream before escalating operational response.</div><span class="pattern-tag">Infrastructure</span></div></div>`
+    :`<div class="pattern-item"><div class="pattern-icon">⚙</div><div class="pattern-content"><div class="pattern-title">Automation status</div><div class="pattern-detail">${allActions.length} webhook${allActions.length!==1?'s':''} configured across ${new Set(allActions.map(a=>a.metric)).size} metric${new Set(allActions.map(a=>a.metric)).size!==1?'s':''}. Execute on threshold breach.</div><span class="pattern-tag">Status</span></div></div>`;
+
   el.innerHTML=`
     <div class="glob-modal-section"><div class="glob-section-title">Summary</div>
       <div class="glob-summary">
-        <div class="glob-pill" onclick="filterGenericModal('actionsDetail','configured','action')"><span class="glob-pill-count">${n}</span><span class="glob-pill-label">Configured</span></div>
-        <div class="glob-pill" style="border-color:var(--green)" onclick="filterGenericModal('actionsDetail','executed','action')"><span class="glob-pill-count" style="color:var(--green)">0</span><span class="glob-pill-label">Executed</span></div>
-        <div class="glob-pill" style="border-color:var(--accent)" onclick="filterGenericModal('actionsDetail','responses','action')"><span class="glob-pill-count" style="color:var(--accent)">${n}</span><span class="glob-pill-label">Responses</span></div>
+        <div class="glob-pill" onclick="filterGenericModal('actionsDetail','configured','action')"><span class="glob-pill-count">${allActions.length}</span><span class="glob-pill-label">Configured</span></div>
+        <div class="glob-pill" style="border-color:${executedCount?'var(--red)':'var(--green)'}" onclick="filterGenericModal('actionsDetail','executed','action')"><span class="glob-pill-count" style="color:${executedCount?'var(--red)':'var(--green)'}">${executedCount}</span><span class="glob-pill-label">Executed</span></div>
+        <div class="glob-pill" style="border-color:var(--accent)" onclick="filterGenericModal('actionsDetail','responses','action')"><span class="glob-pill-count" style="color:var(--accent)">${allActions.length}</span><span class="glob-pill-label">Responses</span></div>
       </div>
       <div id="actionsDetail" style="margin-top:8px"></div>
     </div>
-    <div class="glob-modal-section"><div class="glob-section-title">Most Urgent</div>
-      <div style="font-size:12px;color:var(--gray-light);padding:8px 0">No actions triggered this session.</div>
-    </div>
-    <div class="glob-modal-section"><div class="glob-section-title">Pattern Recognition</div>
-      <div class="pattern-item"><div class="pattern-icon">\u2699</div><div class="pattern-content"><div class="pattern-title">Automation status</div><div class="pattern-detail">${n} programmatic action${n!==1?'s':''} configured. Webhooks execute on threshold breach.</div><span class="pattern-tag">Status</span></div></div>
-    </div>`;
+    <div class="glob-modal-section"><div class="glob-section-title">Most Urgent</div>${urgentHtml}</div>
+    <div class="glob-modal-section"><div class="glob-section-title">Pattern Recognition</div>${patternHtml}</div>`;
+  const chPerfActions=buildChPerfSection();
+  if(chPerfActions) el.innerHTML+=`<div class="glob-modal-section"><div class="glob-section-title">Channel Technical Performance</div>${chPerfActions}</div>`;
 }
 
 
@@ -5064,6 +5324,7 @@ function init(){
     {type:'alarm',name:'Abandonment Alarm',channels:['nc1'],subject:'Abandonment spike',message:'Abandonment rate critical',_open:false},
   ];
 
+  initChannelPerf();
   restartSim();
   updateAlertsBadge();
   updateAnomaliesBadge();

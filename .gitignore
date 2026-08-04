@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Reference material downloaded from Drive (bulky zips + duplicates).
+# The authoritative change spec is kept under Documentation/New/*.docx
+Documentation/*
+!Documentation/New/
+Documentation/New/*
+!Documentation/New/*.docx
