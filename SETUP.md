@@ -125,8 +125,12 @@ npm run dev      # http://localhost:3000  → redirige a /dashboard.html
    con la **org demo sembrada**. Para datos reales, conecta tu observabilidad/canales a
    `POST /api/interactions/batch` (cabecera `x-internal-api-key`). Esa decisión sigue TBD.
 
-2. **Cron de 30 s.** El §7.1 pide refrescos cada 30 s, pero **Vercel Cron tiene mínimo
-   1 min** — `vercel.json` usa `*/1`. Si necesitas 30 s, hace falta un scheduler externo
+2. **Cadencia de los cron.** El §7.1 pide refrescos cada 30 s. **Vercel Cron tiene
+   mínimo 1 min**, y los cuatro jobs de refresco (`metric-refresh`,
+   `sentiment-aggregation`, `alert-evaluation`, `anomaly-detection`) corren cada
+   **5 min** por coste: ninguno depende de la cadencia — leen el último estado y
+   evalúan—, así que la única consecuencia es que una alerta puede tardar hasta
+   5 min en dispararse. Si necesitas 30 s, hace falta un scheduler externo
    (Supabase `pg_cron`, QStash, etc.). No bloquea el demo.
 
 3. **PDF server-side.** El §5.9 pide render server-side; aquí `POST /api/reports/generate`
@@ -174,7 +178,7 @@ migraciones multi-tenant. No lo borré; archívalo o elimínalo cuando confirmes
 - **2 migraciones** (esquema multi-tenant §2 + auth/claims §3).
 - **8 servicios** (§4 + Apéndice A) en `services/`.
 - **~50 rutas API** (§5) en `app/api/**` y `app/auth/**`.
-- **9 cron jobs** (§7) en `app/api/cron/**` + `vercel.json`.
+- **10 cron jobs** (§7) en `app/api/cron/**` + `vercel.json`.
 - **Integraciones** Claude/Resend/Twilio/Slack (§8).
 - **Proxy de auth** (§3.2) en `proxy.ts`.
 - **Dashboard v2** integrado en `public/dashboard.html` con IA vía `/api/ai`.
