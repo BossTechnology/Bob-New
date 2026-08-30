@@ -158,6 +158,13 @@ no compila/no corre. Quedan anotados en el propio código:
   implementé `public.custom_access_token_hook(event jsonb)` (la real) + un
   `handle_new_auth_user` que lee `org_id` del metadata (el del §2.1 fallaba porque
   `users.org_id` es NOT NULL).
+- **Claim `role` → `app_role`**: el §3.1 pide publicar el rol de aplicación en el claim
+  `role`. Ese nombre está **reservado por Supabase**: PostgREST lo lee para elegir el rol
+  de Postgres de la petición, así que con `role:"admin"` toda consulta con sesión de
+  usuario fallaba con `22023: role "admin" does not exist` — es decir, 500 en todos los
+  endpoints sobre `getRouteClient()`. El hook deja `role` intacto (Supabase pone
+  `authenticated`) y publica el rol de aplicación como `app_role`; `lib/auth.ts` lo lee de
+  ahí. Ninguna política RLS usaba el claim (verificado contra `pg_policies`).
 
 ### Inconsistencias del documento (resueltas / marcadas)
 - `baselines`, `organizations` y `users` **no llevaban RLS** en el Cap. 2 (contradice §1.4
@@ -178,7 +185,8 @@ migraciones multi-tenant. No lo borré; archívalo o elimínalo cuando confirmes
 - **2 migraciones** (esquema multi-tenant §2 + auth/claims §3).
 - **8 servicios** (§4 + Apéndice A) en `services/`.
 - **~50 rutas API** (§5) en `app/api/**` y `app/auth/**`.
-- **10 cron jobs** (§7) en `app/api/cron/**` + `vercel.json`.
+- **10 cron jobs** (§7) en `app/api/cron/**` + `vercel.json` (el décimo,
+  `autobotz-reverify`, cubre la re-verificación que el v5.3 deja pendiente).
 - **Integraciones** Claude/Resend/Twilio/Slack (§8).
 - **Proxy de auth** (§3.2) en `proxy.ts`.
 - **Dashboard v2** integrado en `public/dashboard.html` con IA vía `/api/ai`.
