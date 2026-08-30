@@ -13,8 +13,12 @@ function decodeJwtPayload(token: string): Record<string, unknown> {
   }
 }
 
-// User-session auth. org_id and role are read from top-level JWT claims injected
-// by the Supabase custom access-token hook (§3.1). Throws ApiError on failure.
+// User-session auth. org_id and app_role are read from top-level JWT claims
+// injected by the Supabase custom access-token hook (§3.1). The doc names the
+// role claim `role`, but that name is reserved by Supabase — PostgREST reads it
+// to pick the Postgres role, and an app value like "admin" breaks every query
+// with `role "admin" does not exist`. It is published as `app_role` instead.
+// Throws ApiError on failure.
 export async function requireAuth(
   allowedRoles: string[] = ['admin', 'analyst', 'viewer'],
 ): Promise<AuthContext> {
@@ -24,7 +28,7 @@ export async function requireAuth(
 
   const claims = decodeJwtPayload(session.access_token)
   const org_id = (claims.org_id as string) || ''
-  const role = (claims.role as string) || 'viewer'
+  const role = (claims.app_role as string) || 'viewer'
 
   if (!org_id) {
     throw new ApiError(401, 'Missing org_id claim — custom access-token hook not configured')
