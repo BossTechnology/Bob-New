@@ -125,13 +125,13 @@ npm run dev      # http://localhost:3000  → redirige a /dashboard.html
    con la **org demo sembrada**. Para datos reales, conecta tu observabilidad/canales a
    `POST /api/interactions/batch` (cabecera `x-internal-api-key`). Esa decisión sigue TBD.
 
-2. **Cadencia de los cron.** El §7.1 pide refrescos cada 30 s. **Vercel Cron tiene
-   mínimo 1 min**, y los cuatro jobs de refresco (`metric-refresh`,
-   `sentiment-aggregation`, `alert-evaluation`, `anomaly-detection`) corren cada
-   **5 min** por coste: ninguno depende de la cadencia — leen el último estado y
-   evalúan—, así que la única consecuencia es que una alerta puede tardar hasta
-   5 min en dispararse. Si necesitas 30 s, hace falta un scheduler externo
-   (Supabase `pg_cron`, QStash, etc.). No bloquea el demo.
+2. **Cadencia de los cron.** El §7.1 pide refrescos cada 30 s; **Vercel Cron tiene
+   mínimo 1 min**. `alert-evaluation` corre cada **1 min**, que es el suelo de la
+   plataforma, porque es el que marca en cuánto reacciona una alerta. Los otros
+   tres jobs de refresco (`metric-refresh`, `sentiment-aggregation`,
+   `anomaly-detection`) corren cada **5 min** por coste: ninguno depende de la
+   cadencia — leen el último estado y evalúan. Si necesitas 30 s, hace falta un
+   scheduler externo (Supabase `pg_cron`, QStash, etc.). No bloquea el demo.
 
 3. **PDF server-side.** El §5.9 pide render server-side; aquí `POST /api/reports/generate`
    **ensambla el dataset** y lo guarda como JSON en el bucket `reports`. El dashboard ya
