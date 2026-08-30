@@ -7286,6 +7286,46 @@ init();
     return r;
   };
 
+  // ── Persistence for the live-binding config (v5.3) ────────────────
+  // v5.3 removed the explicit save handlers this bridge used to wrap. Fields
+  // now commit as you type: thresholds through commitThreshold(), content
+  // rules through inline onchange attributes that assign straight into
+  // metricCfg. saveTCfg, saveAnomalyCfg and saveTextRules still exist but
+  // nothing calls them, so the wrappers below them went quiet and the panel
+  // kept flashing "Saved" while nothing reached the backend.
+  //
+  // There is no single function left to wrap, so persistence hangs off the
+  // events instead: any change or click inside the config panel schedules a
+  // debounced write of whichever metric is open. Writes are idempotent
+  // upserts, so a redundant one costs nothing, and nothing here depends on a
+  // handler name — which is what broke last time.
+  let _persistT=null;
+  function _persistOpenMetric(){
+    const mid=(typeof actMetricId!=='undefined')?actMetricId:null;
+    if(!mid) return;
+    // A threshold scoped to a specific actor lives under who_<actor>_<metric>#<id>,
+    // so persist the resolved key as well as the base one.
+    const keys=[mid];
+    try{
+      const tk=(typeof _thKey==='function')?_thKey(mid):mid;
+      if(tk&&tk!==mid) keys.push(tk);
+    }catch(e){}
+    Promise.resolve()
+      .then(function(){ return Promise.all(keys.map(function(k){ return Bridge.saveThreshold(k); })); })
+      .then(function(){ return Bridge.saveThresholdResponses(mid); })
+      .then(function(){ return Bridge.saveAnomalyRules(mid); })
+      .then(function(){ return Bridge.saveTextRulesFor(mid); })
+      .catch(function(){});
+  }
+  function _schedulePersist(e){
+    const t=e&&e.target;
+    if(!t||!t.closest||!t.closest('#actContent-config')) return;
+    clearTimeout(_persistT);
+    _persistT=setTimeout(_persistOpenMetric,900);
+  }
+  document.addEventListener('change',_schedulePersist,true);
+  document.addEventListener('click',_schedulePersist,true);
+
   async function hydrate(){
     await Bridge.loadChannels();
     await Bridge.loadThresholds();
