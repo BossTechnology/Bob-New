@@ -5315,8 +5315,21 @@ const ACTOR_LABEL={user:'Users / Members',asa:'ASA \u2014 Artificial Service Age
 const ACTOR_COL={user:0,asa:1,human:2};
 const AVAIL_SESSION_MIN=13;
 
-const _FIRST=['Camila','Andr\u00e9s','Luc\u00eda','Mateo','Valentina','Diego','Sof\u00eda','Tom\u00e1s','Isabela','Joaqu\u00edn','Renata','Sebasti\u00e1n','Paula','Emilio','Daniela','Ignacio','Mariana','Felipe','Antonia','Rodrigo','Carolina','Nicol\u00e1s','Elena','Javier','Bianca','Alejandro','Natalia','Gabriel','Ver\u00f3nica','Mart\u00edn','Adriana','Esteban','Luciana','Hern\u00e1n'];
-const _LAST=['Restrepo','Vargas','Molina','Ferrer','Aguilar','Solano','Bustos','Pineda','Cordero','Ibarra','Salcedo','Peralta','Miranda','Quintero','Escobar','Naranjo','Tapia','Villalba','Cabrera','Duarte'];
+// Roster names follow CFG.lang. They used to be Spanish regardless of the
+// interface language, which read oddly once the dashboard was switched to EN,
+// FR or PT — the v5.3 limits list says as much. Pools are the same length per
+// language so the existing index arithmetic keeps producing a stable roster.
+const _NAME_POOLS={
+  es:{first:['Camila','Andr\u00e9s','Luc\u00eda','Mateo','Valentina','Diego','Sof\u00eda','Tom\u00e1s','Isabela','Joaqu\u00edn','Renata','Sebasti\u00e1n','Paula','Emilio','Daniela','Ignacio','Mariana','Felipe','Antonia','Rodrigo','Carolina','Nicol\u00e1s','Elena','Javier','Bianca','Alejandro','Natalia','Gabriel','Ver\u00f3nica','Mart\u00edn','Adriana','Esteban','Luciana','Hern\u00e1n'],
+      last:['Restrepo','Vargas','Molina','Ferrer','Aguilar','Solano','Bustos','Pineda','Cordero','Ibarra','Salcedo','Peralta','Miranda','Quintero','Escobar','Naranjo','Tapia','Villalba','Cabrera','Duarte']},
+  en:{first:['Emily','Andrew','Lucy','Matthew','Valerie','James','Sophie','Thomas','Isabel','Joachim','Renee','Sebastian','Paula','Emil','Danielle','Ian','Marianne','Philip','Antonia','Roderick','Caroline','Nicholas','Helen','Xavier','Bianca','Alexander','Natalie','Gabriel','Veronica','Martin','Adrienne','Stephen','Lucianne','Herman'],
+      last:['Ashford','Vaughn','Mallory','Fairwood','Aguilar','Sloane','Burnett','Pinehurst','Corden','Iverson','Salisbury','Pemberton','Marlowe','Quinton','Escott','Norwood','Tapley','Villiers','Carbery','Dunmore']},
+  fr:{first:['Camille','Andr\u00e9','Lucie','Mathieu','Valentine','Didier','Sophie','Thomas','Isabelle','Joachim','Ren\u00e9e','S\u00e9bastien','Paule','\u00c9mile','Dani\u00e8le','Igor','Marianne','Philippe','Antoinette','Rodolphe','Caroline','Nicolas','H\u00e9l\u00e8ne','Xavier','Blanche','Alexandre','Nathalie','Gabriel','V\u00e9ronique','Martin','Adrienne','\u00c9tienne','Luciane','Herv\u00e9'],
+      last:['Rocheford','Vasseur','Molinier','Ferrand','Aubert','Solignac','Busson','Pineau','Cordier','Imbert','Salvat','P\u00e9rault','Mirande','Quintin','Escoffier','Narbonne','Tapie','Villard','Cabrol','Duhamel']},
+  pt:{first:['Camila','Andr\u00e9','L\u00facia','Mateus','Valentina','Diogo','Sofia','Tom\u00e1s','Isabela','Joaquim','Renata','Sebasti\u00e3o','Paula','Em\u00edlio','Daniela','In\u00e1cio','Mariana','Filipe','Ant\u00f4nia','Rodrigo','Carolina','Nicolau','Helena','Xavier','Bianca','Alexandre','Nat\u00e1lia','Gabriel','Ver\u00f4nica','Martim','Adriana','Est\u00eav\u00e3o','Luciana','Hernani'],
+      last:['Rebelo','Vargas','Moliner','Ferreira','Aguiar','Solano','Bastos','Pinheiro','Cordeiro','Ibarra','Salgado','Peralta','Miranda','Queiroz','Escobar','Naranjo','Tavares','Vilalva','Cabral','Duarte']},
+};
+function _namePool(){ return _NAME_POOLS[CFG.lang]||_NAME_POOLS.es; }
 
 let HUMAN_ROSTER=[], ASA_FLEET=[], USER_POOL=[];
 let whoOpenRows=new Set(), whoRevealed=new Set(), whoSearch='';
@@ -5333,7 +5346,7 @@ function buildHumanRoster(){
     const chans=[primary];
     if(hChs.length>1&&i%3===0){ const sec=hChs[(i+1)%hChs.length]; if(sec!==primary) chans.push(sec); }
     HUMAN_ROSTER.push({
-      id:'AG-'+String(1040+i), name:_FIRST[i%_FIRST.length]+' '+_LAST[(i*7)%_LAST.length],
+      id:'AG-'+String(1040+i), name:(function(){const P=_namePool();return P.first[i%P.first.length]+' '+P.last[(i*7)%P.last.length];})(),
       chans, live:(i%7!==0), handled:40+(seed%90), resolved:60+(seed%35), esc:2+(seed%14),
       quality:['Low','Med','Med','High','Med'][i%5], rt:1+(seed%4),
     });
@@ -5368,7 +5381,7 @@ function buildUserPool(){
     const anon=((i*13)%100)/100<anonRate;
     USER_POOL.push({
       id:anon?'SES-'+String(90210+i*7):'MBR-'+String(20440+i), anon,
-      name:anon?null:_LAST[(i*3)%_LAST.length], chans:[ch], live:(i%4!==0),
+      name:anon?null:(function(){const P=_namePool();return P.last[(i*3)%P.last.length];})(), chans:[ch], live:(i%4!==0),
       sessions:1+(i%9), aband:(i%5===0),
       sent:(T[CFG.lang]?.sent||T.es.sent)[i%5], tenure:anon?null:(1+(i%48))+' mo',
     });
