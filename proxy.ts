@@ -8,7 +8,12 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
 type CookieToSet = { name: string; value: string; options: CookieOptions }
 
-const PUBLIC_PATHS = ['/login', '/signup', '/demo', '/auth', '/api/health', '/api/ai']
+// `/api/cron` is listed here because the scheduler calls it with a bearer token
+// and no session cookie. Without it the guard answered every scheduled run with
+// a 307 to /login, so the jobs never reached their handlers — and a 307 is not
+// an error, so nothing surfaced it. These routes are not unprotected: each one
+// calls requireCron(), which rejects anything without Bearer ${CRON_SECRET}.
+const PUBLIC_PATHS = ['/login', '/signup', '/demo', '/auth', '/api/health', '/api/ai', '/api/cron']
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })

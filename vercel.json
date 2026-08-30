@@ -1,14 +1,45 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
-    { "path": "/api/cron/metric-refresh", "schedule": "*/1 * * * *" },
-    { "path": "/api/cron/sentiment-aggregation", "schedule": "*/1 * * * *" },
-    { "path": "/api/cron/alert-evaluation", "schedule": "*/1 * * * *" },
-    { "path": "/api/cron/anomaly-detection", "schedule": "*/1 * * * *" },
-    { "path": "/api/cron/baseline-compute", "schedule": "0 * * * *" },
-    { "path": "/api/cron/pattern-recognition", "schedule": "*/15 * * * *" },
-    { "path": "/api/cron/issue-grouping", "schedule": "*/5 * * * *" },
-    { "path": "/api/cron/notif-retry", "schedule": "*/5 * * * *" },
-    { "path": "/api/cron/cleanup", "schedule": "0 3 * * *" }
+    {
+      "path": "/api/cron/metric-refresh",
+      "schedule": "*/1 * * * *"
+    },
+    {
+      "path": "/api/cron/sentiment-aggregation",
+      "schedule": "*/1 * * * *"
+    },
+    {
+      "path": "/api/cron/alert-evaluation",
+      "schedule": "*/1 * * * *"
+    },
+    {
+      "path": "/api/cron/anomaly-detection",
+      "schedule": "*/1 * * * *"
+    },
+    {
+      "path": "/api/cron/baseline-compute",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/pattern-recognition",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/issue-grouping",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/notif-retry",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/cleanup",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/autobotz-reverify",
+      "schedule": "0 4 * * *"
+    }
   ]
 }
