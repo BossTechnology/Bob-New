@@ -7114,6 +7114,48 @@ init();
         responses:(row.responses||[]).map(rr=>this._mapResponseRow(rr)),
       }));
     },
+
+    // ── AutoBotz bindings ──────────────────────────────────────────
+    // These live in window._autoBotz, which is memory only. The scheduled
+    // re-verification (/api/cron/autobotz-reverify) runs server-side, so a
+    // binding it never sees is a binding nothing re-checks.
+    _abBody(ab){
+      // Per-type inputs sit directly on the object; AB_FIELDS says which keys
+      // belong to this type, and `ref` is stored in its own column.
+      const cfg={};
+      (AB_FIELDS[ab.type]||[]).forEach(function(f){
+        const k=f[0];
+        if(k!=='ref'&&ab[k]!=null&&ab[k]!=='') cfg[k]=ab[k];
+      });
+      return {client_id:ab.id,type:ab.type,label:ab.label,provider:ab.provider||'bzzzbox',
+        scope:ab.scope||'company',ref:ab.ref||'',config:cfg};
+    },
+    async persistAB(ab){
+      if(!ab||!ab.ref) return;
+      if(ab._bkid){ await api('/autobotz/'+ab._bkid,{method:'PUT',body:JSON.stringify(this._abBody(ab))}); return; }
+      const d=data(await api('/autobotz',{method:'POST',body:JSON.stringify(this._abBody(ab))}));
+      if(d&&d.id){ ab._bkid=d.id; }
+    },
+    async deleteAB(bkid){ if(bkid){ await api('/autobotz/'+bkid,{method:'DELETE'}); } },
+    async loadAutoBotz(){
+      const d=data(await api('/autobotz'));
+      const rows=d&&d.bindings;
+      if(!Array.isArray(rows)||!rows.length) return;
+      window._autoBotz=rows.map(function(row){
+        const ab=Object.assign({
+          id:row.client_id||('ab'+row.id.slice(0,6)), _bkid:row.id,
+          type:row.type, label:row.label, provider:row.provider,
+          scope:row.scope||'company', ref:row.ref||'',
+          // The server stores the four states abState() understands; `stale` stays
+          // derived from ok + age so one definition governs both sides.
+          verify:{state:row.verify_state||'unverified',
+                  ts:row.verify_ts?new Date(row.verify_ts).getTime():null,
+                  msg:row.verify_msg||''},
+        },row.config||{});
+        return ab;
+      });
+      if(typeof renderChannelsCfgOrBotz==='function'){ try{ renderChannelsCfgOrBotz(); }catch(e){} }
+    },
   };
   window.BobBridge=Bridge;
 
@@ -7218,9 +7260,36 @@ init();
   };
 
   // ── Hydrate persisted config shortly after load ──────────────────
+  const _addAB=addAB;
+  addAB=function(){
+    const before=(window._autoBotz||[]).length;
+    const r=_addAB.apply(this,arguments);
+    const after=(window._autoBotz||[]);
+    // addAB unshifts, and only when validation passed.
+    if(after.length>before) Bridge.persistAB(after[0]);
+    return r;
+  };
+
+  const _saveEditAB=saveEditAB;
+  saveEditAB=function(id){
+    const r=_saveEditAB.apply(this,arguments);
+    Bridge.persistAB(abById(id));
+    return r;
+  };
+
+  const _removeAB=removeAB;
+  removeAB=function(id){
+    const ab=abById(id);
+    const bkid=ab&&ab._bkid;
+    const r=_removeAB.apply(this,arguments);
+    Bridge.deleteAB(bkid);
+    return r;
+  };
+
   async function hydrate(){
     await Bridge.loadChannels();
     await Bridge.loadThresholds();
+    await Bridge.loadAutoBotz();
     // Hydrate threshold responses for every metric that has a persisted threshold.
     const mids=Object.keys(metricCfg).filter(function(k){ return metricCfg[k]&&metricCfg[k]._bkid; });
     await Promise.all(mids.map(function(k){ return Bridge.loadThresholdResponses(k); }));
