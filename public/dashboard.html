@@ -202,13 +202,26 @@ main{display:grid;grid-template-columns:1fr 420px;grid-template-rows:1fr auto;mi
 .lp-chart{display:flex;height:auto;flex:1;min-height:190px;position:relative;align-items:flex-end}
 .lp-bg{position:absolute;inset:0;display:flex;justify-content:space-evenly;pointer-events:none}
 .lp-bg-line{width:0;border-left:1px dashed #D8DCE4;height:100%}
-.lp-item{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;padding-bottom:22px;height:100%;justify-content:flex-end}
+.lp-item{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;padding-bottom:26px;height:100%;justify-content:flex-end}
 .lp-group{display:flex;flex-direction:column;align-items:center}
 .lp-pct{font-size:10px;font-weight:700;color:var(--gray-dark);margin-bottom:3px}
 .lp-dot{width:11px;height:11px;border-radius:50%;background:var(--accent);flex-shrink:0;transition:background .5s,transform .3s;z-index:2}
 .lp-dot.bad{background:var(--red);transform:scale(1.2)}
 .lp-stem{width:1.5px;background:var(--gray-border);border-radius:1px;transition:height .6s cubic-bezier(.34,1.2,.64,1);flex-shrink:0}
-.lp-lbl{position:absolute;bottom:4px;font-size:9.5px;color:var(--gray-mid);white-space:nowrap;left:50%;transform:translateX(-50%)}
+/* v3.7 — ORGA (circle) and MECA (square) as two independent distributions */
+.lp-pair{display:flex;align-items:flex-end;gap:7px}
+.lp-dot.sq{border-radius:2px;background:transparent;border:2.5px solid var(--accent)}
+.lp-dot.sq.bad{background:transparent;border-color:var(--red)}
+.lp-dot{position:relative}
+.lp-dot:hover::after{content:attr(data-tip);position:absolute;bottom:17px;left:50%;transform:translateX(-50%);
+  background:var(--black);color:var(--white);font-size:9.5px;font-weight:600;letter-spacing:.3px;
+  padding:3px 7px;border-radius:5px;white-space:nowrap;z-index:6;pointer-events:none}
+.lp-pctlead{font-size:13px;font-weight:800;color:var(--black);margin-right:5px;letter-spacing:-.2px}
+.lp-legend{display:flex;align-items:center;gap:11px}
+.lp-legend span{display:flex;align-items:center;gap:4px;font-size:9px;font-weight:700;letter-spacing:.8px;color:var(--gray-light)}
+.lp-legend i{display:block;width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.lp-legend i.sq{border-radius:1px;background:transparent;border:2px solid var(--accent)}
+.lp-lbl{position:absolute;bottom:4px;font-size:13px;color:var(--gray-mid);white-space:nowrap;left:50%;transform:translateX(-50%);display:flex;align-items:baseline}
 .at-grid{display:grid;grid-template-columns:1fr 1px 1fr;border:1px solid var(--gray-border);border-radius:8px;overflow:hidden}
 .at-col{padding:16px 18px;cursor:pointer;transition:background .15s}
 .at-col:hover{background:var(--gray-bg)}
@@ -255,6 +268,143 @@ main{display:grid;grid-template-columns:1fr 420px;grid-template-rows:1fr auto;mi
 .m-pct{font-size:11px;color:var(--gray-mid);text-align:center;font-weight:500;transition:color .3s;padding:2px 4px;border-radius:4px}
 .m-pct.ai{background:transparent;color:var(--black);font-weight:700}
 .m-pct.alert{color:var(--red);font-weight:700}
+/* AutoComm / AutoBotz */
+.cfg-subtab-div{width:1px;align-self:stretch;background:var(--gray-border);margin:6px 7px}
+/* one-line description + inline add button, shared by all four sub-tabs */
+.cfg-desc{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.cfg-hdrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.cfg-resp-menu{display:flex;gap:5px;align-items:center;margin-bottom:8px}
+.cfg-resp-cancel{font-size:10px;font-weight:600;font-family:var(--font);padding:4px 9px;border-radius:6px;
+  cursor:pointer;border:1px solid var(--gray-border);background:var(--white);color:var(--gray-mid)}
+.cfg-resp-cancel:hover{border-color:var(--black);color:var(--black)}
+.cfg-saved{font-size:10px;font-weight:600;color:#4E7A3C;opacity:0;transition:opacity .25s}
+.cfg-saved.show{opacity:1}
+.cfg-desc p{flex:1;min-width:0;font-size:11px;color:var(--gray-mid);line-height:1.5;margin:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cfg-add-inline{flex-shrink:0;font-size:10.5px;font-weight:600;font-family:var(--font);padding:4px 10px;
+  border-radius:6px;cursor:pointer;border:1px solid var(--gray-border);background:var(--white);color:var(--gray-dark)}
+.cfg-add-inline:hover{border-color:var(--black);color:var(--black)}
+.cfg-selrow{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.cfg-selrow>select{flex:1;min-width:0}
+.ab-item{border:1px solid var(--gray-border);border-radius:8px;margin-bottom:8px;overflow:hidden;background:var(--white)}
+.ab-head{display:flex;align-items:center;gap:9px;padding:9px 11px}
+.ab-icon{font-size:15px;flex-shrink:0}
+.ab-info{flex:1;min-width:0}
+.ab-label{font-size:12px;font-weight:700;color:var(--black);display:flex;align-items:center;gap:6px}
+.ab-sub{font-size:10px;color:var(--gray-light);margin-top:1px}
+.ab-body{padding:0 11px 10px;border-top:1px solid var(--gray-border);padding-top:8px}
+.ab-field{display:flex;justify-content:space-between;gap:10px;font-size:10.5px;color:var(--gray-mid);padding:2px 0}
+.ab-field b{color:var(--gray-dark);font-weight:600;text-align:right;word-break:break-all}
+.ab-chip{font-size:8.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:1px 5px;border-radius:3px;
+  border:1px solid var(--gray-border);color:var(--gray-mid);background:var(--white)}
+.ab-chip.ok{border-color:#7FA86B;color:#4E7A3C}
+.ab-chip.failed{border-color:var(--red);color:var(--red)}
+.ab-chip.stale{border-color:#C4A265;color:#8A6D2F}
+.ab-chip.pending{border-color:var(--gray-border);color:var(--gray-light)}
+.ab-vstate{font-size:10px;margin-top:6px;color:var(--gray-light)}
+.ab-vstate.ok{color:#4E7A3C}
+.ab-vstate.failed{color:var(--red)}
+.ab-vstate.stale{color:#8A6D2F}
+.ab-actions{display:flex;gap:5px;margin-top:8px}
+.ab-verify,.ab-run{font-size:10px;font-weight:600;font-family:var(--font);padding:4px 10px;border-radius:5px;cursor:pointer;
+  border:1px solid var(--gray-border);background:var(--white);color:var(--gray-dark)}
+.ab-verify:hover,.ab-run:hover{border-color:var(--black);color:var(--black)}
+.ab-run{border-style:dashed}
+.acc-head{display:flex;align-items:center;gap:7px;padding:8px 0;cursor:pointer;user-select:none;
+  border-bottom:1px solid var(--gray-border);margin-bottom:10px}
+.acc-head:last-child{margin-bottom:0}
+.acc-caret{font-size:9px;color:var(--gray-light);transition:transform .2s;flex-shrink:0}
+.acc-head.open .acc-caret{transform:rotate(90deg)}
+.acc-title{font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-light);flex:1}
+.acc-sum{font-size:10.5px;color:var(--gray-dark);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+.acc-body{margin-bottom:14px}
+.edit-btns{display:flex;gap:5px;margin-top:10px}
+.edit-save,.edit-cancel{font-size:10.5px;font-weight:600;font-family:var(--font);padding:5px 14px;border-radius:6px;cursor:pointer}
+.edit-save{border:1px solid var(--black);background:var(--black);color:var(--white)}
+.edit-cancel{border:1px solid var(--gray-border);background:var(--white);color:var(--gray-mid)}
+.edit-cancel:hover{border-color:var(--black);color:var(--black)}
+.del-confirm{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 11px;margin-top:6px;
+  background:#F5ECEC;border:1px solid rgba(224,82,82,.45);border-radius:8px;font-size:10.5px;color:var(--gray-dark)}
+.del-confirm span{flex:1;min-width:150px;line-height:1.45}
+.del-yes{font-size:10.5px;font-weight:600;font-family:var(--font);padding:5px 14px;border-radius:6px;cursor:pointer;
+  border:1px solid var(--red);background:var(--red);color:var(--white)}
+.rule-head{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.rule-name{flex:1;min-width:0;font-size:12px;font-weight:700;color:var(--black);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rule-name.untitled{color:var(--gray-light);font-weight:500;font-style:italic}
+.rule-meta{font-size:10px;color:var(--gray-light);white-space:nowrap}
+
+.scope-chip{font-size:8.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:1px 5px;
+  border-radius:3px;border:1px solid var(--gray-border);color:var(--gray-mid);background:var(--white);white-space:nowrap}
+.scope-chip.inherited{border-style:dashed;color:var(--gray-light)}
+.cfg-nc-item.inherited,.ab-item.inherited{background:var(--gray-bg)}
+.cfg-nc-item.inherited .cfg-nc-label,.ab-item.inherited .ab-label{color:var(--gray-dark)}
+.scope-note{font-size:10px;color:var(--gray-light);margin:-4px 0 8px}
+
+.ab-forow{margin-bottom:6px}
+.ab-forow label{display:block;font-size:9.5px;font-weight:600;letter-spacing:.4px;color:var(--gray-light);margin-bottom:2px;text-transform:uppercase}
+
+/* ── v3.6: Available row + cell-level "who" drill-down (additive) ── */
+.stat-row.avail .stat-val{font-size:13px;font-weight:800;color:var(--black)}
+.stat-row.avail .stat-val.zero{color:var(--gray-light);font-weight:500}
+.avail-lbl{display:flex;align-items:center;gap:6px}
+.avail-dot{width:6px;height:6px;border-radius:50%;background:var(--black);flex-shrink:0}
+.avail-dot.dim{background:var(--gray-border)}
+.cellable{cursor:pointer}
+.cellable:hover{background:transparent;text-decoration:underline;
+  text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:var(--black)}
+.cellable.zero,.cellable.zero:hover{cursor:default;background:transparent;text-decoration:none}
+/* only one thing highlights at a time — the row yields to the cell */
+.stat-row.click:has(.cellable:hover){background:transparent}
+.m-row:has(.cellable:hover){background:transparent}
+.who-scope{font-size:10.5px;color:var(--gray-mid);line-height:1.55;padding:9px 11px;background:var(--gray-bg);
+  border:1px solid var(--gray-border);border-radius:7px;margin-bottom:12px}
+.who-scope b{color:var(--black)}
+.ros-search{width:100%;padding:8px 11px;border:1.5px solid var(--gray-border);border-radius:8px;
+  font-family:var(--font);font-size:12px;color:var(--black);outline:none;margin-bottom:9px}
+.ros-search:focus{border-color:var(--black)}
+.ros-count{font-size:10.5px;color:var(--gray-mid);margin-bottom:9px}
+.ros-list{display:flex;flex-direction:column;gap:5px}
+.ros-item{border:1px solid var(--gray-border);border-radius:8px;overflow:hidden;background:var(--white)}
+.ros-head{display:flex;align-items:center;gap:9px;padding:9px 11px;cursor:pointer;transition:background .15s}
+.ros-head:hover{background:var(--gray-bg)}
+.ros-dot{width:7px;height:7px;border-radius:50%;background:var(--black);flex-shrink:0}
+.ros-name{font-size:12px;font-weight:600;color:var(--black);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ros-sub{font-size:10px;color:var(--gray-light);font-weight:500}
+.ros-chans{display:flex;gap:4px;flex-shrink:0}
+.ros-ch{font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--gray-bg);
+  border:1px solid var(--gray-border);color:var(--gray-dark);white-space:nowrap}
+.ros-caret{font-size:10px;color:var(--gray-light);flex-shrink:0;transition:transform .2s}
+.ros-item.open .ros-caret{transform:rotate(90deg)}
+.ros-item.off .ros-dot{background:var(--gray-border)}
+.ros-item.off .ros-name{color:var(--gray-light);font-weight:500}
+.ros-item.off .ros-ch{color:var(--gray-light);opacity:.6}
+.ros-body{display:none;padding:11px;border-top:1px solid var(--gray-border);background:var(--gray-bg)}
+.ros-item.open .ros-body{display:block}
+.ros-kv{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:9px}
+.ros-kv-cell{background:var(--white);border:1px solid var(--gray-border);border-radius:6px;padding:7px;text-align:center}
+.ros-kv-n{font-size:14px;font-weight:800;color:var(--black)}
+.ros-kv-n.bad{color:var(--red)}
+.ros-kv-l{font-size:8px;color:var(--gray-mid);margin-top:1px;letter-spacing:.3px}
+.ros-mini-hd{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--gray-light);margin:10px 0 6px}
+.ros-hist{display:flex;flex-direction:column;gap:4px}
+.ros-hist-row{display:flex;gap:8px;align-items:center;font-size:10.5px;color:var(--gray-dark);
+  background:var(--white);border:1px solid var(--gray-border);border-radius:6px;padding:6px 8px}
+.ros-hist-t{color:var(--gray-light);font-weight:500;flex-shrink:0}
+.ros-hist-x{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ros-hist-b{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;flex-shrink:0;
+  background:var(--gray-bg);border:1px solid var(--gray-border);color:var(--gray-mid)}
+.ros-hist-b.bad{color:var(--red);border-color:var(--red)}
+.ros-assign{font-size:10.5px;color:var(--gray-dark);background:var(--white);border:1px solid var(--gray-border);
+  border-radius:6px;padding:8px 9px;line-height:1.5}
+.ros-anon{font-size:8.5px;font-weight:700;letter-spacing:.4px;padding:1px 5px;border-radius:3px;
+  background:var(--gray-bg);border:1px dashed var(--gray-border);color:var(--gray-mid)}
+.ros-reveal{font-size:9.5px;font-weight:600;color:var(--gray-mid);border:1px solid var(--gray-border);
+  background:var(--white);border-radius:4px;padding:2px 6px;cursor:pointer;font-family:var(--font)}
+.ros-reveal:hover{border-color:var(--black);color:var(--black)}
+.ros-contrib{height:3px;background:var(--gray-border);border-radius:2px;overflow:hidden;margin-bottom:9px}
+.ros-contrib-fill{height:100%;background:var(--black)}
+.who-pill{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.3px;background:var(--black);
+  color:var(--white);padding:2px 6px;border-radius:3px;margin-right:5px}
 .faq-box{border:1px solid var(--gray-border);border-radius:8px;overflow:hidden}
 .faq-head{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--gray-border);background:var(--white)}
 .faq-tabs{display:flex;align-items:center;gap:0;flex:1}
@@ -350,8 +500,9 @@ main{display:grid;grid-template-columns:1fr 420px;grid-template-rows:1fr auto;mi
 .act-gear-btn:hover{color:var(--black);background:var(--gray-bg)}
 .act-alerts-badge{background:var(--red);color:#fff;font-size:9px;font-weight:700;border-radius:10px;padding:1px 5px;min-width:16px;text-align:center;display:none}
 .act-alerts-badge.show{display:inline-block}
-.act-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-height:0}
-.act-content{display:none;padding:16px}
+.act-body{flex:1;overflow-y:auto;scrollbar-gutter:stable;display:flex;flex-direction:column;min-height:0}
+#actTabTitle{flex-shrink:0}
+.act-content{display:none;padding:16px;flex-shrink:0}
 .act-content.active{display:block}
 #actContent-bobee.active{display:flex;flex-direction:column;flex:1;min-height:0;padding:16px}
 .act-section-hd{font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-light);margin-bottom:10px}
@@ -441,8 +592,6 @@ main{display:grid;grid-template-columns:1fr 420px;grid-template-rows:1fr auto;mi
 .cfg-nc-value{font-size:11px;color:var(--gray-mid);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cfg-nc-remove{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:var(--gray-light);font-size:18px;border-radius:4px;transition:all .2s;flex-shrink:0}
 .cfg-nc-remove:hover{color:var(--red);background:#F5ECEC}
-.cfg-add-resp-btn{width:100%;padding:8px;margin-top:8px;background:var(--gray-bg);border:1.5px dashed var(--gray-border);border-radius:8px;font-family:var(--font);font-size:11px;font-weight:600;color:var(--gray-mid);cursor:pointer;transition:all .2s}
-.cfg-add-resp-btn:hover{border-color:var(--black);color:var(--black)}
 .cfg-resp-choice{padding:7px 14px;border:1.5px solid var(--gray-border);border-radius:7px;background:var(--white);font-family:var(--font);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;color:var(--gray-dark)}
 .cfg-resp-choice:hover{border-color:var(--black);color:var(--black);background:var(--gray-bg)}
 .cfg-resp-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--gray-border);border-radius:8px;margin-bottom:4px;font-size:11px}
@@ -1106,7 +1255,10 @@ main{display:grid;grid-template-columns:1fr 420px;grid-template-rows:1fr auto;mi
         <div class="nps-badge nps-blue" id="npsBadge" onclick="openActionables('nps','NPS','07')">NPS: 07</div>
       </div>
       <div class="lp-outer" onclick="openActionables('sentiment',getT('animo'),'')">
-        <div class="metric-header" id="lbl-animo" style="margin-bottom:10px">Ánimo &amp; Sentimiento</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="metric-header" id="lbl-animo">Ánimo &amp; Sentimiento</div>
+          <div class="lp-legend"><span><i></i>ORGA</span><span><i class="sq"></i>MECA</span></div>
+        </div>
         <div class="lp-chart" id="lpChart">
           <div class="lp-bg">
             <div class="lp-bg-line"></div><div class="lp-bg-line"></div>
@@ -1132,13 +1284,19 @@ main{display:grid;grid-template-columns:1fr 420px;grid-template-rows:1fr auto;mi
           <img src="data:image/png;base64,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" style="object-fit:contain" alt="Human Agent">
         </div>
       </div>
-      <div class="stat-row click" onclick="openActionables('avgtime',getT('tr'),'')">
-        <div class="stat-lbl" id="lbl-tr">Response Time</div>
-        <div class="stat-val">2 Min</div><div class="stat-val ai">1 Min</div><div class="stat-val">1 Min</div>
+      <div class="stat-row avail">
+        <div class="stat-lbl avail-lbl" id="lbl-avail" style="cursor:pointer" onclick="openActionables('available',getT('avail'),'')"><span class="avail-dot" id="availDot"></span><span id="lbl-avail-tx">Disponibles</span></div>
+        <div class="stat-val cellable" id="avail-user" onclick="event.stopPropagation();openWho('user','available')">0</div>
+        <div class="stat-val ai cellable" id="avail-asa" onclick="event.stopPropagation();openWho('asa','available')">0</div>
+        <div class="stat-val cellable" id="avail-human" onclick="event.stopPropagation();openWho('human','available')">0</div>
       </div>
-      <div class="stat-row click" onclick="openActionables('quality',getT('qr'),'')">
-        <div class="stat-lbl" id="lbl-qr">Response Quality</div>
-        <div class="stat-val">Low</div><div class="stat-val ai">Med</div><div class="stat-val">Med</div>
+      <div class="stat-row click">
+        <div class="stat-lbl" id="lbl-tr" onclick="openActionables('avgtime',getT('tr'),'')">Response Time</div>
+        <div class="stat-val cellable" onclick="event.stopPropagation();openWho('user','avgtime')">2 Min</div><div class="stat-val ai cellable" onclick="event.stopPropagation();openWho('asa','avgtime')">1 Min</div><div class="stat-val cellable" onclick="event.stopPropagation();openWho('human','avgtime')">1 Min</div>
+      </div>
+      <div class="stat-row click">
+        <div class="stat-lbl" id="lbl-qr" onclick="openActionables('quality',getT('qr'),'')">Response Quality</div>
+        <div class="stat-val cellable" onclick="event.stopPropagation();openWho('user','quality')">Low</div><div class="stat-val ai cellable" onclick="event.stopPropagation();openWho('asa','quality')">Med</div><div class="stat-val cellable" onclick="event.stopPropagation();openWho('human','quality')">Med</div>
       </div>
     </div>
     <div class="metrics-box" id="metricsBox"></div>
@@ -1188,10 +1346,10 @@ let simTimer=null;
 
 // ═══ i18n ════════════════════════════════════════
 const T={
-  es:{int:'INTERACCIONES',cal:'CALIDAD Y EXPERIENCIA',rend:'RENDIMIENTO',ses:'Sesiones',can:'Canales',avg:'Tiempo Prom.',animo:'&#193;nimo &amp; Sentimiento',acc:'Acciones',tem:'Temas',stats:'Stats',tr:'Tiempo de respuesta',qr:'Calidad de respuesta',faq:'Preguntas Frecuentes',words:'Palabras Populares',now:'Ahora',today:'Hoy',week:'Esta Semana',month:'Este Mes',custom:'Personalizado',sent:['Enojado','Insatisfecho','Satisfecho','Contento','Feliz']},
-  en:{int:'INTERACTIONS',cal:'QUALITY & EXPERIENCE',rend:'PERFORMANCE',ses:'Sessions',can:'Channels',avg:'Avg. Time',animo:'Mood &amp; Sentiment',acc:'Actions',tem:'Themes',stats:'Stats',tr:'Response Time',qr:'Response Quality',faq:'Frequent Questions',words:'Popular Words',now:'Now',today:'Today',week:'This Week',month:'This Month',custom:'Custom',sent:['Angry','Unsatisfied','Satisfied','Content','Happy']},
-  fr:{int:'INTERACTIONS',cal:'QUALIT&#201; & EXP&#201;RIENCE',rend:'PERFORMANCE',ses:'Sessions',can:'Canaux',avg:'Temps Moy.',animo:'Humeur &amp; Sentiment',acc:'Actions',tem:'Th&#232;mes',stats:'Stats',tr:'Temps de r&#233;ponse',qr:'Qualit&#233; de r&#233;ponse',faq:'Questions Fr&#233;quentes',words:'Mots Populaires',now:'Maintenant',today:"Aujourd'hui",week:'Cette Semaine',month:'Ce Mois',custom:'Personnalis&#233;',sent:['Col&#232;re','Insatisfait','Satisfait','Content','Heureux']},
-  pt:{int:'INTERA&#199;&#213;ES',cal:'QUALIDADE & EXPERI&#202;NCIA',rend:'DESEMPENHO',ses:'Sess&#245;es',can:'Canais',avg:'Tempo M&#233;d.',animo:'Humor &amp; Sentimento',acc:'A&#231;&#245;es',tem:'Temas',stats:'Stats',tr:'Tempo de resposta',qr:'Qualidade de resposta',faq:'Perguntas Frequentes',words:'Palavras Populares',now:'Agora',today:'Hoje',week:'Esta Semana',month:'Este M&#234;s',custom:'Personalizado',sent:['Irritado','Insatisfeito','Satisfeito','Contente','Feliz']},
+  es:{int:'INTERACCIONES',cal:'CALIDAD Y EXPERIENCIA',rend:'RENDIMIENTO',ses:'Sesiones',can:'Canales',avg:'Tiempo Prom.',animo:'&#193;nimo &amp; Sentimiento',acc:'Acciones',tem:'Temas',stats:'Stats',avail:'Disponibles',tr:'Tiempo de respuesta',qr:'Calidad de respuesta',faq:'Preguntas Frecuentes',words:'Palabras Populares',now:'Ahora',today:'Hoy',week:'Esta Semana',month:'Este Mes',custom:'Personalizado',sent:['Enojado','Insatisfecho','Satisfecho','Contento','Feliz']},
+  en:{int:'INTERACTIONS',cal:'QUALITY & EXPERIENCE',rend:'PERFORMANCE',ses:'Sessions',can:'Channels',avg:'Avg. Time',animo:'Mood &amp; Sentiment',acc:'Actions',tem:'Themes',stats:'Stats',avail:'Available',tr:'Response Time',qr:'Response Quality',faq:'Frequent Questions',words:'Popular Words',now:'Now',today:'Today',week:'This Week',month:'This Month',custom:'Custom',sent:['Angry','Unsatisfied','Satisfied','Content','Happy']},
+  fr:{int:'INTERACTIONS',cal:'QUALIT&#201; & EXP&#201;RIENCE',rend:'PERFORMANCE',ses:'Sessions',can:'Canaux',avg:'Temps Moy.',animo:'Humeur &amp; Sentiment',acc:'Actions',tem:'Th&#232;mes',stats:'Stats',avail:'Disponibles',tr:'Temps de r&#233;ponse',qr:'Qualit&#233; de r&#233;ponse',faq:'Questions Fr&#233;quentes',words:'Mots Populaires',now:'Maintenant',today:"Aujourd'hui",week:'Cette Semaine',month:'Ce Mois',custom:'Personnalis&#233;',sent:['Col&#232;re','Insatisfait','Satisfait','Content','Heureux']},
+  pt:{int:'INTERA&#199;&#213;ES',cal:'QUALIDADE & EXPERI&#202;NCIA',rend:'DESEMPENHO',ses:'Sess&#245;es',can:'Canais',avg:'Tempo M&#233;d.',animo:'Humor &amp; Sentimento',acc:'A&#231;&#245;es',tem:'Temas',stats:'Stats',avail:'Dispon&#237;veis',tr:'Tempo de resposta',qr:'Qualidade de resposta',faq:'Perguntas Frequentes',words:'Palavras Populares',now:'Agora',today:'Hoje',week:'Esta Semana',month:'Este M&#234;s',custom:'Personalizado',sent:['Irritado','Insatisfeito','Satisfeito','Contente','Feliz']},
 };
 
 // ═══ INDUSTRY CONTENT ════════════════════════════
@@ -1527,11 +1685,13 @@ async function applyConfig(){
     if(ic){iconEl.innerHTML=ic.svg;iconEl.style.display='flex';}
     document.getElementById('hLogoImg').style.display='none';
   }
-  applyLang(l);
+  applyLang(l,true);   // content is regenerated below, don't double-apply
 
   const contextText = document.getElementById('contextText').value.trim();
+  const langChanged = (window._appliedLang && window._appliedLang!==l);
+  window._appliedLang = l;
 
-  if (contextText || ind) {
+  if (contextText || ind || langChanged) {
     // AI-powered path — show loader
     const btn = document.getElementById('sbApplyBtn');
     const loader = document.getElementById('sbAiLoader');
@@ -1545,13 +1705,18 @@ async function applyConfig(){
       closeSidebar();
       toast('✦ AI-generated simulation applied');
     } catch(err) {
-      console.warn('AI generation failed, falling back to presets:', err);
+      // Probe once. Standalone there is no /api/ai, and repeating the warning
+      // on every Apply makes a working demo look broken.
+      if(window._aiOffline!==true){
+        window._aiOffline=true;
+        console.info('[bob-ai] /api/ai not reachable \u2014 using preset content');
+      }
       if(ind) applyIndustryContent(ind, l);
       else { renderFAQ(); renderAccTemas(); }
       renderChannelDisplay();
       restartSim();
       closeSidebar();
-      toast('Configuration applied \u2014 dashboard updated');
+      toast(_presetFallbackMsg(ind,l));
     } finally {
       btn.disabled = false;
       loader.classList.remove('show');
@@ -1566,6 +1731,15 @@ async function applyConfig(){
   }
 }
 
+// Preset tables carry Spanish and English only. Rather than silently serving
+// Spanish under a French label, say so.
+function _presetFallbackMsg(ind,l){
+  const noPreset=(l==='fr'||l==='pt');
+  if(!ind) return 'Configuration applied \u2014 dashboard updated';
+  if(noPreset) return 'Applied \u2014 preset content is Spanish; connect /api/ai for '+
+    ({fr:'French',pt:'Portuguese'}[l])+' content';
+  return 'Configuration applied \u2014 dashboard updated';
+}
 function applyIndustryContent(ind,l){
   const data=INDUSTRY[ind];if(!data)return;
   const lang=l==='fr'||l==='pt'?'es':l; // fallback es for fr/pt
@@ -1584,7 +1758,10 @@ function applyIndustryContent(ind,l){
   initDynList('faq',fqs);
 }
 
-function applyLang(l){
+function applyLang(l,skipContent){
+  if(!skipContent&&window._appliedLang&&window._appliedLang!==l&&CFG.industry){
+    applyIndustryContent(CFG.industry,l);
+  }
   const t=T[l];
   const ids={int:'lbl-int',cal:'lbl-cal',rend:'lbl-rend',ses:'lbl-ses',can:'lbl-can',avg:'lbl-avg',animo:'lbl-animo',acc:'lbl-acc',tem:'lbl-tem',stats:'lbl-stats',tr:'lbl-tr',qr:'lbl-qr',faq:'lbl-faq',words:'lbl-words'};
   Object.entries(ids).forEach(([k,id])=>{const el=document.getElementById(id);if(el)el.innerHTML=t[k];});
@@ -1682,9 +1859,10 @@ function onChannelsChanged(){
     p.sent.forEach((v,i)=>totals[i]+=v*w); totalW+=w;
   });
   if(totalW>0){
-    let sum=0;
-    totals.forEach((t,i)=>{sentiment[i].pct=Math.round(t/totalW);sum+=sentiment[i].pct;});
-    sentiment[2].pct-=(sum-100); // fix rounding drift on neutral state
+    const orga=[]; let sum=0;
+    totals.forEach((t,i)=>{orga[i]=Math.round(t/totalW);sum+=orga[i];});
+    orga[2]-=(sum-100);              // fix rounding drift on neutral state
+    applySentimentBlend(orga);       // organic + mechanical -> displayed
   }
   // Animate existing lollipop stems in-place (no full re-render needed)
   sentiment.forEach(s=>updateLollipop(s));
@@ -1707,6 +1885,8 @@ function onChannelsChanged(){
     metrics.forEach(m=>{ window._mBase[m.id]={total:m.total,pcts:[...m.pcts]}; });
   }
 
+  // Recompute actor attribution from the active channel mix before rendering
+  computeMetricAttribution();
   // Apply modifiers to display values and re-render metrics box
   const modMap={res:resMod,aba:abaMod,der:escMod,alu:aluMod,des:1,nps:1};
   const metricsBox=document.getElementById('metricsBox');
@@ -1715,14 +1895,14 @@ function onChannelsChanged(){
       const base=window._mBase[m.id]||{total:m.total,pcts:m.pcts};
       const mod=modMap[m.id]||1;
       const displayTotal=Math.max(0,Math.round(base.total*mod*fraction));
-      const isAlert=m.id==='aba'&&base.pcts[0]>70;
+      const isAlert=m.id==='aba'&&m.pcts[0]>70;
       return`<div class="m-row" onclick="openActionables('${m.id}',getT('${m.id}')||'${m.es}',${displayTotal})">
         <div class="m-icon" style="color:#111">${mIcons[m.icon]}</div>
         <div class="m-name">${m[CFG.lang]||m.es}</div>
         <div class="m-total">${displayTotal}</div>
-        <div class="m-pct ${isAlert?'alert':''}">${base.pcts[0]}%</div>
-        <div class="m-pct ai">${base.pcts[1]}%</div>
-        <div class="m-pct">${base.pcts[2]}%</div>
+        <div class="m-pct cellable ${isAlert?'alert':''}" onclick="event.stopPropagation();openWho('user','${m.id}')">${m.pcts[0]}%</div>
+        <div class="m-pct ai cellable" onclick="event.stopPropagation();openWho('asa','${m.id}')">${m.pcts[1]}%</div>
+        <div class="m-pct cellable" onclick="event.stopPropagation();openWho('human','${m.id}')">${m.pcts[2]}%</div>
       </div>`;
     }).join('');
   }
@@ -1759,6 +1939,7 @@ function onChannelsChanged(){
   }
 
   // ── 7. Refresh open Actionables activity tab ───────────────────────────
+  updateAvailableRow();
   if(actMetricId) renderActivityTab(actMetricId);
 }
 
@@ -1775,32 +1956,97 @@ function isSentBad(idx,pct){
   if(!t.active) return false;
   return t.type==='upper'?pct>=t.val:pct<=t.val;
 }
+// Each series answers to the threshold when that source is selected.
+// A blended threshold reddens both heads — the emotion breached as a whole.
+function isSentBadFor(idx,series){
+  const sid=['s0','s1','s2','s3','s4'][idx];
+  const sc=metricCfg.sentiment?.thresholds?.[sid];
+  if(!sc||sc.val===null||sc.val===undefined||sc.val==='') return false;
+  const src=sc.source||'blend';
+  const s=sentiment[idx];
+  let v=null;
+  if(src==='blend')      v=s.pct;
+  else if(src==='orga')  v=(series==='orga')?s.orgaRaw:null;
+  else if(src==='meca')  v=(series==='meca')?s.mecaRaw:null;
+  else if(src==='mshare')v=(series==='meca')?mecaShare(idx):null;
+  if(v===null||v===undefined) return false;
+  return (sc.type||'upper')==='upper'?v>=sc.val:v<=sc.val;
+}
 
 function renderLollipops(){
   const chart=document.getElementById('lpChart');
   chart.querySelectorAll('.lp-item').forEach(e=>e.remove());
   const labels=T[CFG.lang].sent;
-  const maxPct=Math.max(...sentiment.map(s=>s.pct),60);
+  // Both series share one vertical scale so their shapes are honestly comparable
+  const maxPct=_lpMax();
   sentiment.forEach((s,i)=>{
-    const h=Math.max(3,Math.round((s.pct/maxPct)*140));
-    const bad=isSentBad(i,s.pct);
     const item=document.createElement('div'); item.className='lp-item';
-    item.innerHTML=`<div class="lp-group"><div class="lp-pct" id="lp-pct-${s.id}">${s.pct}%</div>
-      <div class="lp-dot ${bad?'bad':''}" id="lp-dot-${s.id}"></div>
-      <div class="lp-stem" id="lp-stem-${s.id}" style="height:${h}px"></div></div>
-      <div class="lp-lbl">${labels[i]}</div>`;
+    item.innerHTML=_lpItemHTML(s,i,labels[i],maxPct);
     chart.appendChild(item);
   });
 }
 function updateLollipop(s){
-  const maxPct=Math.max(...sentiment.map(x=>x.pct),60);
-  const idx=sentiment.indexOf(s);
-  const h=Math.max(3,Math.round((s.pct/maxPct)*140));
-  const bad=isSentBad(idx,s.pct);
-  const stem=document.getElementById(`lp-stem-${s.id}`);
-  const dot=document.getElementById(`lp-dot-${s.id}`);
-  const pct=document.getElementById(`lp-pct-${s.id}`);
-  if(stem)stem.style.height=h+'px'; if(dot)dot.classList.toggle('bad',bad); if(pct)pct.textContent=s.pct+'%';
+  const idx=sentiment.indexOf(s), maxPct=_lpMax();
+  const oH=_lpH(s.orgaRaw,maxPct);
+  const oStem=document.getElementById(`lp-stem-${s.id}`);
+  const oDot =document.getElementById(`lp-dot-${s.id}`);
+  const oBad=isSentBadFor(idx,'orga');
+  if(oStem)oStem.style.height=oH+'px';
+  if(oDot)oDot.classList.toggle('bad',oBad);
+  if(oDot)oDot.setAttribute('data-tip',_lpTip('orga',s));
+  const lead=document.getElementById(`lp-pct-${s.id}`);
+  if(lead)lead.textContent=s.pct+'%';
+
+  const hasM=s.mecaRaw!==null&&s.mecaRaw!==undefined;
+  const mStem=document.getElementById(`lp-mstem-${s.id}`);
+  const mDot =document.getElementById(`lp-mdot-${s.id}`);
+  const mBad=hasM&&isSentBadFor(idx,'meca');
+  if(mStem){mStem.style.height=(hasM?_lpH(s.mecaRaw,maxPct):0)+'px';mStem.style.display=hasM?'':'none';}
+  if(mDot){
+    mDot.style.display=hasM?'':'none';
+    mDot.classList.toggle('bad',mBad);
+    mDot.setAttribute('data-tip',_lpTip('meca',s));
+  }
+}
+// ORGA and MECA are independent distributions — each sums to 100% across the
+// five emotions — so they share one scale and their shapes compare directly.
+function _lpMax(){
+  const vals=[];
+  sentiment.forEach(s=>{ vals.push(s.orgaRaw??s.pct); if(s.mecaRaw!=null) vals.push(s.mecaRaw); });
+  return Math.max(...vals,60);
+}
+function _lpH(v,maxPct){ return Math.max(3,Math.round(((v||0)/maxPct)*140)); }
+function _lpSessions(){
+  const on=activeChannels.filter(c=>c.on);
+  return {
+    orga:on.reduce((s,c)=>s+(c.live||0),0),
+    meca:on.filter(c=>rumApp(c.id)>0).reduce((s,c)=>s+(c.live||0),0),
+  };
+}
+function _lpTip(series,s){
+  const base=_lpSessions();
+  if(series==='orga'){
+    const n=Math.round(((s.orgaRaw??s.pct)/100)*base.orga);
+    return `ORGA \u00b7 ${formatNum(n)} sessions`;
+  }
+  const n=Math.round(((s.mecaRaw||0)/100)*base.meca);
+  return `MECA \u00b7 ${formatNum(n)} sessions`;
+}
+function _lpItemHTML(s,i,label,maxPct){
+  const hasM=s.mecaRaw!==null&&s.mecaRaw!==undefined;
+  const oBad=isSentBadFor(i,'orga'), mBad=hasM&&isSentBadFor(i,'meca');
+  const oH=_lpH(s.orgaRaw??s.pct,maxPct), mH=hasM?_lpH(s.mecaRaw,maxPct):0;
+  return `<div class="lp-pair">
+      <div class="lp-group">
+        <div class="lp-dot ${oBad?'bad':''}" id="lp-dot-${s.id}" data-tip="${_lpTip('orga',s)}"></div>
+        <div class="lp-stem" id="lp-stem-${s.id}" style="height:${oH}px"></div>
+      </div>
+      <div class="lp-group">
+        <div class="lp-dot sq ${mBad?'bad':''}" id="lp-mdot-${s.id}" data-tip="${_lpTip('meca',s)}" style="display:${hasM?'':'none'}"></div>
+        <div class="lp-stem" id="lp-mstem-${s.id}" style="height:${mH}px;display:${hasM?'':'none'}"></div>
+      </div>
+    </div>
+    <div class="lp-lbl"><span class="lp-pctlead" id="lp-pct-${s.id}">${s.pct}%</span>${label}</div>`;
 }
 
 // ═══ METRICS / FAQ / ACCTEMAS ════════════════════
@@ -1809,8 +2055,8 @@ function renderMetrics(){
   document.getElementById('metricsBox').innerHTML=metrics.map(m=>`<div class="m-row" id="mrow-${m.id}" onclick="openActionables('${m.id}','${m[l]||m.es}','${m.total}')">
     <div class="m-icon" style="color:#111">${mIcons[m.icon]}</div>
     <div class="m-name">${m[l]||m.es}</div><div class="m-total" id="mtotal-${m.id}">${m.total}</div>
-    <div class="m-pct ${m.id==='aba'&&m.pcts[0]>70?'alert':''}">${m.pcts[0]}%</div>
-    <div class="m-pct ai">${m.pcts[1]}%</div><div class="m-pct">${m.pcts[2]}%</div></div>`).join('');
+    <div class="m-pct cellable ${m.id==='aba'&&m.pcts[0]>70?'alert':''}" onclick="event.stopPropagation();openWho('user','${m.id}')">${m.pcts[0]}%</div>
+    <div class="m-pct ai cellable" onclick="event.stopPropagation();openWho('asa','${m.id}')">${m.pcts[1]}%</div><div class="m-pct cellable" onclick="event.stopPropagation();openWho('human','${m.id}')">${m.pcts[2]}%</div></div>`).join('');
 }
 
 const DEFAULT_FAQS={
@@ -1963,6 +2209,8 @@ const CHANNEL_PROFILES={
 };
 
 // ─ Alert log (pre-seeded with demo entries) ───────
+// Capped on insert — an uncapped log grows without bound over a long session.
+const ALERT_LOG_CAP=300;
 const alertLog=[
   {id:1,mid:'aba',  mname:'Abandonados',  type:'upper',val:43,thresh:40,time:'14:23',sev:'critical',notif:'Email'},
   {id:2,mid:'alu',  mname:'Alucinaciones',type:'upper',val:23,thresh:20,time:'13:47',sev:'warning', notif:'Slack'},
@@ -1974,6 +2222,9 @@ let actMetricId=null;
 // ─ Open / Close / Switch tab ──────────────────────
 function openActionables(metricId,name,val){
   actMetricId=metricId;
+  // Reset the header kicker — openWho() overrides it immediately after
+  const kick=document.querySelector('#actPanel .act-meta-label');
+  if(kick) kick.textContent='Actionables';
   document.getElementById('actMetricName').innerHTML=name;
   document.getElementById('actMetricVal').textContent=val||'';
   // Set timeframe badge
@@ -2022,6 +2273,7 @@ function openFaqActionables(){
 function renderAlarmsTab(metricId){
   const el=document.getElementById('actContent-alarms');
   if(!el)return;
+  if(metricId&&metricId.startsWith('who_')){ el.innerHTML=whoScopedTab('Alarms',metricId); return; }
   // Gather alarm responses configured for this metric
   const cfg=metricCfg[metricId]||{};
   const alarms=(cfg.responses||[]).filter(r=>r.type==='alarm');
@@ -2064,6 +2316,7 @@ function renderAlarmsTab(metricId){
 function renderActionsTab(metricId){
   const el=document.getElementById('actContent-actions');
   if(!el)return;
+  if(metricId&&metricId.startsWith('who_')){ el.innerHTML=whoScopedTab('Actions',metricId); return; }
   const cfg=metricCfg[metricId]||{};
   const actions=(cfg.responses||[]).filter(r=>r.type==='action');
   const triggered=alertLog.filter(a=>a.mid===metricId&&a.type!=='recovery');
@@ -2101,6 +2354,9 @@ function renderActionsTab(metricId){
 
 // ─ Activity tab ───────────────────────────────────
 function renderActivityTab(metricId){
+  // Entity ("who") drill-down
+  if(metricId.startsWith('who_')){ renderEntityActivity(metricId); return; }
+  if(metricId==='available'){ renderAvailableActivity(); return; }
   // Channel performance metrics
   if(metricId.startsWith('ch_')){
     renderChannelActivity(metricId.replace('ch_',''));
@@ -2210,6 +2466,47 @@ function renderAvgTimeActivity(){
     <div class="pattern-box">${patternInsight('avgtime')}</div>`;
 }
 
+// MECA / ORGA decomposition — which source is driving each emotion,
+// and which channels and signals are feeding the mechanical side.
+function buildFrustrationSection(){
+  const labels=T[CFG.lang]?.sent||T.es.sent;
+  const meca=computeMecaDist();
+  const rumChs=activeChannels.filter(c=>c.on&&rumApp(c.id)>0);
+  if(!meca||!rumChs.length){
+    return `<div class="act-section-hd mt">Mechanical vs Organic</div>
+      <div class="ros-assign">No active channel emits RUM signals, so sentiment here is
+      entirely <b>organic</b> \u2014 what people said. Mechanical signal requires a static
+      surface such as Web Forms, Mobile App or Google Business.</div>`;
+  }
+  const share=Math.round(rumVolumeShare()*100);
+  const rows=sentiment.map((s,i)=>{
+    const ms=mecaShare(i);
+    return `<div class="ros-hist-row">
+      <span class="ros-hist-x">${labels[i]}</span>
+      <span class="ros-hist-b">ORGA ${Math.round(s.orga||0)}%</span>
+      <span class="ros-hist-b ${ms>60?'bad':''}">MECA ${Math.round(s.meca||0)}%</span>
+      <span class="ros-hist-t" style="width:52px;text-align:right">${ms}% mech</span>
+    </div>`;}).join('');
+  const sig=rumChs.map(c=>{
+    const r=rumState[c.id]||{};
+    return `<div class="ros-hist-row"><span class="ros-hist-x">${chName(c.id)}</span>
+      <span class="ros-hist-b ${(r.rage||0)>0?'bad':''}">rage ${r.rage||0}</span>
+      <span class="ros-hist-b">dead ${r.dead||0}</span>
+      <span class="ros-hist-b ${(r.errorClick||0)>0?'bad':''}">err ${r.errorClick||0}</span>
+      <span class="ros-hist-b">exit ${r.rapidExit||0}</span></div>`;}).join('');
+  const worst=sentiment.map((s,i)=>({i,ms:mecaShare(i)})).sort((a,b)=>b.ms-a.ms)[0];
+  return `<div class="act-section-hd mt">Mechanical vs Organic</div>
+    <div class="ros-hist">${rows}</div>
+    <div class="act-section-hd mt">Frustration signals</div>
+    <div class="ros-hist">${sig}</div>
+    <div class="ros-assign" style="margin-top:8px">
+      <b>${share}%</b> of active volume can emit RUM at a
+      <b>${Math.round(mechWeight()*100)}%</b> mechanical weight.
+      ${worst&&worst.ms>50
+        ?`<b style="color:var(--red)">${labels[worst.i]} is ${worst.ms}% mechanical</b> \u2014 the interface, not the conversation, is driving it.`
+        :'Conversation is the dominant driver across all five states.'}</div>`;
+}
+
 function renderSentimentActivity(){
   const labels=T[CFG.lang]?.sent||T.es.sent;
   const colors=['var(--red)','#C4A265','var(--black)','var(--green)','var(--green)'];
@@ -2229,6 +2526,7 @@ function renderSentimentActivity(){
     <div class="act-bar-list">${bars}</div>
     <div class="act-section-hd mt">Sentiment Drivers</div>
     <div class="act-sentiment-driver"><strong>↑ Positive:</strong> Fast AI resolution, first-contact resolution, no escalation<br><strong>↓ Negative:</strong> Wait times exceeding <strong>4 min</strong>, escalation events, disambiguation loops</div>
+    ${buildFrustrationSection()}
     <div class="act-section-hd mt">Pattern Insight</div>
     <div class="pattern-box">${patternInsight('sentiment')}</div>`;
 }
@@ -2367,6 +2665,12 @@ function patternInsight(metricId){
 
 // ─ Alerts tab ─────────────────────────────────────
 function renderAlertsTab(metricId){
+  if(metricId&&metricId.startsWith('who_')){
+    const el=document.getElementById('actContent-alerts');
+    if(el) el.innerHTML=whoAlertsTab(metricId);
+    const bd=document.getElementById('actAlertsBadge'); if(bd) bd.classList.remove('show');
+    return;
+  }
   const filtered=alertLog.filter(a=>a.mid===metricId);
   const badge=document.getElementById('actAlertsBadge');
   // Badge shows only alerts FOR THIS METRIC — never the global total
@@ -2437,10 +2741,13 @@ const NOTIF_DEFS=[
 // ─ Config tab dispatcher ──────────────────────────
 // ─ Notification Channels Registry (shared across all metrics) ──
 if(!window._notifChannels) window._notifChannels=[
-  {id:'nc1',type:'email',label:'Operations Team',values:['ops@company.com','lead@company.com']},
-  {id:'nc2',type:'sms',label:'On-Call Manager',values:['+1-555-0199']},
+  {id:'nc1',type:'email',  label:'Operations Team',   values:['ops@company.com','lead@company.com'],scope:'company'},
+  {id:'nc2',type:'sms',    label:'On-Call Manager',   values:['+1-555-0199'],scope:'company'},
+  {id:'nc3',type:'slack',  label:'#soporte-alertas',  values:['#soporte-alertas'],scope:'aba'},
+  {id:'nc4',type:'call',   label:'Escalation Line',   values:['+1-555-0142'],scope:'company'},
+  {id:'nc7',type:'email',  label:'Quality Team',      values:['quality@company.com'],scope:'quality'},
 ];
-let _ncIdCtr=3;
+let _ncIdCtr=8;
 
 function _ensureResponses(mid){
   if(!metricCfg[mid]) metricCfg[mid]={upper:null,lower:null,notifs:[],peak:false,msg:''};
@@ -2449,6 +2756,7 @@ function _ensureResponses(mid){
 
 function _getThresholdOptions(mid){
   const opts=[];
+  if(mid.startsWith('who_')) return _whoOptions(mid);
   if(mid.startsWith('ch_')){
     opts.push({key:'lower',label:'Lower — performance falls below minimum'});
     opts.push({key:'upper',label:'Upper — performance exceeds maximum'});
@@ -2468,7 +2776,12 @@ function _getThresholdOptions(mid){
     opts.push({key:'col-ai-upper',label:'AI column — exceeds %'});
     opts.push({key:'col-human-upper',label:'Human column — exceeds %'});
   } else if(mid==='sentiment'){
-    ['Angry','Unsatisfied','Satisfied','Content','Happy'].forEach((l,i)=>opts.push({key:'sent-s'+i,label:l+' — threshold'}));
+    ['Angry','Unsatisfied','Satisfied','Content','Happy'].forEach((l,i)=>{
+      opts.push({key:'sent-s'+i,   label:l+' — blended threshold'});
+      opts.push({key:'orga-s'+i,   label:l+' — ORGANIC contribution'});
+      opts.push({key:'meca-s'+i,   label:l+' — MECHANICAL contribution'});
+      opts.push({key:'mshare-s'+i, label:l+' — mechanical share of emotion'});
+    });
   } else if(mid==='quality'){
     opts.push({key:'ai-quality',label:'AI quality — falls below'});
     opts.push({key:'human-quality',label:'Human quality — falls below'});
@@ -2479,6 +2792,17 @@ function _getThresholdOptions(mid){
   return opts;
 }
 
+function _webhookPicker(onChangeAttr,selected){
+  const hooks=(window._notifChannels||[]).filter(ch=>ch.type==='webhook');
+  if(!hooks.length) return `<span class="cfg-lbl">Send to webhook</span>
+    <div style="font-size:10px;color:var(--gray-light);padding:4px 0">No webhooks registered \u2014 add one in Response Options.</div>`;
+  return `<span class="cfg-lbl">Send to webhook</span>
+    <div style="display:flex;flex-direction:column;gap:3px;margin:3px 0 6px">${hooks.map(ch=>{
+      const on=(selected||[]).includes(ch.id);
+      return `<label class="cfg-nc-check"><input type="checkbox" ${on?'checked':''} onchange="${onChangeAttr.replace('__ID__',ch.id)}">${_ncTypeIcon(ch.type)} ${ch.label}</label>`;
+    }).join('')}</div>`;
+}
+function _commChannels(){ return (window._notifChannels||[]).filter(c=>c.type!=='webhook'); }
 function _ncTypeIcon(type){
   return{email:'\u2709',sms:'\ud83d\udcf1',slack:'\ud83d\udcac',call:'\ud83d\udcde',webhook:'\ud83d\udd17'}[type]||'\ud83d\udccc';
 }
@@ -2486,13 +2810,19 @@ function _ncTypeIcon(type){
 function renderConfigTab(metricId){
   const el=document.getElementById('actContent-config');
   if(!el)return;
+  // Entity panels use the SAME configuration machinery, not a lesser copy —
+  // they inherit the peak-time control, responses and save button automatically.
   const sub=el.dataset.subTab||'thresholds';
+  // Left pair configures WHEN something fires; right pair configures WHERE it goes.
   el.innerHTML=`<div class="cfg-subtabs">
     <div class="cfg-subtab ${sub==='thresholds'?'active':''}" onclick="switchConfigSubTab('thresholds','${metricId}')">Thresholds</div>
     <div class="cfg-subtab ${sub==='anomalies'?'active':''}" onclick="switchConfigSubTab('anomalies','${metricId}')">Anomalies</div>
-    <div class="cfg-subtab ${sub==='channels'?'active':''}" onclick="switchConfigSubTab('channels','${metricId}')">Response Options</div>
+    <div class="cfg-subtab-div"></div>
+    <div class="cfg-subtab ${sub==='autocomm'?'active':''}" onclick="switchConfigSubTab('autocomm','${metricId}')">AutoComm</div>
+    <div class="cfg-subtab ${sub==='autobotz'?'active':''}" onclick="switchConfigSubTab('autobotz','${metricId}')">AutoBotz</div>
   </div><div id="cfgSubContent"></div>`;
-  if(sub==='channels') renderChannelsCfg();
+  if(sub==='autocomm'||sub==='channels') renderChannelsCfg();
+  else if(sub==='autobotz') renderAutoBotzCfg();
   else if(sub==='anomalies') renderAnomaliesCfg(metricId);
   else renderThresholdsCfg(metricId);
 }
@@ -2500,10 +2830,15 @@ function switchConfigSubTab(sub,mid){
   const el=document.getElementById('actContent-config');
   if(el) el.dataset.subTab=sub;
   renderConfigTab(mid);
+  // Each sub-tab starts at the top — otherwise a tall panel's scroll offset
+  // carries into a short one and the header appears to shift.
+  const body=document.querySelector('#actPanel .act-body');
+  if(body) body.scrollTop=0;
 }
 
 // ═══ THRESHOLDS ═════════════════════════════════
 function _threshUnit(mid,key){
+  if(mid.startsWith('who_')) return _whoUnit(mid,key);
   if(mid.startsWith('ch_')) return '%';
   if(['sessions'].includes(mid)) return 'sessions';
   if(mid==='avgtime') return 'min';
@@ -2546,51 +2881,53 @@ function renderTextRulesCfg(mid){
     else if(r.condition==='newentry') valueField=`<div style="font-size:10px;color:var(--gray-mid);padding:4px 0">Automatically triggers when new items appear.</div>`;
 
     return`<div style="padding:10px;border:1px solid var(--gray-border);border-radius:8px;margin-bottom:8px">
+      ${_delRow(`trule:${mid}:${i}`,r.name||'this rule',(r.responses||[]).length,`removeTextRule('${mid}',${i})`,`_cancelDel(()=>renderTextRulesCfg('${mid}'))`)}
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
         <input class="cfg-kw-input" value="${r.name||''}" placeholder="Rule name" style="flex:1;font-weight:700" onchange="metricCfg['${mid}'].textRules[${i}].name=this.value">
-        <button class="cfg-nc-remove" onclick="removeTextRule('${mid}',${i})">\u00d7</button>
+        <button class="cfg-nc-remove" onclick="event.stopPropagation();_askDel('trule:${mid}:${i}',()=>renderTextRulesCfg('${mid}'))">\u00d7</button>
       </div>
       <select class="sb-select" style="width:100%;padding:5px 8px;font-size:11px;margin-bottom:8px" onchange="metricCfg['${mid}'].textRules[${i}].condition=this.value;renderTextRulesCfg('${mid}')">
         ${TEXT_RULE_CONDITIONS.map(tc=>`<option value="${tc.id}" ${tc.id===r.condition?'selected':''}>${tc.label} \u2014 ${tc.hint}</option>`).join('')}
       </select>
       ${valueField}
-      <div class="act-section-hd" style="margin-top:10px">Responses</div>
+      <div class="cfg-hdrow" style="margin-top:10px">
+        <div class="act-section-hd" style="margin:0">Responses</div>
+        <button class="cfg-add-inline" style="font-size:9.5px;padding:3px 9px" onclick="addTextRuleResp('${mid}',${i})">+ Response</button>
+      </div>
+      ${_respChooser(`x:${mid}:${i}`,`addTextRuleResp('${mid}',${i},'__T__')`)}
       ${respCards||'<div style="font-size:10px;color:var(--gray-light);margin-bottom:4px">No responses.</div>'}
-      <button class="cfg-add-resp-btn" style="font-size:9px;padding:4px 8px;margin-top:2px" onclick="addTextRuleResp('${mid}',${i})">+ Response</button>
     </div>`;
   }).join('');
 
   c.innerHTML=`
     <div class="act-section-hd">Content Rules</div>
-    <div style="font-size:11px;color:var(--gray-mid);margin-bottom:10px;line-height:1.5">Define rules to monitor keyword appearances, ranking changes, frequency spikes, or new entries in this section.</div>
+    <div class="cfg-desc"><p>Watches this list for keywords, ranking shifts and spikes.</p>
+      <button class="cfg-add-inline" onclick="addTextRule('${mid}')">+ Rule</button></div>
     ${ruleCards||'<div style="font-size:11px;color:var(--gray-light);padding:6px 0">No rules defined.</div>'}
-    <button class="cfg-add-resp-btn" onclick="addTextRule('${mid}')">+ Add Rule</button>
-    <button class="cfg-save" style="margin-top:14px" onclick="saveTextRules('${mid}')">Save Configuration</button>`;
+    <div class="cfg-saved" id="cfgSaved">\u2713 Saved</div>`;
 }
 
 function addTextRule(mid){
   _ensureTextRules(mid);
-  metricCfg[mid].textRules.push({name:'',condition:'keyword',value:'',responses:[]});
+  metricCfg[mid].textRules.unshift({name:'',condition:'keyword',value:'',responses:[]});
   renderTextRulesCfg(mid);
 }
-function removeTextRule(mid,i){
+function removeTextRule(mid,i){_pendingDel=null;
   metricCfg[mid].textRules.splice(i,1);
   renderTextRulesCfg(mid);
 }
-function addTextRuleResp(mid,i){
-  const menuId=`trm-${mid}-${i}`;
-  const existing=document.getElementById(menuId);
-  if(existing){existing.style.display=existing.style.display==='none'?'flex':'none';return;}
-  event.target.insertAdjacentHTML('afterend',`<div id="${menuId}" style="display:flex;gap:4px;margin-top:4px">
-    <button class="cfg-resp-choice" onclick="doAddTextRuleResp('${mid}',${i},'alert')">\u26a0 Alert</button>
-    <button class="cfg-resp-choice" onclick="doAddTextRuleResp('${mid}',${i},'alarm')">\ud83d\udd14 Alarm</button>
-    <button class="cfg-resp-choice" onclick="doAddTextRuleResp('${mid}',${i},'action')">\u26a1 Action</button>
-  </div>`);
+function addTextRuleResp(mid,i,type){
+  if(!type){ _toggleRespMenu(`x:${mid}:${i}`,()=>renderTextRulesCfg(mid)); return; }
+  _respMenu=null;
+  _ensureTextRules(mid);
+  if(!metricCfg[mid].textRules[i].responses) metricCfg[mid].textRules[i].responses=[];
+  metricCfg[mid].textRules[i].responses.unshift({type,name:'',channels:[],subject:'',message:'',_open:true,_new:true});
+  renderTextRulesCfg(mid);
 }
 function doAddTextRuleResp(mid,i,type){
   _ensureTextRules(mid);
   if(!metricCfg[mid].textRules[i].responses) metricCfg[mid].textRules[i].responses=[];
-  metricCfg[mid].textRules[i].responses.push({type,name:'',channels:[],subject:'',message:'',_open:true});
+  metricCfg[mid].textRules[i].responses.unshift({type,name:'',channels:[],subject:'',message:'',_open:true,_new:true});
   renderTextRulesCfg(mid);
 }
 function saveTextRules(mid){
@@ -2606,13 +2943,18 @@ function renderThresholdsCfg(mid){
   // Redirect text-based metrics to rule-based config
   if(TEXT_RULE_METRICS.includes(mid)){return renderTextRulesCfg(mid);}
   const c=document.getElementById('cfgSubContent');if(!c)return;
-  _ensureResponses(mid);
-  const cfg=metricCfg[mid]||{};
+  const whoScope=mid.startsWith('who_')?_whoScopeRow(mid):'';
+  const key=_thKey(mid);
+  _ensureResponses(key);
+  const cfg=metricCfg[key]||{};
   const opts=_getThresholdOptions(mid);
   const sel=c.dataset?.st||opts[0]?.key||'upper';
-  const isUp=sel.includes('upper');
+  const _sp=(mid==='sentiment')?_sentKeyParts(sel):null;
+  const isUp=_sp?((_sp.source==='mshare'||_sp.sid==='s0'||_sp.sid==='s1')):sel.includes('upper');
   const bk=isUp?'upper':'lower';
-  const cv=cfg[bk];
+  const cv=_sp?(metricCfg.sentiment?.thresholds?.[_sp.sid]?.source===_sp.source
+                 ?metricCfg.sentiment.thresholds[_sp.sid].val:null)
+             :cfg[bk];
   const unit=_threshUnit(mid,sel);
   const defaultVals={sessions:{upper:1000,lower:500},avgtime:{upper:15,lower:3},nps:{upper:40,lower:0,'lower-promoter':30},
     res:{upper:null,lower:70},aba:{upper:120,lower:null},des:{upper:null,lower:null},der:{upper:120,lower:null},alu:{upper:60,lower:null},
@@ -2631,39 +2973,42 @@ function renderThresholdsCfg(mid){
       return ch?`<span class="cfg-ch-pill">${_ncTypeIcon(ch.type)} ${ch.label}</span>`:'';
     }).filter(Boolean).join('');
     // Expanded detail
-    const allChs=(window._notifChannels||[]).map(ch=>{
+    const allChs=_visibleComms(mid,r.type).map(ch=>{
       const on=(r.channels||[]).includes(ch.id);
-      return`<label class="cfg-nc-check"><input type="checkbox" ${on?'checked':''} onchange="toggleRC('${mid}',${i},'${ch.id}',this.checked)">${_ncTypeIcon(ch.type)} ${ch.label}</label>`;
+      return`<label class="cfg-nc-check"><input type="checkbox" ${on?'checked':''} onchange="toggleRC('${mid}',${i},'${ch.id}',this.checked)">${_ncTypeIcon(ch.type)} ${ch.label} ${_scopeChip(ch,mid)}</label>`;
     }).join('');
     let detail='';
     if(r.type==='alert'||r.type==='alarm'){
       detail=`<span class="cfg-lbl">Send to:</span>
-        <div style="display:flex;flex-direction:column;gap:3px;margin:3px 0 8px">${allChs||'<span style="font-size:10px;color:var(--gray-light)">No channels</span>'}</div>
+        ${r.type==='alarm'?'<div class="scope-note">Alarms are company-wide, so only company-scoped channels are offered.</div>':''}
+        <div style="display:flex;flex-direction:column;gap:3px;margin:3px 0 8px">${allChs||'<span style="font-size:10px;color:var(--gray-light)">No channels in scope \u2014 add one in AutoComm.</span>'}</div>
         <span class="cfg-lbl">Subject Line</span>
-        <input class="cfg-kw-input" value="${r.subject||''}" placeholder="Alert: {{metric}} threshold breached" onchange="metricCfg['${mid}'].responses[${i}].subject=this.value">
+        <input class="cfg-kw-input" value="${r.subject||''}" placeholder="Alert: {{metric}} threshold breached" onchange="metricCfg['${key}'].responses[${i}].subject=this.value">
         <span class="cfg-lbl">Message Template</span>
-        <textarea class="cfg-textarea" rows="2" placeholder="{{metric}} is at {{value}} (threshold: {{threshold}}). Immediate attention required." onchange="metricCfg['${mid}'].responses[${i}].message=this.value">${r.message||''}</textarea>`;
+        <textarea class="cfg-textarea" rows="2" placeholder="{{metric}} is at {{value}} (threshold: {{threshold}}). Immediate attention required." onchange="metricCfg['${key}'].responses[${i}].message=this.value">${r.message||''}</textarea>`;
     } else if(r.type==='action'){
-      detail=`<span class="cfg-lbl">Webhook URL</span><input class="cfg-kw-input" type="url" value="${r.url||''}" placeholder="https://..." onchange="metricCfg['${mid}'].responses[${i}].url=this.value">
-        <span class="cfg-lbl">Payload</span><textarea class="cfg-textarea" rows="2" placeholder='{"metric":"{{metric}}","value":{{value}}}' onchange="metricCfg['${mid}'].responses[${i}].payload=this.value">${r.payload||''}</textarea>`;
+      detail=_autoBotzPicker(`toggleRC('${mid}',${i},'__ID__',this.checked)`,r.channels,mid)+
+        `<span class="cfg-lbl">Payload override (optional)</span><textarea class="cfg-textarea" rows="2" placeholder='{"metric":"{{metric}}","value":{{value}}}' onchange="metricCfg['${key}'].responses[${i}].payload=this.value">${r.payload||''}</textarea>`;
     }
-    return`<div class="cfg-resp-row" onclick="toggleRespOpen('${mid}',${i})" style="cursor:pointer">
+    return`${_delRow(`resp:${mid}:${i}`,name,0,`removeResponse('${mid}',${i})`,`_cancelDel(()=>renderThresholdsCfg('${mid}'))`)}
+    <div class="cfg-resp-row" onclick="toggleRespOpen('${mid}',${i})" style="cursor:pointer">
       <span>${icons[r.type]||''}</span><span style="font-weight:700;font-size:11px">${r.type}</span>
-      <input class="cfg-resp-name" value="${name}" placeholder="Name\u2026" onclick="event.stopPropagation()" onchange="metricCfg['${mid}'].responses[${i}].name=this.value">
+      <input class="cfg-resp-name" value="${name}" placeholder="Name\u2026" onclick="event.stopPropagation()" onchange="metricCfg['${key}'].responses[${i}].name=this.value">
       ${selChs?'<div style="display:flex;gap:3px;flex-shrink:0">'+selChs+'</div>':''}
-      <button class="cfg-nc-remove" onclick="event.stopPropagation();removeResponse('${mid}',${i})">\u00d7</button>
-    </div><div style="display:${expanded};padding:8px 10px 10px;border:1px solid var(--gray-border);border-top:none;border-radius:0 0 8px 8px;margin-top:-1px;margin-bottom:6px">${detail}</div>`;
+      <button class="cfg-nc-remove" onclick="event.stopPropagation();_askDel('resp:${mid}:${i}',()=>renderThresholdsCfg('${mid}'))">\u00d7</button>
+    </div><div style="display:${expanded};padding:8px 10px 10px;border:1px solid var(--gray-border);border-top:none;border-radius:0 0 8px 8px;margin-top:-1px;margin-bottom:6px">${detail}
+      ${_editBtns(`saveResp('${mid}',${i})`,`cancelResp('${mid}',${i})`,!r.name)}</div>`;
   }).join('');
 
   // Peak-time config
   if(!cfg.peakMode) cfg.peakMode='manual';
-  if(!cfg.peakWindows) cfg.peakWindows=[{start:'09:00',end:'11:00',days:'weekdays'},{start:'14:00',end:'16:00',days:'weekdays'}];
+  if(!cfg.peakWindows||!cfg.peakWindows.length) cfg.peakWindows=[{start:'09:00',end:'11:00',days:'weekdays'},{start:'14:00',end:'16:00',days:'weekdays'}];
   const peakMode=cfg.peakMode;
   const peakManual=cfg.peakWindows.map((w,i)=>`<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
-    <input type="time" value="${w.start}" style="font-size:11px;padding:3px 6px;border:1px solid var(--gray-border);border-radius:4px" onchange="metricCfg['${mid}'].peakWindows[${i}].start=this.value">
+    <input type="time" value="${w.start}" style="font-size:11px;padding:3px 6px;border:1px solid var(--gray-border);border-radius:4px" onchange="metricCfg['${key}'].peakWindows[${i}].start=this.value">
     <span style="font-size:10px;color:var(--gray-light)">\u2192</span>
-    <input type="time" value="${w.end}" style="font-size:11px;padding:3px 6px;border:1px solid var(--gray-border);border-radius:4px" onchange="metricCfg['${mid}'].peakWindows[${i}].end=this.value">
-    <select style="font-size:10px;padding:2px 4px;border:1px solid var(--gray-border);border-radius:4px" onchange="metricCfg['${mid}'].peakWindows[${i}].days=this.value">
+    <input type="time" value="${w.end}" style="font-size:11px;padding:3px 6px;border:1px solid var(--gray-border);border-radius:4px" onchange="metricCfg['${key}'].peakWindows[${i}].end=this.value">
+    <select style="font-size:10px;padding:2px 4px;border:1px solid var(--gray-border);border-radius:4px" onchange="metricCfg['${key}'].peakWindows[${i}].days=this.value">
       <option value="weekdays" ${w.days==='weekdays'?'selected':''}>Weekdays</option>
       <option value="weekends" ${w.days==='weekends'?'selected':''}>Weekends</option>
       <option value="all" ${w.days==='all'?'selected':''}>All days</option>
@@ -2673,43 +3018,143 @@ function renderThresholdsCfg(mid){
   const peakHtml=`<div class="cfg-group" style="margin-bottom:12px">
     <span class="cfg-lbl">Peak-Time Exception</span>
     <div style="display:flex;gap:8px;margin-bottom:8px">
-      <label class="cfg-toggle"><input type="radio" name="peak-${mid}" value="manual" ${peakMode==='manual'?'checked':''} onchange="metricCfg['${mid}'].peakMode='manual';renderThresholdsCfg('${mid}')"><span>Manual</span></label>
-      <label class="cfg-toggle"><input type="radio" name="peak-${mid}" value="observed" ${peakMode==='observed'?'checked':''} onchange="metricCfg['${mid}'].peakMode='observed';renderThresholdsCfg('${mid}')"><span>Observed</span></label>
-      <label class="cfg-toggle"><input type="radio" name="peak-${mid}" value="off" ${peakMode==='off'?'checked':''} onchange="metricCfg['${mid}'].peakMode='off';renderThresholdsCfg('${mid}')"><span>Off</span></label>
+      <label class="cfg-toggle"><input type="radio" name="peak-${mid}" value="manual" ${peakMode==='manual'?'checked':''} onchange="metricCfg['${key}'].peakMode='manual';renderThresholdsCfg('${mid}')"><span>Manual</span></label>
+      <label class="cfg-toggle"><input type="radio" name="peak-${mid}" value="observed" ${peakMode==='observed'?'checked':''} onchange="metricCfg['${key}'].peakMode='observed';renderThresholdsCfg('${mid}')"><span>Observed</span></label>
+      <label class="cfg-toggle"><input type="radio" name="peak-${mid}" value="off" ${peakMode==='off'?'checked':''} onchange="metricCfg['${key}'].peakMode='off';renderThresholdsCfg('${mid}')"><span>Off</span></label>
     </div>
     ${peakMode==='manual'?'<div>'+peakManual+'</div>':''}
     ${peakMode==='observed'?'<div style="padding:8px 10px;background:var(--gray-bg);border-radius:7px;border:1px solid var(--gray-border);font-size:11px;color:var(--gray-dark)"><strong>Detected peaks:</strong> Mon\u2013Fri 09:15\u201310:45, Thu 14:00\u201315:30<br><span style="font-size:10px;color:var(--gray-light)">Based on 30-day traffic analysis</span></div>':''}
   </div>`;
 
-  c.innerHTML=`<div style="margin-bottom:8px">
-    <select class="sb-select" id="cfgTS" onchange="onTS('${mid}',this.value)" style="width:100%;padding:7px 10px;margin-bottom:8px">
-      ${opts.map(o=>`<option value="${o.key}" ${o.key===sel?'selected':''}>${o.label}</option>`).join('')}
-    </select>
+  const mechRow=(mid==='sentiment')?_mechWeightRow():'';
+  const thDesc=whoScope?'':`<div class="cfg-desc"><p>Fires when this metric crosses a limit you set.</p></div>`;
+
+  // Collapsed summaries so the configuration reads without expanding anything
+  const selLabel=(opts.find(o=>o.key===sel)||opts[0]||{}).label||'';
+  const thSum=cv!=null?`${selLabel} ${displayVal} ${unit}`:'Not set';
+  const nResp=(cfg.responses||[]).length;
+  const respSum=nResp?`${nResp} configured`:'None';
+  let scopeSum='';
+  if(whoScope){
+    const sc=cfg.scope||'each';
+    scopeSum=sc==='actor'?(cfg.actorId||'No actor selected')
+            :sc==='group'?'The group as a whole':'Each actor individually';
+  }
+
+  c.innerHTML=`${thDesc}
+  ${whoScope?`${_thHead('scope',mid,'Scope',scopeSum)}${_thSec.scope?`<div class="acc-body">${whoScope}</div>`:''}`:''}
+  ${_thHead('threshold',mid,'Threshold',thSum)}
+  ${_thSec.threshold?`<div class="acc-body">${mechRow}
+    <div class="cfg-selrow">
+      <select class="sb-select" id="cfgTS" onchange="onTS('${mid}',this.value)" style="padding:7px 10px">
+        ${opts.map(o=>`<option value="${o.key}" ${o.key===sel?'selected':''}>${o.label}</option>`).join('')}
+      </select>
+    </div>
     <div style="display:flex;gap:8px;align-items:center">
-      <label class="cfg-toggle"><input type="checkbox" id="cfg-tc" ${cv!=null?'checked':''} onchange="document.getElementById('cfg-tv').disabled=!this.checked"><span>Enabled</span></label>
-      <input type="number" class="cfg-num" id="cfg-tv" value="${displayVal}" placeholder="${dv||100}" ${cv==null?'disabled':''} min="0" style="width:90px">
+      <label class="cfg-toggle"><input type="checkbox" id="cfg-tc" ${cv!=null?'checked':''} onchange="document.getElementById('cfg-tv').disabled=!this.checked;commitThreshold('${mid}')"><span>Enabled</span></label>
+      <input type="number" class="cfg-num" id="cfg-tv" value="${displayVal}" placeholder="${dv||100}" ${cv==null?'disabled':''} min="0" style="width:90px" onchange="commitThreshold('${mid}')">
       <span class="cfg-thresh-hint">${unit}</span>
-    </div></div>
-  ${peakHtml}
-  <div class="cfg-divider"></div>
-  <div class="act-section-hd">Responses</div>
-  ${resps||'<div style="font-size:11px;color:var(--gray-light);padding:4px 0">None configured.</div>'}
-  <div id="cfgARM" style="display:none;margin:6px 0"><div style="display:flex;gap:5px">
-    <button class="cfg-resp-choice" onclick="addResp('${mid}','alert')">\u26a0 Alert</button>
-    <button class="cfg-resp-choice" onclick="addResp('${mid}','alarm')">\ud83d\udd14 Alarm</button>
-    <button class="cfg-resp-choice" onclick="addResp('${mid}','action')">\u26a1 Action</button>
-  </div></div>
-  <button class="cfg-add-resp-btn" onclick="document.getElementById('cfgARM').style.display='block'">+ Add Response</button>
-  <button class="cfg-save" style="margin-top:14px" onclick="saveTCfg('${mid}')">Save Configuration</button>`;
+    </div>
+    ${peakHtml}</div>`:''}
+  ${_thHead('responses',mid,'Responses',respSum)}
+  ${_thSec.responses?`<div class="acc-body">
+    <div class="cfg-hdrow" style="margin-bottom:6px">
+      <span style="font-size:10.5px;color:var(--gray-mid)">Alert, Alarm or Action when this fires.</span>
+      <button class="cfg-add-inline" onclick="_toggleRespMenu('t:${mid}',()=>renderThresholdsCfg('${mid}'))">+ Response</button>
+    </div>
+    ${_respChooser(`t:${mid}`,`addResp('${mid}','__T__')`)}
+    ${resps||'<div style="font-size:11px;color:var(--gray-light);padding:4px 0">None configured.</div>'}
+  </div>`:''}
+
+  <div class="cfg-saved" id="cfgSaved">\u2713 Saved</div>`;
+}
+// Sentiment thresholds are keyed per emotion AND per source (blend/orga/meca/
+// mshare), so they persist into metricCfg.sentiment.thresholds — not the plain
+// upper/lower pair every other metric uses.
+function _mechWeightRow(){
+  const mw=Math.round(mechWeight()*100);
+  const chs=activeChannels.filter(c=>c.on&&rumApp(c.id)>0).map(c=>chShort(c.id)).join(', ');
+  return `<div class="act-section-hd">Mechanical vs Organic</div>
+    <div style="font-size:11px;color:var(--gray-mid);line-height:1.5;margin-bottom:8px">
+      How much weight RUM frustration signals carry against conversational sentiment.
+      Applies only to channels that emit RUM \u2014 currently ${chs||'none active'}.
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <input type="range" class="sb-slider" min="0" max="100" value="${mw}" style="flex:1"
+        oninput="metricCfg.sentiment.mechWeight=parseInt(this.value)/100;document.getElementById('mwLbl').textContent=this.value+'% MECA';onChannelsChanged();renderLollipops()">
+      <span id="mwLbl" style="font-size:11px;font-weight:700;white-space:nowrap;width:78px">${mw}% MECA</span>
+    </div>
+    <div class="cfg-divider"></div>`;
+}
+function _sentKeyParts(key){
+  const m=/^(sent|orga|meca|mshare)-s(\d)$/.exec(key||'');
+  return m?{source:m[1]==='sent'?'blend':m[1],sid:'s'+m[2]}:null;
 }
 function onTS(mid,k){const c=document.getElementById('cfgSubContent');if(c)c.dataset.st=k;renderThresholdsCfg(mid);}
-function toggleRespOpen(mid,i){_ensureResponses(mid);metricCfg[mid].responses[i]._open=!metricCfg[mid].responses[i]._open;renderThresholdsCfg(mid);}
-function addResp(mid,type){_ensureResponses(mid);metricCfg[mid].responses.push({type,name:'',channels:[],url:'',subject:'',message:'',_open:true});const m=document.getElementById('cfgARM');if(m)m.style.display='none';renderThresholdsCfg(mid);}
-function removeResponse(mid,i){if(metricCfg[mid]?.responses)metricCfg[mid].responses.splice(i,1);renderThresholdsCfg(mid);}
-function toggleRC(mid,i,ncId,on){const r=metricCfg[mid]?.responses?.[i];if(!r)return;if(!r.channels)r.channels=[];if(on&&!r.channels.includes(ncId))r.channels.push(ncId);if(!on)r.channels=r.channels.filter(c=>c!==ncId);renderThresholdsCfg(mid);}
+function toggleRespOpen(mid,i){
+  const K=_thKey(mid); _ensureResponses(K);
+  const r=metricCfg[K].responses[i]; if(!r)return;
+  if(r._open){ saveResp(mid,i); return; }          // collapsing commits
+  r._open=true; _snapTake(`resp:${mid}:${i}`,r);   // expanding starts a session
+  renderThresholdsCfg(mid);
+}
+function saveResp(mid,i){
+  const r=metricCfg[_thKey(mid)]?.responses?.[i]; if(!r)return;
+  r._open=false; delete r._new; _snapDrop(`resp:${mid}:${i}`);
+  renderThresholdsCfg(mid); toast('Response saved');
+}
+function cancelResp(mid,i){
+  const rs=metricCfg[_thKey(mid)]?.responses; const r=rs?.[i]; if(!r)return;
+  if(r._new){ rs.splice(i,1); _snapDrop(`resp:${mid}:${i}`); }
+  else { _snapRestore(`resp:${mid}:${i}`,r); r._open=false; }
+  renderThresholdsCfg(mid);
+}
+function addResp(mid,type){_respMenu=null;const K=_thKey(mid);_ensureResponses(K);metricCfg[K].responses.forEach(r=>r._open=false);metricCfg[K].responses.unshift({type,name:'',channels:[],url:'',subject:'',message:'',_open:true,_new:true});renderThresholdsCfg(mid);}
+function removeResponse(mid,i){_pendingDel=null;const K=_thKey(mid);if(metricCfg[K]?.responses)metricCfg[K].responses.splice(i,1);renderThresholdsCfg(mid);}
+function toggleRC(mid,i,ncId,on){const r=metricCfg[_thKey(mid)]?.responses?.[i];if(!r)return;if(!r.channels)r.channels=[];if(on&&!r.channels.includes(ncId))r.channels.push(ncId);if(!on)r.channels=r.channels.filter(c=>c!==ncId);renderThresholdsCfg(mid);}
+// Every field in this panel writes straight into metricCfg on change. These two
+// were the only ones read out of the DOM on save, which is why the button existed.
+function commitThreshold(mid){
+  const chk=document.getElementById('cfg-tc'),val=document.getElementById('cfg-tv'),sel=document.getElementById('cfgTS');
+  if(!chk||!val||!sel)return;
+  const k=sel.value;
+  const tk=_thKey(mid);
+  const sp=(mid==='sentiment')?_sentKeyParts(k):null;
+  if(!metricCfg[tk])metricCfg[tk]={};
+  const v=chk.checked?(parseFloat(val.value)||null):null;
+  if(sp){
+    if(!metricCfg.sentiment.thresholds) metricCfg.sentiment.thresholds={};
+    const prev=metricCfg.sentiment.thresholds[sp.sid]||{};
+    metricCfg.sentiment.thresholds[sp.sid]={
+      type:(sp.source==='mshare'||sp.sid==='s0'||sp.sid==='s1')?'upper':'lower',
+      val:v,notifs:prev.notifs||[],source:sp.source};
+    renderLollipops();
+  } else {
+    metricCfg[tk][k.includes('upper')?'upper':'lower']=v;
+  }
+  const s=document.getElementById('cfgSaved');
+  if(s){ s.classList.add('show'); clearTimeout(window._savedT);
+    window._savedT=setTimeout(()=>s.classList.remove('show'),1400); }
+}
 function saveTCfg(mid){
   const chk=document.getElementById('cfg-tc'),val=document.getElementById('cfg-tv'),sel=document.getElementById('cfgTS');
-  if(chk&&val&&sel){const k=sel.value,isUp=k.includes('upper');if(!metricCfg[mid])metricCfg[mid]={};metricCfg[mid][isUp?'upper':'lower']=chk.checked?(parseInt(val.value)||null):null;}
+  if(chk&&val&&sel){
+    const k=sel.value;
+    const sp=(mid==='sentiment')?_sentKeyParts(k):null;
+    if(!metricCfg[mid])metricCfg[mid]={};
+    if(sp){
+      if(!metricCfg.sentiment.thresholds) metricCfg.sentiment.thresholds={};
+      const v=chk.checked?(parseInt(val.value)||null):null;
+      const prev=metricCfg.sentiment.thresholds[sp.sid]||{};
+      metricCfg.sentiment.thresholds[sp.sid]={
+        type:(sp.source==='mshare'||sp.sid==='s0'||sp.sid==='s1')?'upper':'lower',
+        val:v,notifs:prev.notifs||[],source:sp.source};
+      renderLollipops();
+    } else {
+      const isUp=k.includes('upper');
+      metricCfg[mid][isUp?'upper':'lower']=chk.checked?(parseInt(val.value)||null):null;
+    }
+  }
   // Collapse all responses on save
   if(metricCfg[mid]?.responses) metricCfg[mid].responses.forEach(r=>r._open=false);
   toast('Configuration saved');
@@ -2734,46 +3179,97 @@ function renderAnomaliesCfg(mid){
       else if(cond==='frequency') condField=`<div style="display:flex;gap:8px;align-items:center"><input class="cfg-kw-input" value="${r.keywords||''}" placeholder="Keyword to count" style="flex:1" onchange="metricCfg['${mid}'].anomRules.known[${i}].keywords=this.value"><span style="font-size:10px;white-space:nowrap">exceeds</span><input type="number" class="cfg-num" value="${r.freqThresh||5}" min="1" style="width:60px" onchange="metricCfg['${mid}'].anomRules.known[${i}].freqThresh=parseInt(this.value)"><span style="font-size:10px">times</span></div>`;
       else if(cond==='pattern') condField=`<textarea class="cfg-textarea" rows="2" placeholder="Describe the pattern: e.g. 3+ escalations within 10 minutes on the same channel" onchange="metricCfg['${mid}'].anomRules.known[${i}].keywords=this.value">${r.keywords||''}</textarea>`;
 
-      return`<div style="padding:10px;border:1px solid var(--gray-border);border-radius:8px;margin-bottom:8px">
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-          <input class="cfg-kw-input" value="${r.name||''}" placeholder="Rule name" style="flex:1;font-weight:700" onchange="metricCfg['${mid}'].anomRules.known[${i}].name=this.value">
-          <button class="cfg-nc-remove" onclick="rules_removeKnown('${mid}',${i})">\u00d7</button>
+      const rkey=`rule:${mid}:${i}`;
+      const isOpen=!!r._open;   // collapsed by default
+      const nResp=(r.responses||[]).length;
+      if(!isOpen) return`<div style="padding:10px;border:1px solid var(--gray-border);border-radius:8px;margin-bottom:8px">
+        <div class="rule-head" onclick="rules_openRule('${mid}',${i})">
+          <span class="acc-caret">\u25b6</span>
+          <span class="rule-name ${r.name?'':'untitled'}">${r.name||'Untitled rule'}</span>
+          <span class="rule-meta">${nResp} response${nResp===1?'':'s'}</span>
+          <button class="cfg-nc-remove" onclick="event.stopPropagation();_askDel('${rkey}',()=>renderAnomaliesCfg('${mid}'))">\u00d7</button>
         </div>
+        ${_delRow(rkey,r.name||'this rule',nResp,`rules_removeKnown('${mid}',${i})`,`_cancelDel(()=>renderAnomaliesCfg('${mid}'))`)}
+      </div>`;
+      return`<div style="padding:10px;border:1px solid var(--gray-border);border-radius:8px;margin-bottom:8px">
+        <div class="rule-head" style="margin-bottom:8px" onclick="rules_closeRule('${mid}',${i})">
+          <span class="acc-caret" style="transform:rotate(90deg)">\u25b6</span>
+          <span class="rule-name ${r.name?'':'untitled'}">${r.name||'Untitled rule'}</span>
+          <button class="cfg-nc-remove" onclick="event.stopPropagation();_askDel('${rkey}',()=>renderAnomaliesCfg('${mid}'))">\u00d7</button>
+        </div>
+        ${_delRow(rkey,r.name||'this rule',nResp,`rules_removeKnown('${mid}',${i})`,`_cancelDel(()=>renderAnomaliesCfg('${mid}'))`)}
+        <input class="cfg-kw-input" value="${r.name||''}" placeholder="Rule name" style="width:100%;font-weight:700;margin-bottom:8px" onchange="metricCfg['${mid}'].anomRules.known[${i}].name=this.value">
         <select class="sb-select" style="width:100%;padding:5px 8px;font-size:11px;margin-bottom:8px" onchange="metricCfg['${mid}'].anomRules.known[${i}].condition=this.value;renderAnomaliesCfg('${mid}')">
           <option value="contains" ${cond==='contains'?'selected':''}>Contains keyword</option>
           <option value="frequency" ${cond==='frequency'?'selected':''}>Frequency exceeds</option>
           <option value="pattern" ${cond==='pattern'?'selected':''}>Pattern detected</option>
         </select>
         ${condField}
-        <div class="act-section-hd" style="margin-top:10px">Responses</div>
+        <div class="cfg-hdrow" style="margin-top:10px">
+          <div class="act-section-hd" style="margin:0">Responses</div>
+          <button class="cfg-add-inline" style="font-size:9.5px;padding:3px 9px" onclick="rules_addResp('${mid}','known',${i})">+ Response</button>
+        </div>
+        ${_respChooser(`a:${mid}:known:${i}`,`doAddAResp('${mid}','known',${i},'__T__')`)}
         ${respCards||'<div style="font-size:10px;color:var(--gray-light);margin-bottom:4px">No responses.</div>'}
-        <button class="cfg-add-resp-btn" style="font-size:9px;padding:4px 8px;margin-top:2px" onclick="rules_addResp('${mid}','known',${i})">+ Response</button>
+        ${_editBtns(`rules_saveRule('${mid}',${i})`,`rules_cancelRule('${mid}',${i})`,!r.name)}
       </div>`;
     }).join('');
-    body=cards+`<button class="cfg-add-resp-btn" onclick="rules_addKnown('${mid}')">+ Add Rule</button>`;
+    body=cards;
   } else {
     ['critical','warning'].forEach(sev=>{
       const icon=sev==='critical'?'\ud83d\udd34':'\ud83d\udfe1';
       const resps=rules.unknown[sev]||[];
       const respCards=resps.map((resp,ri)=>_anomRespCard(mid,'unknown-'+sev,0,resp,ri)).join('');
       body+=`<div style="padding:10px;border:1px solid var(--gray-border);border-radius:8px;margin-bottom:8px">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-          <span>${icon}</span><span style="font-weight:700;font-size:12px">On ${sev} anomaly</span>
+        <div class="cfg-hdrow" style="margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span>${icon}</span><span style="font-weight:700;font-size:12px">On ${sev} anomaly</span>
+          </div>
+          <button class="cfg-add-inline" style="font-size:9.5px;padding:3px 9px" onclick="rules_addResp('${mid}','unknown-${sev}',0)">+ Response</button>
         </div>
+        ${_respChooser(`a:${mid}:unknown-${sev}:0`,`doAddAResp('${mid}','unknown-${sev}',0,'__T__')`)}
         ${respCards||'<div style="font-size:10px;color:var(--gray-light);margin-bottom:4px">No responses configured.</div>'}
-        <button class="cfg-add-resp-btn" style="font-size:9px;padding:4px 8px;margin-top:2px" onclick="rules_addResp('${mid}','unknown-${sev}',0)">+ Response</button>
       </div>`;
     });
   }
 
-  c.innerHTML=`<select class="sb-select" id="cfgAT" onchange="document.getElementById('cfgSubContent').dataset.at=this.value;renderAnomaliesCfg('${mid}')" style="width:100%;padding:7px 10px;margin-bottom:12px">
-    <option value="known" ${anomType==='known'?'selected':''}>Known Unknowns \u2014 anticipated patterns</option>
-    <option value="unknown" ${anomType==='unknown'?'selected':''}>Unknown Unknowns \u2014 statistical detection</option>
-  </select>
+  c.innerHTML=`<div class="cfg-desc"><p>Patterns worth flagging without a threshold.</p></div>
+  <div class="cfg-selrow">
+    <select class="sb-select" id="cfgAT" onchange="document.getElementById('cfgSubContent').dataset.at=this.value;renderAnomaliesCfg('${mid}')" style="padding:7px 10px">
+      <option value="known" ${anomType==='known'?'selected':''}>Known Unknowns \u2014 anticipated patterns</option>
+      <option value="unknown" ${anomType==='unknown'?'selected':''}>Unknown Unknowns \u2014 statistical detection</option>
+    </select>
+    ${anomType==='known'?`<button class="cfg-add-inline" onclick="rules_addKnown('${mid}')">+ Rule</button>`:''}
+  </div>
   ${body}
-  <button class="cfg-save" style="margin-top:14px" onclick="saveAnomalyCfg('${mid}')">Save Configuration</button>`;
+  <div class="cfg-saved" id="cfgSaved">\u2713 Saved</div>`;
 }
-function rules_addKnown(mid){metricCfg[mid].anomRules.known.push({name:'',keywords:'',condition:'contains',responses:[]});renderAnomaliesCfg(mid);}
+function rules_addKnown(mid){
+  // A new rule opens expanded — there is nothing to collapse to yet — and is
+  // flagged _new so Cancel removes it rather than leaving an empty card.
+  metricCfg[mid].anomRules.known.forEach(r=>r._open=false);
+  metricCfg[mid].anomRules.known.unshift({name:'',keywords:'',condition:'contains',responses:[],_open:true,_new:true});
+  renderAnomaliesCfg(mid);
+}
+function rules_openRule(mid,i){
+  const rs=metricCfg[mid].anomRules.known;
+  rs.forEach((r,j)=>{ if(j!==i) r._open=false; });
+  rs[i]._open=true;
+  _snapTake(`rule:${mid}:${i}`,rs[i]);
+  renderAnomaliesCfg(mid);
+}
+function rules_closeRule(mid,i){ rules_saveRule(mid,i); }
+function rules_saveRule(mid,i){
+  const r=metricCfg[mid].anomRules.known[i]; if(!r)return;
+  r._open=false; delete r._new; _snapDrop(`rule:${mid}:${i}`);
+  _respMenu=null; renderAnomaliesCfg(mid); toast('Rule saved');
+}
+function rules_cancelRule(mid,i){
+  const rs=metricCfg[mid].anomRules.known, r=rs[i]; if(!r)return;
+  if(r._new){ rs.splice(i,1); _snapDrop(`rule:${mid}:${i}`); }
+  else { _snapRestore(`rule:${mid}:${i}`,r); r._open=false; }
+  _respMenu=null; renderAnomaliesCfg(mid);
+}
 function saveAnomalyCfg(mid){
   const rules=metricCfg[mid]?.anomRules;
   if(rules){
@@ -2783,23 +3279,35 @@ function saveAnomalyCfg(mid){
   toast('Anomaly config saved');
   renderAnomaliesCfg(mid);
 }
-function rules_removeKnown(mid,i){metricCfg[mid].anomRules.known.splice(i,1);renderAnomaliesCfg(mid);}
+function rules_removeKnown(mid,i){_pendingDel=null;metricCfg[mid].anomRules.known.splice(i,1);renderAnomaliesCfg(mid);}
+// Which response-type chooser is open. Rendered in a fixed slot beneath the
+// RESPONSES heading so the row above never shifts.
+let _respMenu=null;
+function _respChooser(key,onPick){
+  if(_respMenu!==key) return '';
+  return `<div class="cfg-resp-menu">
+    <button class="cfg-resp-choice" onclick="${onPick.replace('__T__','alert')}">\u26a0 Alert</button>
+    <button class="cfg-resp-choice" onclick="${onPick.replace('__T__','alarm')}">\ud83d\udd14 Alarm</button>
+    <button class="cfg-resp-choice" onclick="${onPick.replace('__T__','action')}">\u26a1 Action</button>
+    <button class="cfg-resp-cancel" onclick="_closeRespMenu()">Cancel</button>
+  </div>`;
+}
+function _toggleRespMenu(key,rerender){ _respMenu=(_respMenu===key)?null:key; rerender(); }
+function _closeRespMenu(){
+  const k=_respMenu; _respMenu=null;
+  if(!k)return;
+  if(k.startsWith('t:')) renderThresholdsCfg(k.slice(2));
+  else if(k.startsWith('x:')) renderTextRulesCfg(k.split(':')[1]);
+  else renderAnomaliesCfg(k.split(':')[1]);
+}
 function rules_addResp(mid,path,i){
-  // Show type chooser instead of silently adding
-  const menuId=`arm-${path}-${i}`;
-  const existing=document.getElementById(menuId);
-  if(existing){existing.style.display=existing.style.display==='none'?'flex':'none';return;}
-  // Find the button and insert chooser after it
-  event.target.insertAdjacentHTML('afterend',`<div id="${menuId}" style="display:flex;gap:4px;margin-top:4px">
-    <button class="cfg-resp-choice" onclick="doAddAResp('${mid}','${path}',${i},'alert')">⚠ Alert</button>
-    <button class="cfg-resp-choice" onclick="doAddAResp('${mid}','${path}',${i},'alarm')">🔔 Alarm</button>
-    <button class="cfg-resp-choice" onclick="doAddAResp('${mid}','${path}',${i},'action')">⚡ Action</button>
-  </div>`);
+  _toggleRespMenu(`a:${mid}:${path}:${i}`,()=>renderAnomaliesCfg(mid));
 }
 function doAddAResp(mid,path,i,type){
+  _respMenu=null;
   const rules=metricCfg[mid].anomRules;
-  if(path==='known'){if(!rules.known[i].responses)rules.known[i].responses=[];rules.known[i].responses.push({type,name:'',channels:[],subject:'',message:'',_open:true});}
-  else{const sev=path.replace('unknown-','');if(!rules.unknown[sev])rules.unknown[sev]=[];rules.unknown[sev].push({type,name:'',channels:[],subject:'',message:'',_open:true});}
+  if(path==='known'){if(!rules.known[i].responses)rules.known[i].responses=[];rules.known[i].responses.unshift({type,name:'',channels:[],subject:'',message:'',_open:true,_new:true});}
+  else{const sev=path.replace('unknown-','');if(!rules.unknown[sev])rules.unknown[sev]=[];rules.unknown[sev].unshift({type,name:'',channels:[],subject:'',message:'',_open:true,_new:true});}
   renderAnomaliesCfg(mid);
 }
 
@@ -2807,21 +3315,23 @@ function _anomRespCard(mid,path,ruleIdx,resp,ri){
   const icons={alert:'\u26a0',alarm:'\ud83d\udd14',action:'\u26a1'};
   const expanded=resp._open?'block':'none';
   const selChs=(resp.channels||[]).map(cid=>{const ch=(window._notifChannels||[]).find(x=>x.id===cid);return ch?`<span class="cfg-ch-pill">${_ncTypeIcon(ch.type)} ${ch.label}</span>`:''}).filter(Boolean).join('');
-  const allChs=(window._notifChannels||[]).map(ch=>{const on=(resp.channels||[]).includes(ch.id);return`<label class="cfg-nc-check"><input type="checkbox" ${on?'checked':''} onchange="toggleARC('${mid}','${path}',${ruleIdx},${ri},'${ch.id}',this.checked)">${_ncTypeIcon(ch.type)} ${ch.label}</label>`;}).join('');
+  const allChs=_visibleComms(mid,resp.type).map(ch=>{const on=(resp.channels||[]).includes(ch.id);return`<label class="cfg-nc-check"><input type="checkbox" ${on?'checked':''} onchange="toggleARC('${mid}','${path}',${ruleIdx},${ri},'${ch.id}',this.checked)">${_ncTypeIcon(ch.type)} ${ch.label} ${_scopeChip(ch,mid)}</label>`;}).join('');
   let detail='';
   if(resp.type==='alert'||resp.type==='alarm'){
-    detail=`<span class="cfg-lbl">Send to:</span><div style="display:flex;flex-direction:column;gap:3px;margin:3px 0 6px">${allChs||'<span style="font-size:10px;color:var(--gray-light)">No channels — add in Channels tab</span>'}</div>
+    detail=`<span class="cfg-lbl">Send to:</span>${resp.type==='alarm'?'<div class="scope-note">Alarms are company-wide, so only company-scoped channels are offered.</div>':''}<div style="display:flex;flex-direction:column;gap:3px;margin:3px 0 6px">${allChs||'<span style="font-size:10px;color:var(--gray-light)">No channels in scope — add one in AutoComm.</span>'}</div>
       <span class="cfg-lbl">Subject</span><input class="cfg-kw-input" value="${resp.subject||''}" placeholder="Alert: anomaly detected">
       <span class="cfg-lbl">Message</span><textarea class="cfg-textarea" rows="2" placeholder="Anomaly detected on {{metric}}. Immediate review recommended.">${resp.message||''}</textarea>`;
   } else {
-    detail=`<span class="cfg-lbl">Webhook URL</span><input class="cfg-kw-input" type="url" value="${resp.url||''}" placeholder="https://...">`;
+    detail=_autoBotzPicker(`toggleARC('${mid}','${path}',${ruleIdx},${ri},'__ID__',this.checked)`,resp.channels,mid);
   }
-  return`<div class="cfg-resp-row" onclick="toggleAROpen('${mid}','${path}',${ruleIdx},${ri})" style="cursor:pointer;margin-bottom:2px">
+  return`${_delRow(`aresp:${mid}:${path}:${ruleIdx}:${ri}`,resp.name||resp.type,0,`rules_removeResp('${mid}','${path}',${ruleIdx},${ri})`,`_cancelDel(()=>renderAnomaliesCfg('${mid}'))`)}
+  <div class="cfg-resp-row" onclick="toggleAROpen('${mid}','${path}',${ruleIdx},${ri})" style="cursor:pointer;margin-bottom:2px">
     <span>${icons[resp.type]||''}</span><span style="font-weight:700;font-size:11px">${resp.type}</span>
     <input class="cfg-resp-name" value="${resp.name||''}" placeholder="Name\u2026" onclick="event.stopPropagation()">
     ${selChs?'<div style="display:flex;gap:3px;flex-shrink:0">'+selChs+'</div>':''}
-    <button class="cfg-nc-remove" onclick="event.stopPropagation();rules_removeResp('${mid}','${path}',${ruleIdx},${ri})">\u00d7</button>
-  </div><div style="display:${expanded};padding:6px 10px 8px;border:1px solid var(--gray-border);border-top:none;border-radius:0 0 8px 8px;margin-top:-1px;margin-bottom:4px">${detail}</div>`;
+    <button class="cfg-nc-remove" onclick="event.stopPropagation();_askDel('aresp:${mid}:${path}:${ruleIdx}:${ri}',()=>renderAnomaliesCfg('${mid}'))">\u00d7</button>
+  </div><div style="display:${expanded};padding:6px 10px 8px;border:1px solid var(--gray-border);border-top:none;border-radius:0 0 8px 8px;margin-top:-1px;margin-bottom:4px">${detail}
+    ${_editBtns(`saveAResp('${mid}','${path}',${ruleIdx},${ri})`,`cancelAResp('${mid}','${path}',${ruleIdx},${ri})`,!resp.name)}</div>`;
 }
 
 function toggleAROpen(mid,path,ruleIdx,ri){
@@ -2833,13 +3343,44 @@ function toggleAROpen(mid,path,ruleIdx,ri){
     renderTextRulesCfg(realMid);
     return;
   }
-  const rules=metricCfg[mid].anomRules;
-  if(path==='known') resp=rules.known[ruleIdx]?.responses?.[ri];
-  else{const sev=path.replace('unknown-','');resp=(rules.unknown[sev]||[])[ri];}
-  if(resp) resp._open=!resp._open;
+  resp=_aRespAt(mid,path,ruleIdx,ri);
+  if(!resp)return;
+  if(resp._open){ saveAResp(mid,path,ruleIdx,ri); return; }
+  resp._open=true; _snapTake(`aresp:${mid}:${path}:${ruleIdx}:${ri}`,resp);
   renderAnomaliesCfg(mid);
 }
+// Resolve a response across all three containers it can live in
+function _aRespAt(mid,path,ruleIdx,ri){
+  if(path.startsWith('textrule-')){
+    const rm=path.replace('textrule-','');
+    return metricCfg[rm]?.textRules?.[ruleIdx]?.responses?.[ri];
+  }
+  const rules=metricCfg[mid]?.anomRules; if(!rules)return null;
+  if(path==='known') return rules.known?.[ruleIdx]?.responses?.[ri];
+  const sev=path.replace('unknown-','');
+  return (rules.unknown?.[sev]||[])[ri];
+}
+function _aRerender(mid,path){
+  if(path.startsWith('textrule-')) renderTextRulesCfg(path.replace('textrule-',''));
+  else renderAnomaliesCfg(mid);
+}
+function saveAResp(mid,path,ruleIdx,ri){
+  const r=_aRespAt(mid,path,ruleIdx,ri); if(!r)return;
+  r._open=false; delete r._new; _snapDrop(`aresp:${mid}:${path}:${ruleIdx}:${ri}`);
+  _aRerender(mid,path); toast('Response saved');
+}
+function cancelAResp(mid,path,ruleIdx,ri){
+  const r=_aRespAt(mid,path,ruleIdx,ri); if(!r)return;
+  const key=`aresp:${mid}:${path}:${ruleIdx}:${ri}`;
+  if(r._new){ rules_removeResp(mid,path,ruleIdx,ri); _snapDrop(key); return; }
+  _snapRestore(key,r); r._open=false; _aRerender(mid,path);
+}
 
+function _flashSaved(){
+  const s=document.getElementById('cfgSaved');
+  if(!s)return; s.classList.add('show'); clearTimeout(window._savedT);
+  window._savedT=setTimeout(()=>s.classList.remove('show'),1400);
+}
 function toggleARC(mid,path,ruleIdx,ri,ncId,on){
   let resp;
   if(path.startsWith('textrule-')){
@@ -2854,7 +3395,7 @@ function toggleARC(mid,path,ruleIdx,ri,ncId,on){
   if(on&&!resp.channels.includes(ncId))resp.channels.push(ncId);
   if(!on)resp.channels=resp.channels.filter(c=>c!==ncId);
 }
-function rules_removeResp(mid,path,i,ri){
+function rules_removeResp(mid,path,i,ri){_pendingDel=null;
   if(path.startsWith('textrule-')){
     const realMid=path.replace('textrule-','');
     metricCfg[realMid]?.textRules?.[i]?.responses?.splice(ri,1);
@@ -2868,59 +3409,88 @@ function rules_removeResp(mid,path,i,ri){
 }
 
 // ═══ COMMUNICATION CHANNELS ═════════════════════
+function renderAutoBotzCfg(){
+  const c=document.getElementById('cfgSubContent');
+  if(c) c.innerHTML=_renderAutoBotz();
+}
+function _scopeSelect(id,mid){
+  const opts=_scopeOptions(mid);
+  return `<select class="sb-select" id="${id}" style="width:100%;padding:4px 6px;font-size:11px;margin-bottom:6px">
+    ${opts.map(o=>`<option value="${o.v}">${o.l}</option>`).join('')}</select>`;
+}
 function renderChannelsCfg(){
   const c=document.getElementById('cfgSubContent');if(!c)return;
-  const chs=window._notifChannels||[];
+  const _ctx=_cfgContext();
+  const chs=_visibleComms(_ctx);
   const list=chs.map(ch=>{
     if(ch._edit) return`<div class="cfg-nc-item" style="flex-wrap:wrap">
       <span class="cfg-nc-icon">${_ncTypeIcon(ch.type)}</span>
       <input class="sb-input" value="${ch.label}" id="nce-l-${ch.id}" style="flex:1;font-size:11px;padding:4px 8px">
       <input class="sb-input" value="${ch.values.join(', ')}" id="nce-v-${ch.id}" style="width:100%;font-size:11px;padding:4px 8px;margin-top:4px">
+      <select class="sb-select" id="nce-s-${ch.id}" style="width:100%;padding:4px 6px;font-size:11px;margin-top:4px">
+        ${_scopeOptions(_ctx).concat((ch.scope&&!_scopeOptions(_ctx).some(o=>o.v===ch.scope))?[{v:ch.scope,l:_scopeLabel(ch.scope)+' (current)'}]:[])
+          .map(o=>`<option value="${o.v}" ${o.v===(ch.scope||'company')?'selected':''}>${o.l}</option>`).join('')}
+      </select>
+      ${(ch.scope||'company')==='company'?'<div class="scope-note" style="width:100%;margin:4px 0 0">Company-wide \u2014 changes affect every metric.</div>':''}
       <div style="display:flex;gap:4px;margin-top:4px;width:100%">
-        <button class="cfg-save" style="flex:1;margin:0;padding:5px;font-size:10px" onclick="saveEditCh('${ch.id}')">Save</button>
-        <button class="cfg-save" style="flex:0;margin:0;padding:5px 10px;font-size:10px;background:var(--gray-mid)" onclick="cancelEditCh('${ch.id}')">Cancel</button>
+        ${_editBtns(`saveEditCh('${ch.id}')`,`cancelEditCh('${ch.id}')`,false)}
       </div></div>`;
-    return`<div class="cfg-nc-item" data-chid="${ch.id}">
+    const _own=(ch.scope||'company')===_ctx;
+    return`${_delRow('nc:'+ch.id,ch.label,_usageCount(ch.id),`doRemoveCh('${ch.id}')`,`_cancelDel(()=>renderChannelsCfg())`)}
+    <div class="cfg-nc-item ${_own?'':'inherited'}" data-chid="${ch.id}">
       <span class="cfg-nc-icon">${_ncTypeIcon(ch.type)}</span>
       <div class="cfg-nc-info" onclick="editCh('${ch.id}')" style="cursor:pointer" title="Click to edit">
-        <div class="cfg-nc-label">${ch.label} <span style="color:var(--gray-light);font-size:10px">(${ch.values.length})</span></div>
+        <div class="cfg-nc-label">${ch.label} <span style="color:var(--gray-light);font-size:10px">(${ch.values.length})</span> ${_scopeChip(ch,_ctx)}</div>
         <div class="cfg-nc-value">${ch.values.join(', ')}</div>
       </div>
-      <button class="cfg-nc-remove" onclick="event.stopPropagation();confirmRemoveCh('${ch.id}')">\u00d7</button>
-    </div>`;
+      <button class="ab-verify" onclick="event.stopPropagation();verifyNC('${ch.id}')">${ch.verify?.state==='pending'?'\u2026':'Test'}</button>
+      <button class="cfg-nc-remove" onclick="event.stopPropagation();_askDel('nc:${ch.id}',()=>renderChannelsCfg())">\u00d7</button>
+    </div>
+    ${ch.verify&&ch.verify.state!=='pending'?`<div class="ab-vstate ok">\u2713 ${ch.verify.msg} \u00b7 ${_abAgo(ch.verify.ts)}</div>`:''}`;
   }).join('');
-  c.innerHTML=`<div class="act-section-hd">Communication Channels</div>
-  ${list||'<div style="font-size:11px;color:var(--gray-light);padding:8px 0;text-align:center">No channels yet.</div>'}
-  <div id="ncAF" style="display:none;margin-top:8px;padding:10px;border:1px solid var(--gray-border);border-radius:8px">
+  c.innerHTML=`<div class="act-section-hd">AutoComm \u2014 automated communications</div>
+  <div class="cfg-desc"><p>Who gets told. Used by Alerts and Alarms.</p>
+    <button class="cfg-add-inline" onclick="document.getElementById('ncAF').style.display='block';updateNcPlaceholder()">+ Comm</button></div>
+  <div id="ncAF" style="display:none;margin-bottom:10px;padding:10px;border:1px solid var(--gray-border);border-radius:8px">
     <div style="display:flex;gap:6px;margin-bottom:6px">
       <select class="sb-select" id="ncTS" style="width:100px;padding:4px 6px;font-size:11px" onchange="updateNcPlaceholder()">
         <option value="email">\u2709 Email</option><option value="sms">\ud83d\udcf1 SMS</option>
-        <option value="slack">\ud83d\udcac Slack</option><option value="call">\ud83d\udcde Call</option>
-        <option value="webhook">\ud83d\udd17 Webhook</option></select>
+        <option value="slack">\ud83d\udcac Slack</option><option value="call">\ud83d\udcde Call</option></select>
       <input class="sb-input" id="ncNI" type="text" placeholder="Team / person name" style="flex:1;font-size:11px;padding:4px 8px">
     </div>
+    ${_scopeSelect('ncSC',_ctx)}
     <div id="ncDynField"></div>
     <div style="display:flex;gap:4px;margin-top:6px">
-      <button class="cfg-save" style="flex:1;margin:0;padding:6px;font-size:11px" onclick="addNC()">Save</button>
-      <button class="cfg-save" style="flex:0;margin:0;padding:6px 10px;font-size:11px;background:var(--gray-mid)" onclick="document.getElementById('ncAF').style.display='none';document.getElementById('ncAB').style.display=''">Cancel</button>
+      ${_editBtns(`addNC()`,`document.getElementById('ncAF').style.display='none'`,true)}
     </div></div>
-  <button class="cfg-add-resp-btn" id="ncAB" onclick="document.getElementById('ncAF').style.display='block';this.style.display='none';updateNcPlaceholder()" style="margin-top:6px;font-size:11px;padding:6px">+ Add Channel</button>`;
+  ${list||'<div style="font-size:11px;color:var(--gray-light);padding:8px 0;text-align:center">No channels yet.</div>'}
+  `;
 }
-function editCh(id){const ch=window._notifChannels.find(c=>c.id===id);if(ch){ch._edit=true;renderChannelsCfg();}}
-function cancelEditCh(id){const ch=window._notifChannels.find(c=>c.id===id);if(ch){delete ch._edit;renderChannelsCfg();}}
+function editCh(id){
+  const ch=window._notifChannels.find(c=>c.id===id); if(!ch)return;
+  window._notifChannels.forEach(c=>{ if(c!==ch) delete c._edit; });
+  ch._edit=true; _snapTake('nc:'+id,ch); renderChannelsCfg();
+}
+function cancelEditCh(id){
+  const ch=window._notifChannels.find(c=>c.id===id); if(!ch)return;
+  _snapRestore('nc:'+id,ch); delete ch._edit; renderChannelsCfg();
+}
 function saveEditCh(id){
   const ch=window._notifChannels.find(c=>c.id===id);if(!ch)return;
   const l=document.getElementById('nce-l-'+id)?.value?.trim();
   const v=document.getElementById('nce-v-'+id)?.value?.trim();
+  const sc=document.getElementById('nce-s-'+id)?.value;
   if(l)ch.label=l;if(v)ch.values=v.split(',').map(s=>s.trim()).filter(Boolean);
-  delete ch._edit;renderChannelsCfg();toast('Channel updated');
+  if(sc)ch.scope=sc;
+  delete ch._edit;_snapDrop('nc:'+id);renderChannelsCfg();toast('Channel updated');
 }
 function addNC(){
   const type=document.getElementById('ncTS')?.value||'email';
   const label=document.getElementById('ncNI')?.value?.trim();
   const vs=document.getElementById('ncVI')?.value?.trim();
   if(!label||!vs){toast('Fill in name and address');return;}
-  window._notifChannels.push({id:'nc'+(_ncIdCtr++),type,label,values:vs.split(',').map(s=>s.trim()).filter(Boolean)});
+  const scope=document.getElementById('ncSC')?.value||'company';
+  window._notifChannels.unshift({id:'nc'+(_ncIdCtr++),type,label,scope,values:vs.split(',').map(s=>s.trim()).filter(Boolean)});
   renderChannelsCfg();toast('Channel added');
 }
 function updateNcPlaceholder(){
@@ -2937,6 +3507,11 @@ function updateNcPlaceholder(){
   const cfg=configs[type]||configs.email;
   field.innerHTML=`<input class="sb-input" id="ncVI" type="${cfg.type}" placeholder="${cfg.placeholder}" style="font-size:11px;padding:4px 8px;width:100%">
     <div style="font-size:9px;color:var(--gray-light);margin-top:3px">e.g. ${cfg.example}</div>`;
+}
+function doRemoveCh(id){
+  _pendingDel=null;
+  window._notifChannels=(window._notifChannels||[]).filter(c=>c.id!==id);
+  renderChannelsCfg(); toast('Channel removed');
 }
 function confirmRemoveCh(id){
   const ch=window._notifChannels.find(c=>c.id===id);
@@ -3162,6 +3737,13 @@ function renderSentimentConfig(){
     return`<div class="cfg-sent-row">
       <div class="cfg-sent-hd" style="color:${colors[i]}">${emojis[i]} ${labels[i]}<span class="cfg-sent-pct">Now: ${sentiment[i].pct}%</span></div>
       <div class="cfg-sent-thresh">
+        <select class="sb-select" style="padding:3px 6px;font-size:10px;width:112px;margin-right:6px"
+          onchange="metricCfg.sentiment.thresholds['${sid}'].source=this.value">
+          <option value="blend" ${(sc.source||'blend')==='blend'?'selected':''}>Blended</option>
+          <option value="orga"  ${sc.source==='orga'?'selected':''}>ORGA only</option>
+          <option value="meca"  ${sc.source==='meca'?'selected':''}>MECA only</option>
+          <option value="mshare" ${sc.source==='mshare'?'selected':''}>MECA share %</option>
+        </select>
         <label class="cfg-toggle"><input type="checkbox" id="cfg-sent-chk-${sid}" ${enabled?'checked':''} onchange="toggleSentThresh('${sid}',this.checked)"><span>${label}</span></label>
         <input type="number" class="cfg-num" id="cfg-sent-val-${sid}" value="${sc.val??''}" placeholder="%" ${!enabled?'disabled':''} min="0" max="100" style="width:56px">
         <span class="cfg-thresh-hint">%</span>
@@ -3169,7 +3751,20 @@ function renderSentimentConfig(){
       <div class="notif-grid" style="grid-template-columns:repeat(4,1fr)">${chips}</div>
     </div>`;
   }).join('');
+  const mw=Math.round(mechWeight()*100);
+  const rumChs=activeChannels.filter(c=>c.on&&rumApp(c.id)>0).map(c=>chShort(c.id)).join(', ');
   document.getElementById('actContent-config').innerHTML=`
+    <div class="act-section-hd">Mechanical vs Organic</div>
+    <div style="font-size:11px;color:var(--gray-mid);line-height:1.5;margin-bottom:8px">
+      How much weight RUM frustration signals carry against conversational sentiment.
+      Applies only to channels that emit RUM — currently ${rumChs||'none active'}.
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <input type="range" class="sb-slider" min="0" max="100" value="${mw}" style="flex:1"
+        oninput="metricCfg.sentiment.mechWeight=parseInt(this.value)/100;document.getElementById('mwLbl').textContent=this.value+'% MECA'">
+      <span id="mwLbl" style="font-size:11px;font-weight:700;white-space:nowrap;width:78px">${mw}% MECA</span>
+    </div>
+    <div class="cfg-divider"></div>
     <div class="act-section-hd">Sentiment State Thresholds</div>
     ${rows}
     <div class="cfg-divider"></div>
@@ -3254,16 +3849,12 @@ function renderKeywordRules(mid,label){
 
   document.getElementById('actContent-config').innerHTML=`
     <div class="act-section-hd">${label} — Keyword Monitoring</div>
-    <div style="font-size:11px;color:var(--gray-mid);margin-bottom:12px;line-height:1.5">
-      Set keywords or phrases to watch for. An alert fires when a matching ${label.toLowerCase().replace('frequent questions','question')} appears within the top N positions of the live list.
+    <div class="cfg-desc">
+      <p>Alerts when a watched term enters the top N of this list.</p>
+      <button class="cfg-add-inline" onclick="addKwRule('${mid}','${label}')">+ Rule</button>
     </div>
     ${ruleCards}
-    <button onclick="addKwRule('${mid}','${label}')"
-      style="width:100%;padding:9px;margin-top:8px;background:var(--gray-bg);border:1.5px dashed var(--gray-border);border-radius:8px;font-family:var(--font);font-size:12px;font-weight:600;color:var(--gray-mid);cursor:pointer;transition:all .2s"
-      onmouseover="this.style.borderColor='var(--black)';this.style.color='var(--black)'"
-      onmouseout="this.style.borderColor='var(--gray-border)';this.style.color='var(--gray-mid)'">
-      + Add Rule
-    </button>
+
     <div class="cfg-divider" style="margin-top:12px"></div>
     ${_peakRow(mid,cfg)}
     <div class="cfg-divider"></div>
@@ -3276,7 +3867,7 @@ function addKwRule(mid,label){
   if(!metricCfg[mid].rules)metricCfg[mid].rules=[];
   // Save current state before adding
   _saveKwRulesInPlace(mid);
-  metricCfg[mid].rules.push({phrase:'',topN:5,notifs:[]});
+  metricCfg[mid].rules.unshift({phrase:'',topN:5,notifs:[]});
   renderKeywordRules(mid,label);
 }
 
@@ -3517,7 +4108,7 @@ function buildBobeeContext() {
   const sLbls  = T[CFG.lang]?.sent || T.es.sent;
   const sentStr= sLbls.map((l, i) => `${l}: ${sentiment[i].pct}%`).join(', ');
   const metStr = metrics.map(m => `${m[CFG.lang]||m.es}: ${m.total}`).join(' | ');
-  // Channel technical performance from BzzzBox
+  // Channel technical performance from BzzzBX
   const chPerfStr = activeChannels.filter(c => c.on).map(c => {
     const p = channelPerf[c.id]; if (!p) return null;
     const def = CH_LIBRARY.find(x => x.id === c.id);
@@ -3544,7 +4135,7 @@ async function loadBobeeInsights() {
   const ctx = buildBobeeContext();
   const prompt = `You are BOBee, the intelligence agent for BOb (Business Observer) by Boss.Technology.
 Analyze this live business interaction dashboard and generate three concise insights.
-Consider BOTH business metrics AND channel technical performance (from BzzzBox observability).
+Consider BOTH business metrics AND channel technical performance (from BzzzBX observability).
 If any channel shows DEGRADED or WARNING status, factor infrastructure health into your analysis — business metric changes may be driven by channel technical issues rather than operational causes.
 
 Dashboard snapshot:
@@ -4067,8 +4658,8 @@ async function sendActBobeeChat(){
   }finally{btn.disabled=false;input?.focus();}
 }
 
-// ═══ CHANNEL TECHNICAL PERFORMANCE (BzzzBox) ═════
-// Simulates per-channel infrastructure health. In production, fed by BzzzBox observability.
+// ═══ CHANNEL TECHNICAL PERFORMANCE (BzzzBX) ═════
+// Simulates per-channel infrastructure health. In production, fed by BzzzBX observability.
 const channelPerf={};
 function initChannelPerf(){
   activeChannels.forEach(c=>{
@@ -4193,6 +4784,944 @@ function renderChannelActivity(chId){
     </div>`;
 }
 
+// ═══ EDIT SESSIONS, ACCORDIONS, DELETE CONFIRM ════
+// Expanding an item starts an edit session: a snapshot is taken so Cancel can
+// actually revert. Fields stay live-bound; Cancel restores the snapshot.
+const _snap={};
+function _snapTake(key,obj){ _snap[key]=JSON.parse(JSON.stringify(obj)); }
+function _snapRestore(key,target){
+  const s=_snap[key]; if(!s||!target) return;
+  Object.keys(target).forEach(k=>{ if(!(k in s)) delete target[k]; });
+  Object.assign(target,JSON.parse(JSON.stringify(s)));
+  delete _snap[key];
+}
+function _snapDrop(key){ delete _snap[key]; }
+
+// Save / Update + Cancel, used by every expanded item so the pattern is uniform.
+function _editBtns(saveFn,cancelFn,isNew){
+  return `<div class="edit-btns">
+    <button class="edit-save" onclick="event.stopPropagation();${saveFn}">${isNew?'Save':'Update'}</button>
+    <button class="edit-cancel" onclick="event.stopPropagation();${cancelFn}">Cancel</button>
+  </div>`;
+}
+
+// Inline delete confirmation — confirm() is blocked, and a row that swaps in
+// place reads better than a dialog anyway.
+let _pendingDel=null;
+function _askDel(key,rerenderFn){ _pendingDel=key; rerenderFn(); }
+function _cancelDel(rerenderFn){ _pendingDel=null; rerenderFn(); }
+function _delRow(key,label,uses,confirmFn,cancelFn){
+  if(_pendingDel!==key) return '';
+  const u=uses>0?` It is used by <b>${uses}</b> response${uses===1?'':'s'}.`:'';
+  return `<div class="del-confirm">
+    <span>Remove <b>${label}</b>?${u} This cannot be undone.</span>
+    <button class="del-yes" onclick="event.stopPropagation();${confirmFn}">Remove</button>
+    <button class="edit-cancel" onclick="event.stopPropagation();${cancelFn}">Cancel</button>
+  </div>`;
+}
+// How many configured responses reference a given AutoComm / AutoBotz id
+function _usageCount(id){
+  let n=0;
+  Object.keys(metricCfg).forEach(mid=>{
+    const c=metricCfg[mid]||{};
+    (c.responses||[]).forEach(r=>{ if((r.channels||[]).includes(id)) n++; });
+    (c.anomRules?.known||[]).forEach(k=>(k.responses||[]).forEach(r=>{ if((r.channels||[]).includes(id)) n++; }));
+    ['critical','warning'].forEach(s=>(c.anomRules?.unknown?.[s]||[]).forEach(r=>{ if((r.channels||[]).includes(id)) n++; }));
+    (c.textRules||[]).forEach(t=>(t.responses||[]).forEach(r=>{ if((r.channels||[]).includes(id)) n++; }));
+  });
+  return n;
+}
+// Threshold panel sections — Scope / Threshold / Responses
+let _thSec={scope:true,threshold:true,responses:true};
+function _thToggle(sec,mid){ _thSec[sec]=!_thSec[sec]; renderThresholdsCfg(mid); }
+function _thHead(sec,mid,title,summary){
+  const open=_thSec[sec];
+  return `<div class="acc-head ${open?'open':''}" onclick="_thToggle('${sec}','${mid}')">
+    <span class="acc-caret">\u25b6</span>
+    <span class="acc-title">${title}</span>
+    ${open?'':`<span class="acc-sum">${summary||''}</span>`}
+  </div>`;
+}
+
+// ═══ SCOPE HIERARCHY ══════════════════════════════
+// AutoComm channels and AutoBotz bindings are defined at a level and inherited
+// downward:  company → metric → cell (actor) → individual.
+// An entry is visible wherever its scope sits on the current context's chain,
+// and editable only at the level where it was defined.
+const SCOPE_LEVELS={company:'Company',metric:'Metric',cell:'Cell',individual:'Individual'};
+
+// Most specific first, company last.
+function _scopeChain(mid){
+  const chain=[];
+  if(!mid) return ['company'];
+  if(mid.includes('#')) chain.push(mid);             // individual override
+  const base=mid.split('#')[0];
+  if(base) chain.push(base);                          // cell, or metric
+  if(base.startsWith('who_')){
+    const parts=base.split('_');                      // who_<actor>_<metric>
+    const metric=parts.slice(2).join('_');
+    if(metric) chain.push(metric);                    // parent metric row
+  }
+  chain.push('company');
+  return [...new Set(chain)];
+}
+function _scopeLevelOf(scope,mid){
+  if(scope==='company') return 'company';
+  if(scope.includes('#')) return 'individual';
+  if(scope.startsWith('who_')) return 'cell';
+  return 'metric';
+}
+function _scopeLabel(scope){
+  if(scope==='company') return 'Company';
+  if(scope.startsWith('who_')){
+    const {actor}=_whoCtx(scope.split('#')[0]);
+    const who=(ACTOR_LABEL[actor]||actor).split(' \u2014 ')[0];
+    return scope.includes('#')?who+' \u00b7 '+scope.split('#')[1]:who;
+  }
+  const m=metrics.find(x=>x.id===scope);
+  if(m) return m[CFG.lang]||m.es;
+  return {sessions:'Sessions',avgtime:'Response Time',quality:'Response Quality',
+          sentiment:'Sentiment'}[scope]||scope;
+}
+// Options offered when creating an entry from the current context
+function _scopeOptions(mid){
+  const opts=[{v:'company',l:'Company \u2014 available everywhere'}];
+  _scopeChain(mid).filter(s=>s!=='company').forEach(s=>
+    opts.push({v:s,l:_scopeLabel(s)+' \u2014 this '+_scopeLevelOf(s,mid)+' only'}));
+  return opts;
+}
+function _inScope(entry,mid){
+  return _scopeChain(mid).includes(entry.scope||'company');
+}
+// Alarms are company-wide by definition, so they may only reach company channels.
+function _visibleComms(mid,respType){
+  const all=(window._notifChannels||[]).filter(c=>c.type!=='webhook');
+  if(respType==='alarm') return all.filter(c=>(c.scope||'company')==='company');
+  return all.filter(c=>_inScope(c,mid));
+}
+function _visibleBotz(mid){
+  return (window._autoBotz||[]).filter(b=>_inScope(b,mid));
+}
+function _scopeChip(entry,mid){
+  const sc=entry.scope||'company';
+  const inherited=sc!==(mid||'company');
+  return `<span class="scope-chip ${inherited?'inherited':''}">${_scopeLabel(sc)}</span>`;
+}
+// The panel needs to know which metric or entity it was opened from
+function _cfgContext(){ return actMetricId||'company'; }
+
+// ═══ AUTOBOTZ — automated actions ═════════════════
+// BOb does NOT author automations. It holds a BINDING: a named reference to
+// something that already exists in BzzzBX or a customer system, plus the
+// minimum needed to invoke it and read the result. Scripts, agent tooling and
+// RPA sequences are owned and maintained by that execution layer.
+const AB_TYPES={
+  webhook:   {label:'Webhook + JSON', icon:'\u{1F517}', blurb:'Event-driven HTTP push. Milliseconds, deterministic.'},
+  rpa:       {label:'RPA / Scripted', icon:'\u{1F916}', blurb:'Rule-based job. Reaches systems with no API.'},
+  synthetics:{label:'Synthetics',     icon:'\u{1F578}', blurb:'Drives the real UI to verify what RUM inferred.'},
+  agent:     {label:'AI Agent',       icon:'\u{1F9E0}', blurb:'Given a goal and context, decides how to respond.'},
+};
+const AB_PROVIDERS=[{id:'bzzzbox',label:'BzzzBX'},{id:'customer',label:'Customer Endpoint'}];
+// Binding fields per type — reference, not definition
+// [key, label, kind, placeholder|options] — the binding a given type needs.
+// BOb stores the reference and inputs; the automation itself lives in the provider.
+const AB_FIELDS={
+  webhook:[
+    ['ref','Endpoint reference','text','hooks/scale or https://\u2026'],
+    ['method','Method','select',['POST','GET','PUT','PATCH','DELETE']],
+    ['payload','Payload template','area','{"metric":"{{metric}}","value":{{value}}}'],
+  ],
+  rpa:[
+    ['ref','Job reference','text','rpa/open-case'],
+    ['params','Input parameters','text','queue=support,priority=high'],
+    ['timeout','Timeout','select',['30s','2 min','5 min','15 min']],
+  ],
+  synthetics:[
+    ['ref','Check reference','text','syn/checkout-e2e'],
+    ['env','Target environment','select',['production','staging','preview']],
+    ['onfail','On failure','select',['Report only','Report + alert','Report + retry once']],
+  ],
+  agent:[
+    ['ref','Agent reference','text','agents/triage-v2'],
+    ['goal','Goal / context scope','area','Diagnose the breach using metric, channel health and roster context.'],
+    ['cap','Invocation cap','select',['5 / day','20 / day','100 / day','Unlimited']],
+    ['approval','Destructive actions','select',['Require approval','Auto-approve']],
+  ],
+};
+if(!window._autoBotz) window._autoBotz=[
+  {id:'ab1',type:'webhook',   label:'Auto-Scale Webhook',provider:'bzzzbox',
+   scope:'company',ref:'hooks/scale',method:'POST',payload:'{"metric":"{{metric}}","value":{{value}}}',
+   verify:{state:'ok',ts:Date.now()-3*864e5,msg:'200 OK'}},
+  {id:'ab2',type:'webhook',   label:'Incident Bridge',provider:'customer',
+   scope:'company',ref:'https://api.company.com/hooks/incident',method:'POST',payload:'{"metric":"{{metric}}"}',
+   verify:{state:'ok',ts:Date.now()-42*864e5,msg:'200 OK'}},
+  {id:'ab3',type:'synthetics',label:'Checkout Flow Check',provider:'bzzzbox',
+   scope:'aba',ref:'syn/checkout-e2e',env:'production',
+   verify:{state:'failed',ts:Date.now()-2*36e5,msg:'Step 4 timeout — postcode field'}},
+  {id:'ab4',type:'rpa',       label:'CRM Case Opener',provider:'customer',
+   scope:'company',ref:'rpa/open-case',params:'queue=support,priority=high',
+   verify:{state:'unverified',ts:null,msg:''}},
+  {id:'ab5',type:'agent',     label:'Root-Cause Triage',provider:'bzzzbox',
+   scope:'company',ref:'agents/triage-v2',goal:'metric + channel health + roster',cap:'20 / day',
+   verify:{state:'ok',ts:Date.now()-6*36e5,msg:'Agent reachable'}},
+];
+let _abIdCtr=6;
+const AB_STALE_MS=30*864e5;   // a verification older than 30 days is not evidence
+
+function abState(ab){
+  const v=ab.verify||{};
+  if(v.state==='pending') return 'pending';
+  if(v.state==='failed')  return 'failed';
+  if(v.state==='ok')      return (Date.now()-(v.ts||0)>AB_STALE_MS)?'stale':'ok';
+  return 'unverified';
+}
+function abStateLabel(st,ab){
+  const ago=ab.verify?.ts?_abAgo(ab.verify.ts):'';
+  return {ok:'Verified '+ago,stale:'Verified '+ago+' \u2014 stale',failed:'Failed '+ago,
+          pending:'Verifying\u2026',unverified:'Never verified'}[st];
+}
+function _abAgo(ts){
+  const d=Date.now()-ts, h=Math.floor(d/36e5);
+  if(h<1) return 'just now';
+  if(h<24) return h+'h ago';
+  return Math.floor(h/24)+'d ago';
+}
+function abById(id){ return (window._autoBotz||[]).find(a=>a.id===id); }
+
+// Verify = resolve the binding. Always safe, no side effects, no cost.
+function verifyAB(id,run){
+  const ab=abById(id); if(!ab)return;
+  ab.verify={state:'pending',ts:null,msg:''};
+  renderChannelsCfgOrBotz();
+  setTimeout(()=>{
+    const ok=ab.id!=='ab3';   // seeded failure so QA sees the failed state
+    ab.verify={state:ok?'ok':'failed',ts:Date.now(),
+      msg:ok?(run?'Executed \u2014 200 OK':'Reference resolved'):'Step 4 timeout \u2014 postcode field'};
+    if(!ok) logAlert('autobotz','AutoBotz: '+ab.label,'upper',1,0,{notifs:['email']},'critical');
+    renderChannelsCfgOrBotz();
+    toast(ok?(run?'Test run completed':'Verified'):'Verification failed');
+  },900);
+}
+// Each type asks for what it actually needs — a Synthetics check has no payload,
+// an AI Agent has no HTTP method.
+function _abFieldInputs(type){
+  return (AB_FIELDS[type]||[]).map(([k,lbl,kind,extra])=>{
+    const id='abF-'+k;
+    if(kind==='select') return `<div class="ab-forow"><label>${lbl}</label>
+      <select class="sb-select" id="${id}" style="width:100%;padding:4px 6px;font-size:11px">
+        ${extra.map(o=>`<option value="${o}">${o}</option>`).join('')}</select></div>`;
+    if(kind==='area') return `<div class="ab-forow"><label>${lbl}</label>
+      <textarea class="sb-input" id="${id}" rows="2" placeholder="${extra}"
+        style="width:100%;font-size:11px;padding:4px 8px;font-family:var(--font);resize:vertical"></textarea></div>`;
+    return `<div class="ab-forow"><label>${lbl}</label>
+      <input class="sb-input" id="${id}" type="text" placeholder="${extra}"
+        style="width:100%;font-size:11px;padding:4px 8px"></div>`;
+  }).join('');
+}
+function renderABFields(type){
+  const el=document.getElementById('abFields');
+  if(el) el.innerHTML=_abFieldInputs(type||'webhook');
+}
+function addAB(){
+  const type=document.getElementById('abTS')?.value||'webhook';
+  const label=document.getElementById('abNI')?.value?.trim();
+  const provider=document.getElementById('abPS')?.value||'bzzzbox';
+  const vals={};
+  (AB_FIELDS[type]||[]).forEach(([k])=>{
+    const el=document.getElementById('abF-'+k);
+    if(el&&el.value!=null&&el.value!=='') vals[k]=el.value.trim?el.value.trim():el.value;
+  });
+  if(!label||!vals.ref){ toast('Name and reference are required'); return; }
+  const scope=document.getElementById('abSC')?.value||'company';
+  window._autoBotz.unshift(Object.assign({id:'ab'+(_abIdCtr++),type,label,provider,scope,
+    verify:{state:'unverified',ts:null,msg:''}},vals));
+  const f=document.getElementById('abAF'); if(f)f.style.display='none';
+  renderChannelsCfgOrBotz(); toast('AutoBotz created — verify it before relying on it');
+}
+function cancelEditAB(id){
+  const ab=abById(id); if(!ab)return;
+  _snapRestore('ab:'+id,ab); ab._open=false; renderChannelsCfgOrBotz();
+}
+function saveEditAB(id){
+  const ab=abById(id); if(!ab)return;
+  const l=document.getElementById('abe-l-'+id)?.value?.trim();
+  const p=document.getElementById('abe-p-'+id)?.value;
+  const s=document.getElementById('abe-s-'+id)?.value;
+  if(l)ab.label=l; if(p)ab.provider=p; if(s)ab.scope=s;
+  (AB_FIELDS[ab.type]||[]).forEach(([k])=>{
+    const el=document.getElementById('abe-f-'+k+'-'+id);
+    if(el&&el.value!=null) ab[k]=el.value;
+  });
+  // Configuration changed, so the previous verification no longer proves anything
+  const snap=_snap['ab:'+id];
+  const changed=snap?JSON.stringify(Object.assign({},snap,{_open:0,verify:0}))!==JSON.stringify(Object.assign({},ab,{_open:0,verify:0})):true;
+  if(changed) ab.verify={state:'unverified',ts:null,msg:''};
+  ab._open=false; _snapDrop('ab:'+id);
+  renderChannelsCfgOrBotz();
+  toast(changed?'AutoBotz updated \u2014 verify it again':'No changes');
+}
+function renderChannelsCfgOrBotz(){
+  const c=document.getElementById('cfgSubContent');
+  const el=document.getElementById('actContent-config');
+  if((el?.dataset?.subTab)==='autobotz') renderAutoBotzCfg(); else renderChannelsCfg();
+}
+function _abFormFields(ab,ctx){
+  const opts=_scopeOptions(ctx);
+  const scopeOpts=opts.concat(opts.some(o=>o.v===(ab.scope||'company'))?[]:[{v:ab.scope,l:_scopeLabel(ab.scope)+' (current)'}]);
+  const fields=(AB_FIELDS[ab.type]||[]).map(([k,lbl,kind,extra])=>{
+    const id='abe-f-'+k+'-'+ab.id, v=ab[k]||'';
+    if(kind==='select') return `<div class="ab-forow"><label>${lbl}</label>
+      <select class="sb-select" id="${id}" style="width:100%;padding:4px 6px;font-size:11px">
+        ${extra.map(o=>`<option value="${o}" ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`;
+    if(kind==='area') return `<div class="ab-forow"><label>${lbl}</label>
+      <textarea class="sb-input" id="${id}" rows="2" style="width:100%;font-size:11px;padding:4px 8px;font-family:var(--font);resize:vertical">${v}</textarea></div>`;
+    return `<div class="ab-forow"><label>${lbl}</label>
+      <input class="sb-input" id="${id}" type="text" value="${v}" style="width:100%;font-size:11px;padding:4px 8px"></div>`;
+  }).join('');
+  return `<div class="ab-forow"><label>Name</label>
+      <input class="sb-input" id="abe-l-${ab.id}" value="${ab.label}" style="width:100%;font-size:11px;padding:4px 8px"></div>
+    <div class="ab-forow"><label>Provider</label>
+      <select class="sb-select" id="abe-p-${ab.id}" style="width:100%;padding:4px 6px;font-size:11px">
+        ${AB_PROVIDERS.map(p=>`<option value="${p.id}" ${p.id===ab.provider?'selected':''}>${p.label}</option>`).join('')}</select></div>
+    <div class="ab-forow"><label>Scope</label>
+      <select class="sb-select" id="abe-s-${ab.id}" style="width:100%;padding:4px 6px;font-size:11px">
+        ${scopeOpts.map(o=>`<option value="${o.v}" ${o.v===(ab.scope||'company')?'selected':''}>${o.l}</option>`).join('')}</select></div>
+    ${(ab.scope||'company')==='company'?'<div class="scope-note">Company-wide \u2014 changes affect every metric.</div>':''}
+    ${fields}`;
+}
+function openAB(id){
+  const ab=abById(id); if(!ab)return;
+  (window._autoBotz||[]).forEach(x=>{ if(x!==ab) x._open=false; });
+  ab._open=true; _snapTake('ab:'+id,ab); renderChannelsCfgOrBotz();
+}
+function closeAB(id){ saveEditAB(id); }
+function removeAB(id){
+  _pendingDel=null;
+  window._autoBotz=(window._autoBotz||[]).filter(a=>a.id!==id);
+  renderChannelsCfgOrBotz();
+}
+
+// Verify every AutoComm channel — sending a test message IS the real thing
+function verifyNC(id){
+  const ch=(window._notifChannels||[]).find(c=>c.id===id); if(!ch)return;
+  ch.verify={state:'pending',ts:null,msg:''};
+  renderChannelsCfg();
+  setTimeout(()=>{
+    ch.verify={state:'ok',ts:Date.now(),msg:'Test message delivered'};
+    renderChannelsCfg(); toast('Test sent to '+ch.label);
+  },800);
+}
+
+// Picker used by Action responses — replaces the old webhook-only filter.
+// Verification state is shown at the point of use, not only in Response Options.
+function _autoBotzPicker(onChangeAttr,selected,mid){
+  const list=_visibleBotz(mid||_cfgContext());
+  if(!list.length) return `<span class="cfg-lbl">Run AutoBotz</span>
+    <div style="font-size:10px;color:var(--gray-light);padding:4px 0">None defined \u2014 create one in Response Options \u203a AutoBotz.</div>`;
+  return `<span class="cfg-lbl">Run AutoBotz</span>
+    <div style="display:flex;flex-direction:column;gap:3px;margin:3px 0 6px">${list.map(ab=>{
+      const on=(selected||[]).includes(ab.id), st=abState(ab);
+      return `<label class="cfg-nc-check"><input type="checkbox" ${on?'checked':''} onchange="${onChangeAttr.replace('__ID__',ab.id)}">
+        ${AB_TYPES[ab.type].icon} ${ab.label}
+        <span class="ab-chip ${st}">${st==='ok'?'verified':st}</span>
+        ${_scopeChip(ab,mid||_cfgContext())}</label>`;
+    }).join('')}</div>`;
+}
+
+// AutoBotz panel — bindings, verification state, and safe/real test actions
+function _renderAutoBotz(){
+  const _ctx=_cfgContext();
+  const list=_visibleBotz(_ctx);
+  const cards=list.map(ab=>{
+    const st=abState(ab), tdef=AB_TYPES[ab.type];
+    const fields=(AB_FIELDS[ab.type]||[]).map(([k,lbl])=>
+      ab[k]?`<div class="ab-field"><span>${lbl}</span><b>${ab[k]}</b></div>`:'').join('');
+    const own=(ab.scope||'company')===_ctx;
+    const dkey=`ab:${ab.id}`, uses=_usageCount(ab.id);
+    const delRow=_delRow(dkey,ab.label,uses,`removeAB('${ab.id}')`,`_cancelDel(()=>renderChannelsCfgOrBotz())`);
+    const head=`<div class="ab-head rule-head" onclick="${ab._open?`closeAB('${ab.id}')`:`openAB('${ab.id}')`}">
+        <span class="acc-caret" style="${ab._open?'transform:rotate(90deg)':''}">\u25b6</span>
+        <span class="ab-icon">${tdef.icon}</span>
+        <div class="ab-info">
+          <div class="ab-label">${ab.label}
+            <span class="ab-chip ${st}">${st==='ok'?'verified':st}</span>
+            ${_scopeChip(ab,_ctx)}</div>
+          <div class="ab-sub">${tdef.label} \u00b7 ${(AB_PROVIDERS.find(p=>p.id===ab.provider)||{}).label||ab.provider}</div>
+        </div>
+        <button class="cfg-nc-remove" onclick="event.stopPropagation();_askDel('${dkey}',()=>renderChannelsCfgOrBotz())">\u00d7</button>
+      </div>${delRow}`;
+    if(!ab._open) return `<div class="ab-item ${own?'':'inherited'}">${head}</div>`;
+    return `<div class="ab-item ${own?'':'inherited'}">${head}
+      <div class="ab-body">
+        ${_abFormFields(ab,_ctx)}
+        <div class="ab-vstate ${st}">${abStateLabel(st,ab)}${ab.verify?.msg?' \u00b7 '+ab.verify.msg:''}</div>
+        <div class="ab-actions">
+          <button class="ab-verify" onclick="verifyAB('${ab.id}',false)">Verify</button>
+          <button class="ab-run" onclick="verifyAB('${ab.id}',true)">Run test</button>
+        </div>
+        ${_editBtns(`saveEditAB('${ab.id}')`,`cancelEditAB('${ab.id}')`,false)}
+      </div>
+    </div>`;
+  }).join('');
+  const typeOpts=Object.keys(AB_TYPES).map(k=>`<option value="${k}">${AB_TYPES[k].icon} ${AB_TYPES[k].label}</option>`).join('');
+  return `<div class="act-section-hd">AutoBotz \u2014 automated actions</div>
+    <div class="cfg-desc"><p>What gets done. Used by Actions.</p>
+      <button class="cfg-add-inline" onclick="document.getElementById('abAF').style.display='block'">+ Botz</button></div>
+    <div id="abAF" style="display:none;margin-bottom:10px;padding:10px;border:1px solid var(--gray-border);border-radius:8px">
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <select class="sb-select" id="abTS" style="width:150px;padding:4px 6px;font-size:11px" onchange="renderABFields(this.value)">${typeOpts}</select>
+        <input class="sb-input" id="abNI" type="text" placeholder="Name" style="flex:1;font-size:11px;padding:4px 8px">
+      </div>
+      <select class="sb-select" id="abPS" style="width:100%;padding:4px 6px;font-size:11px;margin-bottom:6px">
+        ${AB_PROVIDERS.map(p=>`<option value="${p.id}">${p.label}</option>`).join('')}</select>
+      ${_scopeSelect('abSC',_ctx)}
+      <div id="abFields">${_abFieldInputs('webhook')}</div>
+      <div style="font-size:10px;color:var(--gray-light);margin:2px 0 7px">
+        The reference points at an automation that already exists in the provider.</div>
+      <div style="display:flex;gap:4px">
+        ${_editBtns(`addAB()`,`document.getElementById('abAF').style.display='none'`,true)}
+      </div>
+    </div>
+    ${cards||'<div style="font-size:11px;color:var(--gray-light);padding:8px 0;text-align:center">None defined yet.</div>'}
+    `;
+}
+
+// ═══ ACTOR ATTRIBUTION — metric columns derive from channel mix ═══
+// The three actor percentages are no longer frozen. Each active channel
+// contributes its volume, distributed only across the actors that live on it,
+// then normalised back to 100% across the visible columns.
+function computeMetricAttribution(){
+  if(!window._mBase){
+    window._mBase={};
+    metrics.forEach(m=>{ window._mBase[m.id]={total:m.total,pcts:[...m.pcts]}; });
+  }
+  const onChs=activeChannels.filter(c=>c.on);
+  const totalVol=onChs.reduce((s,c)=>s+(c.live||0),0)||1;
+  metrics.forEach(m=>{
+    const bias=window._mBase[m.id]?.pcts||m.pcts;
+    const acc=[0,0,0];
+    onChs.forEach(c=>{
+      const mix=(typeof chMix==='function')?chMix(c.id):{u:1,a:1,h:1};
+      const w=[bias[0]*(mix.u?1:0),bias[1]*(mix.a?1:0),bias[2]*(mix.h?1:0)];
+      const sum=w[0]+w[1]+w[2]; if(!sum)return;
+      const share=(c.live||0)/totalVol;
+      acc[0]+=w[0]/sum*share; acc[1]+=w[1]/sum*share; acc[2]+=w[2]/sum*share;
+    });
+    const tot=acc[0]+acc[1]+acc[2]; if(!tot)return;
+    const p=acc.map(x=>Math.round(x/tot*100));
+    const drift=100-(p[0]+p[1]+p[2]);
+    p[p.indexOf(Math.max(...p))]+=drift;   // absorb rounding on the largest column
+    m.pcts=p;
+  });
+}
+
+// ═══ RUM — MECHANICAL SENTIMENT ═══════════════════
+// Real User Monitoring frustration signals. Applies to static surfaces only —
+// a rage click is a browser concept; a phone call has no such thing.
+const RUM_APPLICABILITY={app:1,forms:1,google:1,bot:0,whatsapp:0,voice:0,email:0,
+  social:0,retail:0,tickets:0,chat:0,reddit:0};
+function rumApp(id){ const v=RUM_APPLICABILITY[id]; return v===undefined?0:v; }
+const rumState={};
+
+// Signals are driven by the same channelPerf degradation that already exists,
+// so a BzzzBX incident propagates through to the mood chart.
+function tickRum(){
+  activeChannels.forEach(c=>{
+    if(!rumApp(c.id))return;
+    const p=channelPerf[c.id]; if(!p)return;
+    const friction=Math.max(0,Math.min(1,(100-p.pct)/60));
+    const lat=Math.min(1,p.latency/500);
+    const err=Math.min(1,(p.errorRate||0)/5);
+    const vol=c.live||1;
+    rumState[c.id]={
+      rage:      Math.round(vol*friction*lat*0.06),
+      errorClick:Math.round(vol*err*0.05),
+      dead:      Math.round(vol*friction*0.04),
+      thrash:    Math.round(vol*lat*friction*0.05),
+      rapidExit: Math.round(vol*friction*friction*0.07),
+      clean:     Math.round(vol*(1-friction)*0.55),
+      fast:      Math.round(vol*(1-friction)*(1-lat)*0.35),
+    };
+  });
+}
+
+// Signal → emotional bucket. RUM measures the absence of friction too, so all
+// five buckets are reachable, not only the negative end.
+function computeMecaDist(){
+  const onChs=activeChannels.filter(c=>c.on&&rumApp(c.id)>0);
+  if(!onChs.length) return null;
+  const b=[0,0,0,0,0];
+  onChs.forEach(c=>{
+    const r=rumState[c.id]; if(!r)return;
+    const w=rumApp(c.id)*(c.live||1);
+    b[0]+=(r.rage+r.errorClick+r.rapidExit)*w;   // Enojado
+    b[1]+=(r.dead+r.thrash)*w;                   // Insatisfecho
+    b[2]+=(r.clean*0.50)*w;                      // Satisfecho
+    b[3]+=(r.clean*0.30+r.fast*0.40)*w;          // Contento
+    b[4]+=(r.fast*0.60)*w;                       // Feliz
+  });
+  const tot=b.reduce((s,x)=>s+x,0); if(!tot) return null;
+  const p=b.map(x=>Math.round(x/tot*100));
+  p[2]+=100-p.reduce((s,x)=>s+x,0);
+  return p;
+}
+// Share of active volume that can emit RUM at all
+function rumVolumeShare(){
+  const on=activeChannels.filter(c=>c.on);
+  const tot=on.reduce((s,c)=>s+(c.live||0),0)||1;
+  return on.reduce((s,c)=>s+(c.live||0)*rumApp(c.id),0)/tot;
+}
+function mechWeight(){
+  const w=metricCfg.sentiment?.mechWeight;
+  return (w===undefined||w===null)?0.35:w;
+}
+// Blend and store the two contributions on each sentiment bucket.
+// organic + mechanical always equals the displayed percentage.
+function applySentimentBlend(orgaDist){
+  const meca=computeMecaDist();
+  const wm=meca?mechWeight()*rumVolumeShare():0;
+  const wo=1-wm;
+  sentiment.forEach((s,i)=>{
+    const o=orgaDist[i]*wo, m=meca?meca[i]*wm:0;
+    s.orgaRaw=orgaDist[i]; s.mecaRaw=meca?meca[i]:null;
+    s.orga=o; s.meca=m; s.pct=Math.round(o+m);
+  });
+  const drift=100-sentiment.reduce((a,s)=>a+s.pct,0);
+  sentiment[2].pct+=drift;
+  return {meca,wm};
+}
+// Mechanical share of a single bucket — the newly configurable signal:
+// "the interface, not the conversation, is driving this emotion"
+function mecaShare(i){
+  const s=sentiment[i], tot=(s.orga||0)+(s.meca||0);
+  return tot>0?Math.round(s.meca/tot*100):0;
+}
+
+// ═══ ACTOR ENTITIES — "WHO" DRILL-DOWN ════════════
+// Actor presence per channel. u = Users/Members, a = ASA, h = Human Agent.
+// arep is reserved for Artificial Representatives — modelled, never displayed.
+const CH_ACTOR_MIX={
+  bot:{u:1,a:1,h:0,arep:0},   whatsapp:{u:1,a:1,h:1,arep:0}, voice:{u:1,a:0,h:1,arep:0},
+  app:{u:1,a:1,h:0,arep:0},   forms:{u:1,a:1,h:0,arep:0},    email:{u:1,a:1,h:1,arep:0},
+  social:{u:1,a:1,h:1,arep:0},retail:{u:1,a:0,h:1,arep:0},   google:{u:1,a:1,h:1,arep:0},
+  tickets:{u:1,a:1,h:1,arep:0},chat:{u:1,a:1,h:1,arep:0},    reddit:{u:1,a:0,h:1,arep:0},
+};
+const STATIC_CHANNELS=['app','forms','google'];
+function chMix(id){ return CH_ACTOR_MIX[id]||{u:1,a:1,h:1,arep:0}; }
+function chShort(id){ const d=CH_LIBRARY.find(x=>x.id===id); return d?d.name.split(/[ /]/)[0]:id; }
+function chName(id){ const d=CH_LIBRARY.find(x=>x.id===id); return d?d.name:id; }
+
+const ACTOR_LABEL={user:'Users / Members',asa:'ASA \u2014 Artificial Service Agents',human:'Human Agents'};
+const ACTOR_COL={user:0,asa:1,human:2};
+const AVAIL_SESSION_MIN=13;
+
+const _FIRST=['Camila','Andr\u00e9s','Luc\u00eda','Mateo','Valentina','Diego','Sof\u00eda','Tom\u00e1s','Isabela','Joaqu\u00edn','Renata','Sebasti\u00e1n','Paula','Emilio','Daniela','Ignacio','Mariana','Felipe','Antonia','Rodrigo','Carolina','Nicol\u00e1s','Elena','Javier','Bianca','Alejandro','Natalia','Gabriel','Ver\u00f3nica','Mart\u00edn','Adriana','Esteban','Luciana','Hern\u00e1n'];
+const _LAST=['Restrepo','Vargas','Molina','Ferrer','Aguilar','Solano','Bustos','Pineda','Cordero','Ibarra','Salcedo','Peralta','Miranda','Quintero','Escobar','Naranjo','Tapia','Villalba','Cabrera','Duarte'];
+
+let HUMAN_ROSTER=[], ASA_FLEET=[], USER_POOL=[];
+let whoOpenRows=new Set(), whoRevealed=new Set(), whoSearch='';
+
+// Human agents are a SHARED pool — each agent carries channel skills.
+// Availability is de-duplicated across channels, never summed per channel.
+function buildHumanRoster(){
+  const hChs=activeChannels.map(c=>c.id).filter(id=>chMix(id).h);
+  HUMAN_ROSTER=[];
+  if(!hChs.length) return;
+  for(let i=0;i<34;i++){
+    const seed=(i*37)%100;
+    const primary=hChs[i%hChs.length];
+    const chans=[primary];
+    if(hChs.length>1&&i%3===0){ const sec=hChs[(i+1)%hChs.length]; if(sec!==primary) chans.push(sec); }
+    HUMAN_ROSTER.push({
+      id:'AG-'+String(1040+i), name:_FIRST[i%_FIRST.length]+' '+_LAST[(i*7)%_LAST.length],
+      chans, live:(i%7!==0), handled:40+(seed%90), resolved:60+(seed%35), esc:2+(seed%14),
+      quality:['Low','Med','Med','High','Med'][i%5], rt:1+(seed%4),
+    });
+  }
+}
+// ASAs are instances, not people. Identity is the build; history is shared.
+function buildAsaFleet(){
+  ASA_FLEET=[];
+  activeChannels.filter(c=>chMix(c.id).a).forEach((c,i)=>{
+    const seed=(i*29)%100, isStatic=STATIC_CHANNELS.includes(c.id);
+    const total=isStatic?2:(3+(seed%4));
+    ASA_FLEET.push({
+      id:'ASA-'+c.id.toUpperCase().slice(0,4)+'-01', chans:[c.id],
+      build:isStatic?'v3.9.4':'v4.2.1', live:Math.max(1,total-(i%2)), total,
+      res:(isStatic?78:64)+(seed%12), halluc:+((isStatic?0.5:1.6)+(seed%22)/10).toFixed(1),
+      rt:isStatic?'0.4 s':'0.9 s',
+    });
+    if(!isStatic&&i%3===0) ASA_FLEET.push({
+      id:'ASA-'+c.id.toUpperCase().slice(0,4)+'-02', chans:[c.id], build:'v4.1.8',
+      live:1, total:2, res:58+(seed%10), halluc:+(3.4+(seed%14)/10).toFixed(1), rt:'1.1 s',
+    });
+  });
+}
+// Users: identified members plus anonymous sessions. Login rate is a property
+// of the channel — static and bot traffic mostly arrives without an identity.
+function buildUserPool(){
+  const chs=activeChannels.map(c=>c.id); USER_POOL=[];
+  if(!chs.length) return;
+  for(let i=0;i<180;i++){
+    const ch=chs[(i*3+(i%7))%chs.length];
+    const anonRate=STATIC_CHANNELS.includes(ch)?0.85:(ch==='bot'?0.75:0.20);
+    const anon=((i*13)%100)/100<anonRate;
+    USER_POOL.push({
+      id:anon?'SES-'+String(90210+i*7):'MBR-'+String(20440+i), anon,
+      name:anon?null:_LAST[(i*3)%_LAST.length], chans:[ch], live:(i%4!==0),
+      sessions:1+(i%9), aband:(i%5===0),
+      sent:(T[CFG.lang]?.sent||T.es.sent)[i%5], tenure:anon?null:(1+(i%48))+' mo',
+    });
+  }
+}
+function rebuildEntities(){ buildHumanRoster(); buildAsaFleet(); buildUserPool(); }
+
+// ── Availability ────────────────────────────────────
+// Users  : concurrent users — Little's Law, L = arrival rate x time in system
+// ASA    : provisioned instances that are live (capacity, not volume)
+// Human  : distinct on-shift agents whose skills intersect the active channels
+function computeAvailability(){
+  const onChs=activeChannels.filter(c=>c.on);
+  const mins={ahora:60,now:60,hoy:1440,today:1440,semana:10080,week:10080,mes:43200,month:43200}[CFG_TIMEFRAME]||60;
+  let users=0;
+  onChs.forEach(c=>{ if(chMix(c.id).u) users+=Math.round(((c.live||0)/mins)*AVG_AVAIL_TIME()); });
+  let asa=0;
+  ASA_FLEET.forEach(f=>{ if(f.chans.some(x=>onChs.some(c=>c.id===x))) asa+=f.live; });
+  const humans=HUMAN_ROSTER.filter(a=>a.live&&a.chans.some(x=>onChs.some(c=>c.id===x&&chMix(x).h))).length;
+  return {users,asa,humans};
+}
+function AVG_AVAIL_TIME(){ return (typeof avgTimeVal==='number'&&avgTimeVal>0)?avgTimeVal:AVAIL_SESSION_MIN; }
+
+function updateAvailableRow(){
+  const d=computeAvailability();
+  [['avail-user',d.users],['avail-asa',d.asa],['avail-human',d.humans]].forEach(([id,v])=>{
+    const el=document.getElementById(id); if(!el)return;
+    el.textContent=formatNum(v); el.classList.toggle('zero',v===0);
+  });
+  const dot=document.getElementById('availDot');
+  if(dot) dot.classList.toggle('dim',(d.users+d.asa+d.humans)===0);
+  const lb=document.getElementById('lbl-avail-tx'); if(lb) lb.innerHTML=getT('avail');
+  if(actMetricId==='available'||(actMetricId||'').startsWith('who_')){
+    const v=document.getElementById('actMetricVal');
+    if(v&&actMetricId.startsWith('who_')){
+      const a=actMetricId.split('_')[1];
+      if(actMetricId.endsWith('_available'))
+        v.textContent=formatNum(a==='human'?d.humans:a==='asa'?d.asa:d.users);
+    }
+  }
+}
+
+// ── Entry point from a matrix cell ──────────────────
+function openWho(actor,metricId){
+  rebuildEntities();
+  whoOpenRows.clear(); whoSearch='';
+  const m=metrics.find(x=>x.id===metricId);
+  const mName=metricId==='available'?getT('avail')
+    :metricId==='avgtime'?getT('tr'):metricId==='quality'?getT('qr')
+    :(m?(m[CFG.lang]||m.es):metricId);
+  const d=computeAvailability();
+  const val=metricId==='available'
+    ? formatNum(actor==='human'?d.humans:actor==='asa'?d.asa:d.users)
+    : (m?m.pcts[ACTOR_COL[actor]]+'%':'');
+  openActionables('who_'+actor+'_'+metricId,mName,val);
+  const k=document.querySelector('#actPanel .act-meta-label');
+  if(k) k.textContent=ACTOR_LABEL[actor];
+}
+function _whoCtx(id){ const p=(id||'').split('_'); return {actor:p[1],metricId:p.slice(2).join('_')}; }
+function whoToggleRow(rid){ whoOpenRows.has(rid)?whoOpenRows.delete(rid):whoOpenRows.add(rid); renderActivityTab(actMetricId); }
+function whoReveal(rid){ whoRevealed.add(rid); renderActivityTab(actMetricId); }
+function whoOnSearch(v){ whoSearch=(v||'').toLowerCase(); renderActivityTab(actMetricId); }
+function _chTags(chans){ return chans.map(c=>`<span class="ros-ch">${chShort(c)}</span>`).join(''); }
+function _esc(s){ return String(s).replace(/'/g,"\\'"); }
+
+// ── Aggregate Available panel (row-label click) ─────
+function renderAvailableActivity(){
+  const el=document.getElementById('actContent-activity'); if(!el)return;
+  rebuildEntities();
+  const d=computeAvailability(), onChs=activeChannels.filter(c=>c.on);
+  const hChs=onChs.filter(c=>chMix(c.id).h);
+  const naive=hChs.reduce((s,c)=>s+HUMAN_ROSTER.filter(a=>a.live&&a.chans.includes(c.id)).length,0);
+  el.innerHTML=`<div class="act-section-hd" style="margin-top:4px">Available now</div>
+    <div class="ros-kv">
+      <div class="ros-kv-cell"><div class="ros-kv-n">${formatNum(d.users)}</div><div class="ros-kv-l">USERS</div></div>
+      <div class="ros-kv-cell"><div class="ros-kv-n">${formatNum(d.asa)}</div><div class="ros-kv-l">ASA</div></div>
+      <div class="ros-kv-cell"><div class="ros-kv-n">${formatNum(d.humans)}</div><div class="ros-kv-l">HUMAN</div></div>
+    </div>
+    <div class="who-scope">Availability is capacity, not volume. Click any of the three numbers in the
+      <b>${getT('avail')}</b> row to see <b>who</b> is behind it.</div>
+    <div class="act-section-hd mt">Per channel</div>
+    <div class="ros-list">${onChs.map(c=>{
+      const mx=chMix(c.id);
+      return `<div class="ros-item"><div class="ros-head" style="cursor:default">
+        <span class="ros-dot"></span><span class="ros-name">${chName(c.id)}</span>
+        <span class="ros-chans">
+          <span class="ros-ch" style="${mx.u?'':'opacity:.35'}">U</span>
+          <span class="ros-ch" style="${mx.a?'':'opacity:.35'}">A</span>
+          <span class="ros-ch" style="${mx.h?'':'opacity:.35'}">H</span>
+        </span></div></div>`;}).join('')}</div>
+    <div class="act-section-hd mt">Method</div>
+    <div class="ros-assign"><b>Users</b> \u2014 concurrent, from volume \u00f7 window \u00d7 avg session.<br>
+      <b>ASA</b> \u2014 live instances; a static channel <i>is</i> a service agent.<br>
+      <b>Human</b> \u2014 distinct on-shift agents. Per-channel sum reads <b>${naive}</b>;
+      de-duplicated it is <b>${d.humans}</b>.</div>`;
+}
+
+// ── The three WHO views ─────────────────────────────
+function renderEntityActivity(entityId){
+  const el=document.getElementById('actContent-activity'); if(!el)return;
+  if(!HUMAN_ROSTER.length&&!ASA_FLEET.length&&!USER_POOL.length) rebuildEntities();
+  const {actor,metricId}=_whoCtx(entityId);
+  el.innerHTML = actor==='human'?_whoHumans(metricId)
+               : actor==='asa'  ?_whoAsa(metricId)
+               :                 _whoUsers(metricId);
+}
+
+function _whoHumans(metricId){
+  const onChs=activeChannels.filter(c=>c.on).map(c=>c.id).filter(id=>chMix(id).h);
+  if(!onChs.length) return `<div class="who-scope">No active channel carries human agents.
+    <b>Human availability is 0</b> \u2014 the column is empty because nobody works here, not because data is missing.</div>`;
+  const isAvail=metricId==='available';
+  let pool=HUMAN_ROSTER.filter(a=>a.chans.some(c=>onChs.includes(c)));
+  if(whoSearch) pool=pool.filter(a=>(a.name+' '+a.id).toLowerCase().includes(whoSearch));
+  pool=isAvail?[...pool].sort((a,b)=>(b.live-a.live)||a.name.localeCompare(b.name))
+              :[...pool].sort((a,b)=>b.handled-a.handled);
+  const max=Math.max(...pool.map(a=>a.handled),1), liveN=pool.filter(a=>a.live).length;
+  return `<div class="who-scope">${isAvail
+      ?'<b>Roster.</b> Everyone in the pool for the active channels. Live agents in black, off-session in gray \u2014 still explorable.'
+      :'<b>Attribution.</b> Agents who contributed to this metric, ranked by volume handled.'}</div>
+    <input class="ros-search" placeholder="Search name or agent ID&hellip;" value="${whoSearch}" oninput="whoOnSearch(this.value)">
+    <div class="ros-count">${liveN} live of ${pool.length} \u00b7 ${onChs.map(chShort).join(', ')}</div>
+    <div class="ros-list">${pool.map(a=>{
+      const o=whoOpenRows.has(a.id);
+      return `<div class="ros-item ${o?'open':''} ${a.live?'':'off'}">
+        <div class="ros-head" onclick="whoToggleRow('${a.id}')">
+          <span class="ros-dot"></span>
+          <span class="ros-name">${a.name} <span class="ros-sub">${a.id}</span></span>
+          <span class="ros-chans">${_chTags(a.chans)}</span><span class="ros-caret">&#9654;</span>
+        </div>
+        <div class="ros-body">
+          <div class="ros-kv">
+            <div class="ros-kv-cell"><div class="ros-kv-n">${a.handled}</div><div class="ros-kv-l">HANDLED</div></div>
+            <div class="ros-kv-cell"><div class="ros-kv-n">${a.resolved}%</div><div class="ros-kv-l">RESOLVED</div></div>
+            <div class="ros-kv-cell"><div class="ros-kv-n ${a.quality==='Low'?'bad':''}">${a.quality}</div><div class="ros-kv-l">QUALITY</div></div>
+          </div>
+          ${isAvail?'':`<div class="ros-contrib"><div class="ros-contrib-fill" style="width:${Math.round(a.handled/max*100)}%"></div></div>`}
+          <div class="ros-mini-hd">Session history</div>
+          <div class="ros-hist">
+            <div class="ros-hist-row"><span class="ros-hist-t">14:31</span><span class="ros-hist-x">Resolved enquiry</span><span class="ros-hist-b">${chShort(a.chans[0])}</span></div>
+            <div class="ros-hist-row"><span class="ros-hist-t">14:12</span><span class="ros-hist-x">Escalated from handoff</span><span class="ros-hist-b ${a.esc>8?'bad':''}">${a.esc} esc</span></div>
+            <div class="ros-hist-row"><span class="ros-hist-t">13:47</span><span class="ros-hist-x">Status enquiry</span><span class="ros-hist-b">${chShort(a.chans[a.chans.length-1])}</span></div>
+          </div>
+          <div class="ros-mini-hd">Current assignment</div>
+          <div class="ros-assign">${a.live
+            ?`In session on <b>${a.chans.map(chName).join('</b> and <b>')}</b> \u00b7 avg response ${a.rt} min`
+            :'Not in session. Historical data remains available.'}</div>
+        </div></div>`;}).join('')}</div>`;
+}
+
+function _whoAsa(metricId){
+  const onIds=activeChannels.filter(c=>c.on).map(c=>c.id);
+  let fleet=ASA_FLEET.filter(f=>f.chans.some(c=>onIds.includes(c)));
+  if(!fleet.length) return `<div class="who-scope">No ASA instances on the active channels.</div>`;
+  if(whoSearch) fleet=fleet.filter(f=>(f.id+' '+f.build).toLowerCase().includes(whoSearch));
+  const live=fleet.reduce((s,f)=>s+f.live,0), tot=fleet.reduce((s,f)=>s+f.total,0);
+  const avgRes=Math.round(fleet.reduce((s,f)=>s+f.res,0)/(fleet.length||1));
+  const avgHal=(fleet.reduce((s,f)=>s+f.halluc,0)/(fleet.length||1)).toFixed(1);
+  return `<div class="who-scope"><b>Fleet view.</b> ASAs are instances, not people, so there is no
+    per-person history. Identity is the <b>build</b>; performance is <b>shared across the fleet</b>.</div>
+    <div class="act-section-hd">Working now</div>
+    <div class="ros-kv">
+      <div class="ros-kv-cell"><div class="ros-kv-n">${live}</div><div class="ros-kv-l">LIVE</div></div>
+      <div class="ros-kv-cell"><div class="ros-kv-n">${tot}</div><div class="ros-kv-l">PROVISIONED</div></div>
+      <div class="ros-kv-cell"><div class="ros-kv-n">${fleet.length}</div><div class="ros-kv-l">INSTANCES</div></div>
+    </div>
+    <input class="ros-search" style="margin-top:12px" placeholder="Search instance or build&hellip;" value="${whoSearch}" oninput="whoOnSearch(this.value)">
+    <div class="ros-list">${fleet.map(f=>{
+      const o=whoOpenRows.has(f.id);
+      return `<div class="ros-item ${o?'open':''} ${f.live?'':'off'}">
+        <div class="ros-head" onclick="whoToggleRow('${f.id}')">
+          <span class="ros-dot"></span>
+          <span class="ros-name">${f.id} <span class="ros-sub">${f.build}</span></span>
+          <span class="ros-chans">${_chTags(f.chans)}<span class="ros-ch">${f.live}/${f.total}</span></span>
+          <span class="ros-caret">&#9654;</span>
+        </div>
+        <div class="ros-body">
+          <div class="ros-kv">
+            <div class="ros-kv-cell"><div class="ros-kv-n">${f.res}%</div><div class="ros-kv-l">RESOLVED</div></div>
+            <div class="ros-kv-cell"><div class="ros-kv-n ${f.halluc>3?'bad':''}">${f.halluc}%</div><div class="ros-kv-l">HALLUC.</div></div>
+            <div class="ros-kv-cell"><div class="ros-kv-n">${f.rt}</div><div class="ros-kv-l">RESPONSE</div></div>
+          </div>
+          <div class="ros-mini-hd">Shared performance</div>
+          <div class="ros-assign">Aggregate across all <b>${f.total}</b> instances of this build on
+            <b>${f.chans.map(chName).join(', ')}</b>.
+            ${f.halluc>3?'<b style="color:var(--red)">This build hallucinates above fleet average.</b>':'Tracking within fleet norms.'}</div>
+        </div></div>`;}).join('')}</div>
+    <div class="act-section-hd mt">Fleet aggregate</div>
+    <div class="ros-assign">Resolved <b>${avgRes}%</b> \u00b7 hallucination <b>${avgHal}%</b> across ${tot} provisioned instances.</div>`;
+}
+
+function _whoUsers(metricId){
+  const onIds=activeChannels.filter(c=>c.on).map(c=>c.id);
+  let pool=USER_POOL.filter(u=>u.chans.some(c=>onIds.includes(c)));
+  if(whoSearch) pool=pool.filter(u=>(u.id+' '+(u.name||'')).toLowerCase().includes(whoSearch));
+  if(!pool.length) return `<div class="who-scope">No sessions on the active channels.</div>`;
+  const shown=pool.slice(0,40), anonN=pool.filter(u=>u.anon).length;
+  return `<div class="who-scope"><b>Identity.</b> Member ID is primary. Many sessions are
+    <b>anonymous</b> \u2014 a visitor with a session but no login. Names sit behind an explicit reveal.</div>
+    <input class="ros-search" placeholder="Search member or session ID&hellip;" value="${whoSearch}" oninput="whoOnSearch(this.value)">
+    <div class="ros-count">${formatNum(pool.length)} in scope \u00b7 ${formatNum(anonN)} anonymous \u00b7 showing ${shown.length}</div>
+    <div class="ros-list">${shown.map(u=>{
+      const o=whoOpenRows.has(u.id);
+      return `<div class="ros-item ${o?'open':''} ${u.live?'':'off'}">
+        <div class="ros-head" onclick="whoToggleRow('${u.id}')">
+          <span class="ros-dot"></span>
+          <span class="ros-name">${u.id} ${u.anon?'<span class="ros-anon">ANON</span>'
+            :(whoRevealed.has(u.id)?`<span class="ros-sub">${u.name}</span>`:'')}</span>
+          <span class="ros-chans">${_chTags(u.chans)}</span><span class="ros-caret">&#9654;</span>
+        </div>
+        <div class="ros-body">
+          <div class="ros-kv">
+            <div class="ros-kv-cell"><div class="ros-kv-n">${u.sessions}</div><div class="ros-kv-l">SESSIONS</div></div>
+            <div class="ros-kv-cell"><div class="ros-kv-n ${u.aband?'bad':''}">${u.aband?'Yes':'No'}</div><div class="ros-kv-l">ABANDONED</div></div>
+            <div class="ros-kv-cell"><div class="ros-kv-n" style="font-size:11px">${u.sent}</div><div class="ros-kv-l">SENTIMENT</div></div>
+          </div>
+          <div class="ros-mini-hd">Identity</div>
+          <div class="ros-assign">${u.anon
+            ?'Anonymous session \u2014 visitor not logged in. No member record to resolve.'
+            :(whoRevealed.has(u.id)
+              ?`Member <b>${u.name}</b> \u00b7 tenure ${u.tenure}. <span style="color:var(--gray-mid)">Reveal logged.</span>`
+              :`Identified member \u00b7 tenure ${u.tenure}. <button class="ros-reveal" onclick="event.stopPropagation();whoReveal('${u.id}')">Reveal name</button>`)}</div>
+        </div></div>`;}).join('')}</div>`;
+}
+
+// ── Other tabs, scoped to the entity ────────────────
+function whoScopedTab(tabName,entityId){
+  const {actor}=_whoCtx(entityId);
+  return `<div class="who-scope">${tabName} scoped to <b>${ACTOR_LABEL[actor]}</b>.
+    Same tab, narrower subject \u2014 thresholds and responses can target an individual actor
+    rather than only the aggregate.</div>`;
+}
+function whoAlertsTab(entityId){
+  const {actor}=_whoCtx(entityId);
+  if(actor!=='human'||!HUMAN_ROSTER.length) return whoScopedTab('Alerts',entityId);
+  const onIds=activeChannels.filter(c=>c.on).map(c=>c.id).filter(id=>chMix(id).h);
+  const weak=HUMAN_ROSTER.filter(a=>a.chans.some(c=>onIds.includes(c))&&a.quality==='Low');
+  if(!weak.length) return `<div class="who-scope"><b>Entity-scoped alerts.</b> No agent in this pool
+    is currently breaching an individual threshold.</div>`;
+  return `<div class="who-scope"><b>Entity-scoped.</b> Alerts can now name the actor, not only the metric.</div>`+
+    weak.slice(0,4).map(a=>`<div class="alert-item critical">
+      <div class="alert-item-top">
+        <div class="alert-dot critical"></div>
+        <div class="alert-title">Response quality below threshold</div>
+        <div class="alert-time">${tStr?tStr():''}</div>
+      </div>
+      <div class="alert-body"><span class="who-pill">WHO</span>${a.name} \u00b7 ${a.id} \u2014
+        quality <b>Low</b> against a <b>Med</b> floor on ${chName(a.chans[0])}.</div>
+    </div>`).join('');
+}
+
+// Entity ("who") panels reuse renderThresholdsCfg wholesale. Only the scope
+// selector and the option list are entity-specific.
+// who_<actor>_<metric>#<actorId> when scope is a specific actor.
+// The scope selector itself always lives on the base key.
+function _thKey(mid){
+  const c=metricCfg[mid];
+  return (c&&c.scope==='actor'&&c.actorId)?mid+'#'+c.actorId:mid;
+}
+function _overrideIds(mid){
+  return Object.keys(metricCfg).filter(k=>k.startsWith(mid+'#')).map(k=>k.split('#')[1]);
+}
+function _whoScopeRow(mid){
+  const {actor}=_whoCtx(mid);
+  if(!metricCfg[mid]) metricCfg[mid]={upper:null,lower:null,notifs:[],peak:false,msg:'',responses:[],scope:'each',actorId:''};
+  const scope=metricCfg[mid].scope||'each';
+  if(!HUMAN_ROSTER.length&&!ASA_FLEET.length) rebuildEntities();
+  // Specific-actor scope is offered for agents and ASA builds only. Users stay
+  // at each/group — a threshold pinned to a named customer runs against the
+  // pseudonymity position taken for the Users panel.
+  const canPin=(actor==='human'||actor==='asa');
+  const roster=actor==='human'
+    ? HUMAN_ROSTER.filter(a=>a.chans.some(ch=>activeChannels.some(c=>c.on&&c.id===ch)))
+        .map(a=>({id:a.id,label:a.name+' \u00b7 '+a.id}))
+    : ASA_FLEET.filter(f=>f.chans.some(ch=>activeChannels.some(c=>c.on&&c.id===ch)))
+        .map(f=>({id:f.id,label:f.id+' \u00b7 '+f.build}));
+  const pinned=metricCfg[mid].actorId||'';
+  const stale=pinned&&!roster.some(r=>r.id===pinned);
+  return `<div style="font-size:11px;color:var(--gray-mid);line-height:1.5;margin-bottom:8px">
+      Applies to <b>${ACTOR_LABEL[actor]||actor}</b>. Evaluate against each individual actor,
+      the group as a whole${canPin?', or one specific actor as an override':''}.
+    </div>
+    <select class="sb-select" style="width:100%;padding:7px 10px;margin-bottom:${scope==='actor'?'8px':'12px'}"
+      onchange="metricCfg['${mid}'].scope=this.value;_thSec.threshold=true;renderThresholdsCfg('${mid}')">
+      <option value="each"  ${scope==='each'?'selected':''}>Each actor individually</option>
+      <option value="group" ${scope==='group'?'selected':''}>The group as a whole</option>
+      ${canPin?`<option value="actor" ${scope==='actor'?'selected':''}>A specific actor</option>`:''}
+    </select>
+    ${_overrideIds(mid).length?`<div style="font-size:10.5px;color:var(--gray-mid);margin-bottom:8px">
+      <b>${_overrideIds(mid).length}</b> actor override${_overrideIds(mid).length===1?'':'s'} configured:
+      ${_overrideIds(mid).join(', ')}</div>`:''}
+    ${scope==='actor'&&canPin?`
+      <select class="sb-select" style="width:100%;padding:7px 10px;margin-bottom:6px"
+        onchange="metricCfg['${mid}'].actorId=this.value;renderThresholdsCfg('${mid}')">
+        <option value="">Select an actor\u2026</option>
+        ${roster.map(r=>`<option value="${r.id}" ${r.id===pinned?'selected':''}>${r.label}</option>`).join('')}
+      </select>
+      ${stale?`<div style="font-size:10.5px;color:var(--red);margin-bottom:8px">
+        \u26a0 <b>${pinned}</b> is no longer in the active pool \u2014 this threshold will not evaluate.</div>`
+      :`<div style="font-size:10.5px;color:var(--gray-light);margin-bottom:8px">
+        Stored separately as <b>${mid}#${pinned||'\u2026'}</b>. Overrides the group rule for this actor
+        only \u2014 everyone else keeps the group threshold.</div>`}
+    `:''}
+    `;
+}
+function _whoOptions(mid){
+  const {actor,metricId}=_whoCtx(mid.split('#')[0]);
+  const scope=metricCfg[mid.split('#')[0]]?.scope||'each';
+  const perActor=(scope==='each'||scope==='actor');
+  if(metricId==='available'){
+    if(actor==='human') return perActor
+      ? [{key:'upper',label:'Unavailable longer than'},
+         {key:'lower',label:'Availability \u2014 falls below % of shift'}]
+      : [{key:'lower',label:'Available agents \u2014 falls below'},
+         {key:'upper',label:'Available agents \u2014 exceeds'},
+         {key:'lower-rate',label:'Availability rate \u2014 falls below %'}];
+    if(actor==='asa') return perActor
+      ? [{key:'lower',label:'Instances of this build \u2014 falls below'},
+         {key:'upper',label:'This build\u2019s hallucination \u2014 exceeds %'}]
+      : [{key:'lower',label:'Live instances \u2014 falls below'},
+         {key:'upper',label:'Fleet hallucination rate \u2014 exceeds %'}];
+    return [{key:'lower',label:'Concurrent users \u2014 falls below'},
+            {key:'upper',label:'Concurrent users \u2014 exceeds'}];
+  }
+  if(metricId==='quality') return perActor
+    ? [{key:'lower',label:'Quality \u2014 falls below'}]
+    : [{key:'lower',label:'Average quality \u2014 falls below'}];
+  if(metricId==='avgtime') return perActor
+    ? [{key:'upper',label:'Response time \u2014 exceeds'}]
+    : [{key:'upper',label:'Average response time \u2014 exceeds'}];
+  return perActor
+    ? [{key:'upper',label:'This actor\u2019s share \u2014 exceeds %'},
+       {key:'upper-sessions',label:'Sessions handled \u2014 exceeds'}]
+    : [{key:'upper',label:'Actor contribution \u2014 exceeds %'},
+       {key:'lower',label:'Actor contribution \u2014 falls below %'}];
+}
+function _whoUnit(mid,key){
+  const base=mid.split('#')[0];
+  const {actor,metricId}=_whoCtx(base);
+  const scope=metricCfg[base]?.scope||'each';
+  const perActor=(scope==='each'||scope==='actor');
+  if((key||'').includes('rate')||(key||'').includes('%')) return '%';
+  if((key||'')==='upper-sessions') return 'sessions';
+  if(metricId==='available'){
+    if(actor==='human') return perActor?(key==='upper'?'min':'%'):'count';
+    if(actor==='asa') return perActor?(key==='upper'?'%':'count'):(key==='upper'?'%':'count');
+    return 'sessions';
+  }
+  if(metricId==='avgtime') return 'min';
+  if(metricId==='quality') return 'level';
+  return '%';
+}
+
 // ═══ ANOMALIES ════════════════════════════════════
 
 const ANOMALY_DATA=[
@@ -4205,6 +5734,7 @@ const ANOMALY_DATA=[
 function renderAnomaliesTab(metricId){
   const el=document.getElementById('actContent-anomalies');
   if(!el)return;
+  if(metricId&&metricId.startsWith('who_')){ el.innerHTML=whoScopedTab('Anomalies',metricId); return; }
 
   // Filter by metric when specific Actionables is open
   let data=ANOMALY_DATA;
@@ -4280,11 +5810,15 @@ function tick(){
     const arr=document.getElementById('trendArr');
     if(avgTimeVal>prev){arr.textContent='\u2191';arr.className='trend up';}
     else if(avgTimeVal<prev){arr.textContent='\u2193';arr.className='trend down';}
-    rebalance(); sentiment.forEach(s=>updateLollipop(s));
+    rebalance();
+    applySentimentBlend(sentiment.map(s=>s.orgaRaw!==undefined?s.orgaRaw:s.pct));
+    sentiment.forEach(s=>updateLollipop(s));
     for(let i=0;i<5;i++){const el=document.getElementById(`faq-n-${i}`);if(el)el.textContent=formatNum(jitter(parseInt(el.textContent)||DEFAULT_COUNTS[i]||10,CFG.vol));}
     tickDynLists();
     tickWords();
     tickChannelPerf();
+    tickRum();
+    updateAvailableRow();
     checkThresholds();
     checkKeywordRules();
   } else {
@@ -4340,6 +5874,7 @@ function logAlert(id,mname,type,val,thresh,cfg,sev){
     : 'Email';
   const chPerfCtx=getChannelPerfForMetric(id.split('-')[0]);
   alertLog.unshift({id:alertIdCtr++,mid:id.split('-')[0],mname,type,val,thresh,time:ts,sev,notif,chPerf:chPerfCtx||null});
+  if(alertLog.length>ALERT_LOG_CAP) alertLog.length=ALERT_LOG_CAP;
   breachCooldown[id]=Date.now();
   // Track breach frequency for reactive anomalies
   const baseId=id.split('-')[0];
@@ -4361,6 +5896,7 @@ function logRecovery(id,mname,cfg){
     ? cfg.notifs[0].charAt(0).toUpperCase()+cfg.notifs[0].slice(1)
     : 'Email';
   alertLog.unshift({id:alertIdCtr++,mid:id.split('-')[0],mname,type:'recovery',val:null,thresh:null,time:ts,sev:'info',notif});
+  if(alertLog.length>ALERT_LOG_CAP) alertLog.length=ALERT_LOG_CAP;
   const baseId=id.split('-')[0];
   if(actMetricId===baseId) renderAlertsTab(baseId);
   updateAlertsBadge();
@@ -4510,14 +6046,20 @@ function checkThresholds(){
     ['s0','s1','s2','s3','s4'].forEach((sid,i)=>{
       const sc=sentCfg.thresholds[sid];
       if(!sc||sc.val===null||sc.val===undefined||sc.val==='')return;
-      const compId=`sent-${sid}`;
-      const pctVal=sentiment[i].pct;
+      const src=sc.source||'blend';
+      const compId=`sent-${sid}-${src}`;
+      const pctVal= src==='meca'   ? (sentiment[i].mecaRaw==null?null:Math.round(sentiment[i].mecaRaw))
+                  : src==='orga'   ? Math.round(sentiment[i].orgaRaw??sentiment[i].pct)
+                  : src==='mshare' ? mecaShare(i)
+                  :                  sentiment[i].pct;
+      if(pctVal===null) return;   // no mechanical signal on the active channels
       const isUpper=sc.type==='upper';
       const upper=isUpper?sc.val:null;
       const lower=isUpper?null:sc.val;
       const dotEl=document.getElementById(`lp-dot-${sentiment[i].id}`);
       const stemEl=document.getElementById(`lp-stem-${sentiment[i].id}`)?.closest('.lp-item');
-      const mname=`Sentiment: ${sentLabels[i]}`;
+      const srcTag={meca:' · MECÁNICO',orga:' · ORGÁNICO',mshare:' · MECA share'}[src]||'';
+      const mname=`Sentiment: ${sentLabels[i]}${srcTag}`;
       const notifCfg={notifs:sc.notifs||sentCfg.notifs||[],peak:sentCfg.peak};
       evaluateBreach(compId,pctVal,upper,lower,dotEl,stemEl,mname,notifCfg,sentCfg.peak);
     });
@@ -4596,9 +6138,14 @@ function checkReactiveAnomaly(metricId,mname){
 
 function updateAlertsBadge(){
   const count=alertLog.length;
-  // Actionables tab badge
+  // Actionables tab badge — scoped to whatever the panel is showing.
+  // On an entity ("who_") panel the global total is meaningless.
   const badge=document.getElementById('actAlertsBadge');
-  if(badge){if(count){badge.textContent=count;badge.classList.add('show');}else badge.classList.remove('show');}
+  if(badge){
+    if((actMetricId||'').startsWith('who_')){ badge.classList.remove('show'); }
+    else if(count){ badge.textContent=count; badge.classList.add('show'); }
+    else badge.classList.remove('show');
+  }
   // Header icon badge
   const hb=document.getElementById('hdrAlertsBadge');
   if(hb){hb.textContent=count>0?count:'';hb.classList.toggle('show',count>0);}
@@ -5302,7 +6849,8 @@ function updateNpsBadgeColor(score){
 
 // ═══ INIT ═════════════════════════════════════════
 function init(){
-  applyLang(CFG.lang); // apply language first so all labels are correct from load
+  window._appliedLang=CFG.lang;
+  applyLang(CFG.lang,true); // labels only at load; content comes from render*
   renderChannelDisplay(); renderLollipops(); renderMetrics(); renderFAQ(); renderAccTemas();
   const today=new Date().toISOString().split('T')[0];
   document.getElementById('dateTo').value=today;
@@ -5322,9 +6870,48 @@ function init(){
   _ensureResponses('aba');
   metricCfg.aba.responses=[
     {type:'alarm',name:'Abandonment Alarm',channels:['nc1'],subject:'Abandonment spike',message:'Abandonment rate critical',_open:false},
+    {type:'action',name:'Session Recovery Hook',channels:['ab2'],payload:'{"metric":"aba","value":{{value}}}',_open:false},
   ];
+  // Action responses now select a REGISTERED webhook — migrate the seeded one
+  metricCfg.avgtime.responses[1].channels=['ab1'];
+  _ensureResponses('alu');
+  metricCfg.alu.responses=[
+    {type:'alert',name:'Hallucination Watch',channels:['nc3','nc7'],subject:'Hallucination rate breached',message:'{{metric}} at {{value}} \u2014 review AI responses',_open:false},
+    {type:'action',name:'Incident Bridge',channels:['ab2'],payload:'{"metric":"alu","value":{{value}}}',_open:false},
+  ];
+  _ensureResponses('der');
+  metricCfg.der.responses=[
+    {type:'alert',name:'Escalation Notice',channels:['nc2'],subject:'Escalations above baseline',message:'Escalations at {{value}}',_open:false},
+  ];
+  _ensureResponses('quality');
+  metricCfg.quality.responses=[
+    {type:'alert',name:'Quality Review',channels:['nc7'],subject:'Response quality below floor',message:'Quality dropped on {{metric}}',_open:false},
+  ];
+  _ensureResponses('sentiment');
+  metricCfg.sentiment.responses=[
+    {type:'alarm',name:'Mood Alarm',channels:['nc1','nc3'],subject:'Negative sentiment spike',message:'Sentiment breached \u2014 check channel health',_open:false},
+  ];
+  // Anomaly rules — so the Anomalies config tab is populated for QA
+  metricCfg.aba.anomRules={known:[
+    {name:'Checkout friction',condition:'contains',keywords:'timeout, payment, error',responses:[
+      {type:'alert',name:'Friction Alert',channels:['nc1'],subject:'Checkout friction detected',message:'Anomaly on {{metric}}',_open:false}]},
+    {name:'Repeat abandons',condition:'frequency',keywords:'abandon',freqThresh:8,responses:[
+      {type:'action',name:'Notify CRM',channels:['ab4'],payload:'{"anomaly":"abandon"}',_open:false}]},
+  ],unknown:{critical:[],warning:[]}};
+  // Sentiment thresholds exercising all four sources, including MECA/ORGA
+  metricCfg.sentiment.thresholds.s0={type:'upper',val:8, notifs:['email'],source:'blend'};
+  metricCfg.sentiment.thresholds.s1={type:'upper',val:22,notifs:['email'],source:'orga'};
+  metricCfg.sentiment.thresholds.s2={type:'lower',val:35,notifs:[],       source:'meca'};
+  metricCfg.sentiment.thresholds.s3={type:'lower',val:12,notifs:[],       source:'blend'};
+  metricCfg.sentiment.thresholds.s4={type:'lower',val:4, notifs:[],       source:'mshare'};
 
   initChannelPerf();
+  tickRum();
+  computeMetricAttribution();
+  applySentimentBlend(sentiment.map(s=>s.pct));
+  renderMetrics(); renderLollipops();
+  rebuildEntities();
+  updateAvailableRow();
   restartSim();
   updateAlertsBadge();
   updateAnomaliesBadge();
@@ -5358,13 +6945,22 @@ init();
   const BASE='/api/config';
   async function api(path,opts){
     try{
+      if(window._bridgeOffline===true) return null;
       const r=await fetch(BASE+path,Object.assign({
         headers:{'Content-Type':'application/json'},
         credentials:'same-origin',
       },opts||{}));
       if(!r.ok) throw new Error('HTTP '+r.status);
       return await r.json();
-    }catch(e){ console.warn('[bob-bridge]',(opts&&opts.method)||'GET',path,'—',e.message); return null; }
+    }catch(e){
+      // Probe once. Standalone, the backend is simply absent — say so a single
+      // time rather than narrating every call for the rest of the session.
+      if(window._bridgeOffline!==true){
+        window._bridgeOffline=true;
+        console.info('[bob-bridge] backend not reachable — running standalone, persistence disabled');
+      }
+      return null;
+    }
   }
   const data=(res)=>res&&res.data!==undefined?res.data:null;
 
@@ -5632,7 +7228,7 @@ init();
     const el=document.getElementById('actContent-config');
     if(el&&typeof renderConfigTab==='function'&&actMetricId){ try{ renderConfigTab(actMetricId); }catch(e){} }
   }
-  setTimeout(function(){ hydrate().catch(function(e){ console.warn('[bob-bridge] hydrate',e); }); },600);
+  setTimeout(function(){ hydrate().catch(function(){}); },600);
 })();
 </script>
 </body>
