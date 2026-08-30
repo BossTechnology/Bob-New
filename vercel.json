@@ -11,7 +11,7 @@
     },
     {
       "path": "/api/cron/alert-evaluation",
-      "schedule": "*/5 * * * *"
+      "schedule": "*/1 * * * *"
     },
     {
       "path": "/api/cron/anomaly-detection",
