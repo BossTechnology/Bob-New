@@ -8,13 +8,21 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    # Next pins its own build and lint toolchain, and dependabot cannot see
+    # that. Both entries below are majors that this project cannot take yet;
+    # minor and patch bumps of each keep flowing. Note that a green Vercel
+    # check does not clear a bump here: the build does not run eslint and
+    # there are no CI workflows, so lint breakage passes review unnoticed.
     ignore:
-      # typescript@7 breaks the build. Next 16.2.6 reports "It looks like
-      # you're trying to use TypeScript but do not have the required
-      # package(s) installed" and the build worker exits 1 — observed on
-      # PR #17, preview dpl_DTbjN3Ux. The other three open bumps (eslint 10,
-      # @types/node 26, the minor-and-patch group) build green, so the major
-      # gate is scoped to this one package. Lift it when Next supports v7;
-      # minor and patch bumps keep flowing meanwhile.
+      # typescript@7: Next 16 reports "It looks like you're trying to use
+      # TypeScript but do not have the required package(s) installed" and the
+      # build worker exits 1. Observed on PR #17. Lift when Next supports v7.
       - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      # eslint@10: eslint-config-next declares "eslint": ">=9.0.0" but ships
+      # eslint-plugin-react@7.37.5, which calls context.getFilename() --
+      # removed in eslint 10. `npm run lint` throws before linting anything.
+      # Merged as PR #15 and reverted. Lift when eslint-config-next ships a
+      # plugin build that works on v10.
+      - dependency-name: eslint
         update-types: [version-update:semver-major]
