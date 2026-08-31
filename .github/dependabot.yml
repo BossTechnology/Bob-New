@@ -8,3 +8,13 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # typescript@7 breaks the build. Next 16.2.6 reports "It looks like
+      # you're trying to use TypeScript but do not have the required
+      # package(s) installed" and the build worker exits 1 — observed on
+      # PR #17, preview dpl_DTbjN3Ux. The other three open bumps (eslint 10,
+      # @types/node 26, the minor-and-patch group) build green, so the major
+      # gate is scoped to this one package. Lift it when Next supports v7;
+      # minor and patch bumps keep flowing meanwhile.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
