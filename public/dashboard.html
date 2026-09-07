@@ -4921,7 +4921,7 @@ const AB_TYPES={
   synthetics:{label:'Synthetics',     icon:'\u{1F578}', blurb:'Drives the real UI to verify what RUM inferred.'},
   agent:     {label:'AI Agent',       icon:'\u{1F9E0}', blurb:'Given a goal and context, decides how to respond.'},
 };
-const AB_PROVIDERS=[{id:'bzzzbox',label:'BzzzBX'},{id:'customer',label:'Customer Endpoint'}];
+const AB_PROVIDERS=[{id:'bzzzbx',label:'BzzzBX'},{id:'customer',label:'Customer Endpoint'}];
 // Binding fields per type — reference, not definition
 // [key, label, kind, placeholder|options] — the binding a given type needs.
 // BOb stores the reference and inputs; the automation itself lives in the provider.
@@ -4949,19 +4949,26 @@ const AB_FIELDS={
   ],
 };
 if(!window._autoBotz) window._autoBotz=[
-  {id:'ab1',type:'webhook',   label:'Auto-Scale Webhook',provider:'bzzzbox',
+  {id:'ab1',type:'webhook',   label:'Auto-Scale Webhook',provider:'bzzzbx',
    scope:'company',ref:'hooks/scale',method:'POST',payload:'{"metric":"{{metric}}","value":{{value}}}',
+   mutative:true,
    verify:{state:'ok',ts:Date.now()-3*864e5,msg:'200 OK'}},
   {id:'ab2',type:'webhook',   label:'Incident Bridge',provider:'customer',
    scope:'company',ref:'https://api.company.com/hooks/incident',method:'POST',payload:'{"metric":"{{metric}}"}',
+   mutative:true,
    verify:{state:'ok',ts:Date.now()-42*864e5,msg:'200 OK'}},
-  {id:'ab3',type:'synthetics',label:'Checkout Flow Check',provider:'bzzzbox',
+  {id:'ab3',type:'synthetics',label:'Checkout Flow Check',provider:'bzzzbx',
    scope:'aba',ref:'syn/checkout-e2e',env:'production',
+   // BR-3. This check walks the checkout to completion, because a monitor that
+   // stops before payment does not tell you payments work. Every run therefore
+   // creates a REAL order. Approval is required, and it is not the same kind of
+   // thing as ab5 despite both being "just a check".
+   mutative:true,requires_approval:true,
    verify:{state:'failed',ts:Date.now()-2*36e5,msg:'Step 4 timeout — postcode field'}},
   {id:'ab4',type:'rpa',       label:'CRM Case Opener',provider:'customer',
-   scope:'company',ref:'rpa/open-case',params:'queue=support,priority=high',
+   scope:'company',ref:'rpa/open-case',params:'queue=support,priority=high',mutative:true,
    verify:{state:'unverified',ts:null,msg:''}},
-  {id:'ab5',type:'agent',     label:'Root-Cause Triage',provider:'bzzzbox',
+  {id:'ab5',type:'agent',     label:'Root-Cause Triage',provider:'bzzzbx',mutative:false,
    scope:'company',ref:'agents/triage-v2',goal:'metric + channel health + roster',cap:'20 / day',
    verify:{state:'ok',ts:Date.now()-6*36e5,msg:'Agent reachable'}},
 ];
@@ -5025,15 +5032,21 @@ function renderABFields(type){
 function addAB(){
   const type=document.getElementById('abTS')?.value||'webhook';
   const label=document.getElementById('abNI')?.value?.trim();
-  const provider=document.getElementById('abPS')?.value||'bzzzbox';
+  const provider=document.getElementById('abPS')?.value||'bzzzbx';
   const vals={};
   (AB_FIELDS[type]||[]).forEach(([k])=>{
     const el=document.getElementById('abF-'+k);
     if(el&&el.value!=null&&el.value!=='') vals[k]=el.value.trim?el.value.trim():el.value;
   });
   if(!label||!vals.ref){ toast('Name and reference are required'); return; }
+  const mu=document.getElementById('abMU')?.value;
+  if(mu!=='true'&&mu!=='false'){
+    toast('State whether invoking this changes anything (BR-3)'); return;
+  }
+  const mutative=(mu==='true');
   const scope=document.getElementById('abSC')?.value||'company';
   window._autoBotz.unshift(Object.assign({id:'ab'+(_abIdCtr++),type,label,provider,scope,
+    mutative,requires_approval:mutative,
     verify:{state:'unverified',ts:null,msg:''}},vals));
   const f=document.getElementById('abAF'); if(f)f.style.display='none';
   renderChannelsCfgOrBotz(); toast('AutoBotz created — verify it before relying on it');
@@ -5175,6 +5188,15 @@ function _renderAutoBotz(){
       <select class="sb-select" id="abPS" style="width:100%;padding:4px 6px;font-size:11px;margin-bottom:6px">
         ${AB_PROVIDERS.map(p=>`<option value="${p.id}">${p.label}</option>`).join('')}</select>
       ${_scopeSelect('abSC',_ctx)}
+      <!-- BR-3. No default. A journey that checks whether a field accepts input
+           is inert; a journey that completes a checkout creates a real order.
+           Same type, opposite risk, so BOb will not register it unstated. -->
+      <div class="ab-forow"><label>Does invoking this change anything?</label>
+        <select class="sb-select" id="abMU" style="width:100%;padding:4px 6px;font-size:11px">
+          <option value="">— must be stated —</option>
+          <option value="false">No — it only observes</option>
+          <option value="true">Yes — it changes state in the world</option>
+        </select></div>
       <div id="abFields">${_abFieldInputs('webhook')}</div>
       <div style="font-size:10px;color:var(--gray-light);margin:2px 0 7px">
         The reference points at an automation that already exists in the provider.</div>
@@ -7148,11 +7170,18 @@ init();
         const k=f[0];
         if(k!=='ref'&&ab[k]!=null&&ab[k]!=='') cfg[k]=ab[k];
       });
-      return {client_id:ab.id,type:ab.type,label:ab.label,provider:ab.provider||'bzzzbox',
-        scope:ab.scope||'company',ref:ab.ref||'',config:cfg};
+      // Column names follow the rename (R-02) and D-21: no client_id, `scope`
+      // is `scope_kind`, `ref` is `reference`, `config` is `binding`. `mutative`
+      // has no default server-side, so it must travel or the write is refused.
+      return {type:ab.type,label:ab.label,provider:ab.provider||'bzzzbx',
+        scope_kind:ab.scope||'company',reference:ab.ref||'',binding:cfg,
+        mutative:!!ab.mutative,requires_approval:!!ab.requires_approval};
     },
     async persistAB(ab){
       if(!ab||!ab.ref) return;
+      // BR-3 is enforced by a server-side constraint. Sending an unruled
+      // binding would return 400; not sending it at all is the honest move.
+      if(typeof ab.mutative!=='boolean') return;
       if(ab._bkid){ await api('/autobotz/'+ab._bkid,{method:'PUT',body:JSON.stringify(this._abBody(ab))}); return; }
       const d=data(await api('/autobotz',{method:'POST',body:JSON.stringify(this._abBody(ab))}));
       if(d&&d.id){ ab._bkid=d.id; }
@@ -7164,15 +7193,19 @@ init();
       if(!Array.isArray(rows)||!rows.length) return;
       window._autoBotz=rows.map(function(row){
         const ab=Object.assign({
-          id:row.client_id||('ab'+row.id.slice(0,6)), _bkid:row.id,
+          // D-21 dropped client_id, so the local id derives from the server id.
+          id:'ab'+row.id.slice(0,6), _bkid:row.id,
           type:row.type, label:row.label, provider:row.provider,
-          scope:row.scope||'company', ref:row.ref||'',
+          scope:row.scope_kind||'company', ref:row.reference||'',
+          mutative:row.mutative, requires_approval:!!row.requires_approval,
           // The server stores the four states abState() understands; `stale` stays
           // derived from ok + age so one definition governs both sides.
+          // R-03 removed 'pending'; three states are stored and `stale` stays
+          // derived from ok + age, so one definition governs both sides.
           verify:{state:row.verify_state||'unverified',
-                  ts:row.verify_ts?new Date(row.verify_ts).getTime():null,
+                  ts:row.verified_at?new Date(row.verified_at).getTime():null,
                   msg:row.verify_msg||''},
-        },row.config||{});
+        },row.binding||{});
         return ab;
       });
       if(typeof renderChannelsCfgOrBotz==='function'){ try{ renderChannelsCfgOrBotz(); }catch(e){} }

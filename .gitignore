@@ -50,3 +50,8 @@ Documentation/New/*
 # Supabase CLI local stack state
 supabase/.branches/
 supabase/.temp/
+
+# contract-amendments.md is the handover artifact between build sessions: it
+# carries every finding, amendment and its reasoning. It has to be tracked, or
+# a new session is told to read a file that is not in the repository.
+!Documentation/contract-amendments.md

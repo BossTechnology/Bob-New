@@ -12,12 +12,19 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative, extname } from 'node:path'
 import { REPO_ROOT } from './helpers/db.mjs'
 
+// `public/` was skipped here to avoid scanning build output, and it cost us:
+// public/dashboard.html carried 'bzzzbox' six times, including in the payload
+// its backend bridge POSTs to /api/config/autobotz. D-20 removed the provider
+// CHECK on the argument that this test covered the whole repository. It did
+// not. Skipping a directory is how a guard acquires a hole in exactly the place
+// the defect lives, so `public` is scanned and build output is excluded by
+// extension instead.
 const SKIP_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build', 'coverage', 'public',
+  'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
 ])
 const SCAN_EXT = new Set([
   '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.sql', '.json', '.md',
-  '.yml', '.yaml', '.toml', '.css',
+  '.yml', '.yaml', '.toml', '.css', '.html',
 ])
 
 // Files that must contain a forbidden spelling in order to do their job.
