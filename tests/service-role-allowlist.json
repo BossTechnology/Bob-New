@@ -1,0 +1,148 @@
+{
+  "_comment": [
+    "ID-10 says no query path can return rows from another tenant. The service",
+    "role bypasses RLS, so policy tests say nothing about these routes. Every",
+    "route reaching for the service client must appear here with a reason and a",
+    "disposition. A route not listed fails the suite, which forces a decision",
+    "rather than allowing a new unguarded path to appear quietly.",
+    "",
+    "scoping values:",
+    "  jwt        — tenant comes from the caller's verified JWT claim",
+    "  iterated   — cron path, iterates tenants and scopes each query by org_id",
+    "  caller     — tenant is whatever the caller asserts. A FINDING.",
+    "  none       — no tenant dimension, or cross-tenant by design",
+    "",
+    "disposition values:",
+    "  ok         — reviewed, correct as written",
+    "  finding    — recorded in Documentation/contract-amendments.md",
+    "  superseded — the table it touches leaves BOb at Migration Order step 18"
+  ],
+
+  "routes": {
+    "app/auth/signup/route.ts": {
+      "scoping": "none",
+      "disposition": "ok",
+      "reason": "Creates the organisation. There is no tenant to scope to yet."
+    },
+    "app/api/health/route.ts": {
+      "scoping": "none",
+      "disposition": "ok",
+      "reason": "Liveness only. Reads no tenant data."
+    },
+    "app/api/admin/orgs/route.ts": {
+      "scoping": "none",
+      "disposition": "ok",
+      "reason": "Cross-tenant by design, platform operator only."
+    },
+    "app/api/admin/metrics/usage/route.ts": {
+      "scoping": "none",
+      "disposition": "ok",
+      "reason": "Cross-tenant by design, platform operator only."
+    },
+    "app/api/admin/seed/route.ts": {
+      "scoping": "jwt",
+      "disposition": "ok",
+      "reason": "Seeds one named organisation; scopes every write by org_id."
+    },
+    "app/api/reports/[id]/route.ts": {
+      "scoping": "jwt",
+      "disposition": "ok",
+      "reason": "Signs a storage path prefixed with the caller's own org_id."
+    },
+    "app/api/reports/generate/route.ts": {
+      "scoping": "jwt",
+      "disposition": "ok",
+      "reason": "Tenant from requireAuth; every query carries org_id."
+    },
+    "app/api/ai/chat/route.ts": {
+      "scoping": "jwt",
+      "disposition": "ok",
+      "reason": "Tenant from requireAuth before any read."
+    },
+    "app/api/alerts/route.ts": {
+      "scoping": "jwt",
+      "disposition": "ok",
+      "reason": "Tenant from requireAuth; every query carries org_id."
+    },
+    "app/api/anomalies/route.ts": {
+      "scoping": "jwt",
+      "disposition": "ok",
+      "reason": "Tenant from requireAuth; every query carries org_id."
+    },
+    "app/api/interactions/route.ts": {
+      "scoping": "jwt",
+      "disposition": "superseded",
+      "reason": "Reads `interactions`, which becomes a projection at step 18."
+    },
+    "app/api/cron/autobotz-reverify/route.ts": {
+      "scoping": "iterated",
+      "disposition": "superseded",
+      "reason": "Iterates activeOrgIds and scopes by org_id. Retired to pg_cron in Slice 6 per R-05."
+    },
+    "app/api/cron/issue-grouping/route.ts": {
+      "scoping": "iterated",
+      "disposition": "superseded",
+      "reason": "Iterates activeOrgIds. Retired to pg_cron per R-05."
+    },
+    "app/api/cron/sentiment-aggregation/route.ts": {
+      "scoping": "iterated",
+      "disposition": "superseded",
+      "reason": "Iterates activeOrgIds. Sentiment becomes proj_sentiment in Slice 2."
+    },
+    "app/api/cron/notif-retry/route.ts": {
+      "scoping": "none",
+      "disposition": "superseded",
+      "reason": "Delivery moves to Node-RED; BOb reads back proj_deliveries. Handoff Part 1."
+    },
+    "app/api/cron/cleanup/route.ts": {
+      "scoping": "none",
+      "disposition": "finding",
+      "reason": "F-02. Deletes from audit_log and notification_log by timestamp across all tenants with no org_id predicate. Correct as a platform retention sweep, but it is a cross-tenant DELETE and should say so. Moves to pg_cron in Slice 5."
+    },
+    "app/api/interactions/batch/route.ts": {
+      "scoping": "caller",
+      "disposition": "finding",
+      "reason": "F-03. Inserts a caller-supplied array into `interactions` behind a shared service token. The tenant is whatever the caller writes. Superseded at step 18 when interactions becomes a projection fed by the feeder."
+    },
+    "app/api/metrics/snapshot/route.ts": {
+      "scoping": "caller",
+      "disposition": "finding",
+      "reason": "F-04. Inserts with body.org_id behind a shared service token. Superseded at step 18; metric_snapshots is replaced by the projection layer."
+    },
+    "app/api/notify/email/route.ts": {
+      "scoping": "none",
+      "disposition": "superseded",
+      "reason": "Delivery moves to Node-RED, the only component holding a customer credential."
+    },
+    "app/api/notify/sms/route.ts": {
+      "scoping": "none",
+      "disposition": "superseded",
+      "reason": "Delivery moves to Node-RED."
+    },
+    "app/api/notify/call/route.ts": {
+      "scoping": "none",
+      "disposition": "superseded",
+      "reason": "Delivery moves to Node-RED."
+    },
+    "app/api/notify/slack/route.ts": {
+      "scoping": "none",
+      "disposition": "superseded",
+      "reason": "Delivery moves to Node-RED."
+    },
+    "app/api/slack/action/route.ts": {
+      "scoping": "none",
+      "disposition": "superseded",
+      "reason": "Inbound provider callback. Moves with delivery to Node-RED."
+    },
+    "app/api/twilio/status/route.ts": {
+      "scoping": "none",
+      "disposition": "superseded",
+      "reason": "Inbound provider callback. Outcome arrives via proj_deliveries after Slice 6."
+    },
+    "app/api/twilio/twiml/route.ts": {
+      "scoping": "none",
+      "disposition": "superseded",
+      "reason": "Inbound provider callback. Moves with delivery to Node-RED."
+    }
+  }
+}

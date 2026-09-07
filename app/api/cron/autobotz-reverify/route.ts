@@ -10,7 +10,7 @@
 // HONESTY RULE — the one thing not to get wrong here. A reference this cron
 // cannot actually reach is left `unverified` with the reason recorded, never
 // marked `ok`. Only `provider:'customer'` bindings carrying an absolute URL are
-// resolvable today; `provider:'bzzzbox'` has no API in this deployment, so those
+// resolvable today; `provider:'bzzzbx'` has no API in this deployment, so those
 // stay unverified until BzzzBX exists. A fabricated `ok` would be worse than no
 // cron at all: it turns "nobody checked" into "we checked and it was fine".
 import { requireCron } from '@/lib/auth'
@@ -28,7 +28,7 @@ type Binding = {
   id: string
   label: string
   provider: string
-  ref: string
+  reference: string
   verify_state: string
   verify_msg: string
 }
@@ -58,7 +58,7 @@ async function probe(b: Binding): Promise<Probe> {
   }
   let url: URL
   try {
-    url = new URL(b.ref)
+    url = new URL(b.reference)
   } catch {
     return { state: 'unverified', msg: 'Reference is not an absolute URL — not checked' }
   }
@@ -105,13 +105,13 @@ export async function GET(request: Request) {
 
     for (const orgId of await activeOrgIds()) {
       // Due for a re-check: never verified, or last verified beyond the window.
-      // `pending` is a transient client state and is re-checked too.
+      // R-03 removed `pending`; a check in flight is `unverified` and stays due.
       const { data, error } = await sb
-        .from('autobotz_bindings')
-        .select('id, label, provider, ref, verify_state, verify_msg')
+        .from('autobotz')
+        .select('id, label, provider, reference, verify_state, verify_msg')
         .eq('org_id', orgId)
-        .or(`verify_ts.is.null,verify_ts.lt.${cutoff}`)
-        .order('verify_ts', { ascending: true, nullsFirst: true })
+        .or(`verified_at.is.null,verified_at.lt.${cutoff}`)
+        .order('verified_at', { ascending: true, nullsFirst: true })
         .limit(BATCH_PER_ORG)
       if (error) throw error
 
@@ -123,13 +123,13 @@ export async function GET(request: Request) {
         else skipped++
 
         await sb
-          .from('autobotz_bindings')
+          .from('autobotz')
           .update({
             verify_state: result.state,
             // An unverified result is not evidence, so it carries no timestamp —
             // which also leaves the binding due on the next run rather than
             // parking it for another 30 days.
-            verify_ts: result.state === 'unverified' ? null : new Date().toISOString(),
+            verified_at: result.state === 'unverified' ? null : new Date().toISOString(),
             verify_msg: result.msg,
           })
           .eq('id', b.id)

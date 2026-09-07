@@ -1,0 +1,50 @@
+# Supabase CLI project configuration.
+#
+# D-23 (Q10, option a). The tenancy suite runs against the Supabase local stack
+# rather than a plain Postgres container, because the policies we ship depend on
+# auth.jwt(), the `authenticated` and `anon` roles and supabase_auth_admin. None
+# of those exist in bare Postgres, so a bare container would test a
+# reconstruction of the policies instead of the policies.
+
+project_id = "bob-v1"
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = false
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+jwt_expiry = 3600
+enable_signup = true
+
+# The custom access token hook injects org_id, app_role, org_slug and plan.
+# Every RLS policy reads org_id through auth.jwt(), so the hook is not optional
+# in a local stack that is meant to behave like the deployed one.
+[auth.hook.custom_access_token]
+enabled = true
+uri = "pg-functions://postgres/public/custom_access_token_hook"
+
+[studio]
+enabled = true
+port = 54323
+
+[storage]
+enabled = true
+
+[analytics]
+enabled = false
+
+[realtime]
+enabled = true

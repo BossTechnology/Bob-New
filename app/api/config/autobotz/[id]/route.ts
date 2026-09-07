@@ -9,7 +9,7 @@ import { getRouteClient } from '@/lib/supabase'
 import { requireAuth } from '@/lib/auth'
 import { ok, badReq, handle } from '@/lib/api-response'
 
-const COLS = 'id, client_id, type, label, provider, scope, ref, config, verify_state, verify_ts, verify_msg'
+const COLS = 'id, type, label, provider, scope_kind, scope_ref, reference, binding, enabled, requires_approval, mutative, verify_state, verified_at, verify_msg'
 
 export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
@@ -20,21 +20,25 @@ export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: str
 
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
     if ('label' in body) patch.label = body.label
-    if ('scope' in body) patch.scope = body.scope
-    if ('ref' in body) patch.ref = body.ref
-    if ('config' in body) patch.config = body.config
+    if ('scope_kind' in body) patch.scope_kind = body.scope_kind
+    if ('scope_ref' in body) patch.scope_ref = body.scope_ref
+    if ('enabled' in body) patch.enabled = body.enabled
+    if ('reference' in body) patch.reference = body.reference
+    if ('binding' in body) patch.binding = body.binding
+    // BR-3 cannot be unset once given: the CHECK refuses NULL on update too.
+    if ('mutative' in body) patch.mutative = body.mutative
     if (Object.keys(patch).length === 1) return badReq('Nothing to update')
 
     // A changed target makes the previous verification meaningless.
-    if ('ref' in body || 'config' in body) {
+    if ('reference' in body || 'binding' in body) {
       patch.verify_state = 'unverified'
-      patch.verify_ts = null
+      patch.verified_at = null
       patch.verify_msg = ''
     }
 
     const sb = await getRouteClient()
     const { data, error } = await sb
-      .from('autobotz_bindings')
+      .from('autobotz')
       .update(patch)
       .eq('id', id)
       .eq('org_id', org_id)
@@ -52,7 +56,7 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: str
     const { org_id } = await requireAuth(['admin', 'analyst'])
     const { id } = await ctx.params
     const sb = await getRouteClient()
-    const { error } = await sb.from('autobotz_bindings').delete().eq('id', id).eq('org_id', org_id)
+    const { error } = await sb.from('autobotz').delete().eq('id', id).eq('org_id', org_id)
     if (error) throw error
     return ok({ deleted: true })
   } catch (e) {

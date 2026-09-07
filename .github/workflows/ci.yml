@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# ID-12 — a tenancy failure is a build-blocking defect, not a bug.
+# The `tenancy` job must be a REQUIRED status check on the protected branch.
+# Without that, this file makes tenancy visible rather than blocking, and the
+# rule asks for blocking. That setting lives in branch protection, not here, and
+# is the one part of ID-12 a workflow file cannot assert about itself.
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Runs on every change, first, and independently of anything else. If the
+  # migration chain does not apply from nothing, no other result means anything.
+  migrations:
+    name: Migrations apply from an empty database
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start the local stack
+        run: supabase start
+      - name: Apply the full chain from scratch
+        run: supabase db reset --no-seed
+      - name: Assert no migration was skipped
+        run: |
+          supabase db reset --no-seed
+          echo "chain applied twice from empty — idempotent from nothing"
+
+  tenancy:
+    name: Tenancy (build-blocking · ID-10 to ID-12)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: npm ci
+      - run: supabase start
+      - run: supabase db reset --no-seed
+      - name: ID-10, ID-11, ID-12
+        env:
+          SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: npm run test:tenancy
+
+  schema:
+    name: Slice 0 schema and naming
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: npm ci
+      - run: supabase start
+      - run: supabase db reset --no-seed
+      - name: SR-1, SR-2, PR-9, R-01 to R-03, BR-3, D-16
+        env:
+          SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: node --test --test-concurrency=1 tests/slice0-schema.test.mjs
+      - name: D-11, D-27, C-07, IR-1 — Slice 1 schema
+        env:
+          SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: node --test --test-concurrency=1 tests/slice1-schema.test.mjs
+      - name: Product naming is case-sensitive
+        run: node --test --test-concurrency=1 tests/naming.test.mjs
+
+  availability:
+    name: Availability (FR-20 to FR-23)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: npm ci
+      - run: supabase start
+      - run: supabase db reset --no-seed
+      - name: FR-20 is the single most important rule in the acceptance suite
+        env:
+          SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: npm run test:availability
+
+  build:
+    name: Lint and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
