@@ -46,3 +46,7 @@ Documentation/*
 !Documentation/New/
 Documentation/New/*
 !Documentation/New/*.docx
+
+# Supabase CLI local stack state
+supabase/.branches/
+supabase/.temp/
