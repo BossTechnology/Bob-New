@@ -42,10 +42,10 @@ Treat this repo as if it were public.
 ## Commands
 
 ```bash
-npm run dev     # Next dev server
-npm run build   # production build
-npm run start   # serve the build
-npm run lint    # eslint
+pnpm run dev     # Next dev server
+pnpm run build   # production build
+pnpm run start   # serve the build
+pnpm run lint    # eslint
 ```
 
 See `SETUP.md` for environment configuration.

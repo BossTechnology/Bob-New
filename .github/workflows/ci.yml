@@ -40,34 +40,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
+          cache: pnpm
       - uses: supabase/setup-cli@v1
         with:
           version: latest
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
       - run: supabase start
       - run: supabase db reset --no-seed
       - name: ID-10, ID-11, ID-12
         env:
           SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
-        run: npm run test:tenancy
+        run: pnpm run test:tenancy
 
   schema:
     name: Slice 0 schema and naming
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
+          cache: pnpm
       - uses: supabase/setup-cli@v1
         with:
           version: latest
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
       - run: supabase start
       - run: supabase db reset --no-seed
       - name: SR-1, SR-2, PR-9, R-01 to R-03, BR-3, D-16
@@ -86,30 +88,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
+          cache: pnpm
       - uses: supabase/setup-cli@v1
         with:
           version: latest
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
       - run: supabase start
       - run: supabase db reset --no-seed
       - name: FR-20 is the single most important rule in the acceptance suite
         env:
           SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
-        run: npm run test:availability
+        run: pnpm run test:availability
 
   build:
     name: Lint and build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run build
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run build

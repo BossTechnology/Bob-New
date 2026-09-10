@@ -2,7 +2,7 @@
 
 Todo el **backend del Backend Discovery v1.0** está implementado en este proyecto
 (`bob-web`) y el **dashboard v2** ya está integrado (`public/dashboard.html`) con sus
-llamadas de IA reenrutadas al proxy server-side. El build pasa (`npm run build` ✅).
+llamadas de IA reenrutadas al proxy server-side. El build pasa (`pnpm run build` ✅).
 
 Lo que sigue son las acciones que **solo puedes hacer tú** (cuentas, secretos, infra,
 deploy). Están en orden. Camino elegido: **org demo sembrada** (§12.2).
@@ -110,8 +110,8 @@ Esto crea la org demo + canales + 600 interacciones + sentimiento + alertas + an
 
 ## PARTE 2 — Correr en local
 ```bash
-npm install
-npm run dev      # http://localhost:3000  → redirige a /dashboard.html
+pnpm install
+pnpm run dev      # http://localhost:3000  → redirige a /dashboard.html
 # Dashboard demo directo: http://localhost:3000/dashboard.html
 ```
 (En local los cron de Vercel no corren; puedes invocarlos a mano:

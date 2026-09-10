@@ -1,0 +1,5 @@
+allowBuilds:
+  # Reached only through eslint-config-next. Its postinstall fetches the native
+  # binding when the optional dependency did not install; the binding arrives
+  # through optionalDependencies on its own, so the script is not needed.
+  unrs-resolver: false
