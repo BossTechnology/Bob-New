@@ -46,3 +46,4 @@ Documentation/*
 !Documentation/New/
 Documentation/New/*
 !Documentation/New/*.docx
+!.env.example
