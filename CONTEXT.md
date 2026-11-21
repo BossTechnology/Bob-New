@@ -11,6 +11,10 @@ Términos del proyecto y su significado exacto. Úsalos en código, commits, doc
 | Cero observado | Hay filas y suman cero | `lib/bob/matrix.ts` |
 | No configurado | Ningún canal de la selección declara la capacidad o la declaración que la fila necesita (contrato §5, §9.1, §9.2) | `lib/bob/matrix.ts` |
 | Organización de la caja | El único `org_id` de una caja (P5); bajo su claim lee `bob_app` | `BOB_ORG_ID` |
+| Sin acceso | Cuenta de GoTrue sin fila en `bob.users`, o con `active` distinto de verdadero. En la caja recibe 403; no es `viewer` | `lib/bob/roles.ts`, `lib/bob/box-proxy.ts` |
+| Modo caja | La app corriendo como BOb v1 dentro de una caja: lee `bob` como `bob_app`, sesión contra el GoTrue de la caja, sin service role ni PostgREST | `BOB_CAJA=1`, `lib/bob/runtime.ts` |
+| Superficie de la caja | La lista de rutas que el modo caja sirve; lo que no está en ella responde 404 | `lib/bob/surface.ts` |
+| Sin proyección | Cifra de la demo que ninguna de las ocho proyecciones lleva (Disponibles, Calidad de respuesta, Sesiones, NPS). No es «sin fila» | `lib/bob/screens.ts`, `lib/bob/matrix.ts` |
 
 ## Fuera de alcance
 Lo que este proyecto explícitamente NO hace.

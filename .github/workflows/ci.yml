@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The BOb-engine commit whose schema `bob` and fixture the live tests read.
+  # Bump it by hand when the contract moves.
+  BOB_ENGINE_REF: 5be756a8fcfb656aefa87e3a7c84fd453a8eb00c
+  # Same CLI version as BOb-engine's own CI.
+  SUPABASE_CLI_VERSION: 2.120.0
+
+jobs:
+  static:
+    name: Lint, typecheck and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+  live:
+    name: Schema bob as bob_app (live tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+        with:
+          repository: BossTechnology/BOb-engine
+          ref: ${{ env.BOB_ENGINE_REF }}
+          path: engine
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: engine/package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: supabase/setup-cli@v2
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      - run: npm ci
+      - name: Install BOb-engine's test helpers
+        working-directory: engine
+        run: pnpm install --frozen-lockfile
+      - name: Start BOb-engine's stack and apply its migrations
+        working-directory: engine
+        run: |
+          supabase start
+          supabase db reset --no-seed
+      - name: Load the two-tenant fixture and run the reference feeder
+        env:
+          BOB_ENGINE_DIR: engine
+          SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: node scripts/ci/load-bob-world.mjs
+      - name: All tests, live ones included (a missing database fails)
+        env:
+          BOB_REQUIRE_LIVE: '1'
+          BOB_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: npm test

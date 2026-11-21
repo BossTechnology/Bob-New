@@ -1,9 +1,13 @@
 // §5.1 GET /auth/me — current user profile, org, role, plan.
 import { getRouteClient } from '@/lib/supabase'
 import { ok, unauth, handle } from '@/lib/api-response'
+import { isBox } from '@/lib/bob/runtime.ts'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET() {
   try {
+    // In the box: the GoTrue account, the box's org and the role in bob.users.
+    if (isBox()) return ok(await requireAuth(['admin', 'analyst', 'viewer']))
     const sb = await getRouteClient()
     const { data: { user } } = await sb.auth.getUser()
     if (!user) return unauth()

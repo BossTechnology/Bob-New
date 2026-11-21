@@ -117,24 +117,75 @@ npm run dev      # http://localhost:3000  → redirige a /dashboard.html
 (En local los cron de Vercel no corren; puedes invocarlos a mano:
 `curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/metric-refresh`.)
 
-### Matriz de Performance sobre proyecciones (`/bob/performance`, solo local y preview)
-Lee las ocho `bob.proj_*` de BOb-engine como `bob_app`, bajo el claim del `org_id` de la caja
-(P5 §3.3). Nunca con la service role. Responde 404 salvo con `BOB_PERF_MATRIX=1` y la auth de
-Supabase configurada (`NEXT_PUBLIC_SUPABASE_*`); en producción de Vercel, 404 siempre.
+### Pantallas sobre proyecciones (`/bob/performance`, `/bob/interactions`, `/bob/quality`)
+Leen el esquema `bob` de BOb-engine como `bob_app`, bajo el claim del `org_id` de la caja (P5
+§3.3). Nunca con la service role ni por PostgREST. `/api/bob/*` devuelve lo mismo en JSON.
+Fuera de la caja responden 404 salvo con `BOB_PERF_MATRIX=1` y la auth de Supabase configurada
+(`NEXT_PUBLIC_SUPABASE_*`); en producción de Vercel, 404 siempre.
 
-- `BOB_DATABASE_URL`: conexión a Postgres de BOb, solo servidor. En la caja, la credencial de
-  `bob/app.env`. En local, el stack Supabase de BOb-engine (`postgresql://postgres:postgres@127.0.0.1:<puerto>/postgres`).
+- `BOB_DATABASE_URL`: conexión a Postgres de BOb, solo servidor y solo fuera de la caja. En local,
+  el stack Supabase de BOb-engine (`postgresql://postgres:postgres@127.0.0.1:<puerto>/postgres`).
 - `BOB_ORG_ID`: la única organización de la caja (P5: una organización por caja).
-- `BOB_PERF_MATRIX=1`: enciende la ruta. Sin ella no existe, tampoco en la caja.
+- `BOB_PERF_MATRIX=1`: enciende las pantallas fuera de la caja.
 
 En local, `postgres` no es superusuario: antes de leer hay que darle el rol, como hacen los tests
 de BOb-engine (`GRANT bob_app TO postgres`). Para tener filas, correr el alimentador de referencia
 de BOb-engine sobre `supabase/tests/fixtures/feeder_events.json` (ventana 2026-11-18 14:00–14:30 UTC).
+El stack `bob-v1` es compartido: recargar el fixture antes de los tests, no resetearlo.
 
 ```bash
 BOB_TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:<puerto>/postgres npm test
 ```
-Sin `BOB_TEST_DATABASE_URL` corren solo los tests puros; los de lectura se saltan.
+Sin `BOB_TEST_DATABASE_URL` corren solo los tests puros; los de lectura se saltan. Para cargar el
+fixture y el alimentador sin resetear el stack:
+
+```bash
+BOB_ENGINE_DIR=../BOb-engine SUPABASE_DB_URL=postgresql://postgres:postgres@127.0.0.1:<puerto>/postgres node scripts/ci/load-bob-world.mjs
+```
+
+En CI (`.github/workflows/ci.yml`) el job «Schema bob as bob_app» levanta el stack de BOb-engine en
+el commit fijado en `BOB_ENGINE_REF`, carga el fixture y corre todos los tests con
+`BOB_REQUIRE_LIVE=1`: ahí, sin base de datos, el test `live-guard` falla en vez de saltarse.
+
+### Modo caja (`BOB_CAJA=1`)
+BOb v1 dentro de una caja (insumos de Bzzz, «lo mínimo de la etapa 4», §4.2). Inventario de lo que
+cambia y lo que se apaga: `docs/bob-schema-data-layer/inventario.md`.
+
+Configuración (no secreta, sin `NEXT_PUBLIC_`, leída al arrancar, nunca al construir):
+
+| Variable | Qué es |
+|---|---|
+| `BOB_CAJA=1` | Enciende el modo caja |
+| `BOB_ORG_ID` | La organización de la caja |
+| `BOB_GOTRUE_URL` | El GoTrue de la caja por dentro, en su raíz (`http://bzzz-supabase-auth:9999`, sin `/auth/v1`) |
+| `BOB_DB_HOST`, `BOB_DB_PORT` (5432), `BOB_DB_NAME` (`postgres`) | `supabase-db` por `bzzz-app` |
+| `BOB_SECRETS_FILE` | Solo para pruebas; por omisión `/run/secrets/bob/app.env` |
+
+El único secreto es el login de `bob_app`, en un fichero montado (nunca en el entorno):
+```
+BOB_APP_USUARIO=...
+BOB_APP_CLAVE=...
+```
+
+En modo caja:
+- Sirve solo una lista de rutas (`lib/bob/surface.ts`). Todo lo demás, 404: `/api/ai`, notify,
+  Twilio, Slack, los crons, `/auth/signup`, `/demo` y el simulador `dashboard.html`.
+- Cada petición se valida contra GoTrue. GoTrue caído: 503, nunca `/login`. Token rechazado:
+  `/login`. Las cookies de sesión son de BOb (`bob-at`, `bob-rt`, `httpOnly`).
+- Una cuenta sin fila en `bob.users`, o con `active` distinto de verdadero, recibe 403 en
+  `/bob/*`, `/api/bob/*` y `/api/config/*` (Henry, 2026-11-21). Mientras `bob.users` no tenga
+  política para `bob_app` (P-1), eso es toda cuenta.
+- Ningún error de la base llega al cliente: 503 si no responde, 4xx por código (409 duplicado,
+  403 RLS, 400 dato inválido, 404 sin fila), 500 genérico para lo demás; el detalle, al log.
+- La conexión tiene tope: 3 s para conseguir cliente, 5 s por sentencia, ventanas de lectura de
+  31 días como máximo.
+- El proxy ve todas las rutas salvo `_next/static`: una ruta apagada da 404 aunque acabe en
+  `.json`, `.js` o `.css`.
+- `/api/health` responde 503 si `bob_app` o GoTrue no contestan.
+- No arranca si falta configuración o si el entorno trae `SUPABASE_SERVICE_ROLE_KEY`,
+  `JWT_SECRET`, `BOB_DATABASE_URL`, la credencial de migración o claves de salida
+  (`instrumentation.ts`). Tampoco si el login de la base es superusuario o `BYPASSRLS` (o miembro
+  de uno); si la base aún no responde al arrancar, la primera lectura lo comprueba y se niega.
 
 ---
 
