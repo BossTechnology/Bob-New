@@ -6,7 +6,11 @@ Términos del proyecto y su significado exacto. Úsalos en código, commits, doc
 
 | Término | Significado | Dónde aparece |
 |---|---|---|
-| | | |
+| Matriz de Performance | El bloque RENDIMIENTO de la demo: métricas por fila, actores (Cliente, Agente IA, Agente humano) por columna | `public/dashboard.html`, `app/bob/performance` |
+| Sin fila | No hay fila de proyección para esa celda en la ventana. No es cero | `lib/bob/matrix.ts` |
+| Cero observado | Hay filas y suman cero | `lib/bob/matrix.ts` |
+| No configurado | Ningún canal de la selección declara la capacidad o la declaración que la fila necesita (contrato §5, §9.1, §9.2) | `lib/bob/matrix.ts` |
+| Organización de la caja | El único `org_id` de una caja (P5); bajo su claim lee `bob_app` | `BOB_ORG_ID` |
 
 ## Fuera de alcance
 Lo que este proyecto explícitamente NO hace.

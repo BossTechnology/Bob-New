@@ -117,6 +117,25 @@ npm run dev      # http://localhost:3000  → redirige a /dashboard.html
 (En local los cron de Vercel no corren; puedes invocarlos a mano:
 `curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/metric-refresh`.)
 
+### Matriz de Performance sobre proyecciones (`/bob/performance`, solo local y preview)
+Lee las ocho `bob.proj_*` de BOb-engine como `bob_app`, bajo el claim del `org_id` de la caja
+(P5 §3.3). Nunca con la service role. Responde 404 salvo con `BOB_PERF_MATRIX=1` y la auth de
+Supabase configurada (`NEXT_PUBLIC_SUPABASE_*`); en producción de Vercel, 404 siempre.
+
+- `BOB_DATABASE_URL`: conexión a Postgres de BOb, solo servidor. En la caja, la credencial de
+  `bob/app.env`. En local, el stack Supabase de BOb-engine (`postgresql://postgres:postgres@127.0.0.1:<puerto>/postgres`).
+- `BOB_ORG_ID`: la única organización de la caja (P5: una organización por caja).
+- `BOB_PERF_MATRIX=1`: enciende la ruta. Sin ella no existe, tampoco en la caja.
+
+En local, `postgres` no es superusuario: antes de leer hay que darle el rol, como hacen los tests
+de BOb-engine (`GRANT bob_app TO postgres`). Para tener filas, correr el alimentador de referencia
+de BOb-engine sobre `supabase/tests/fixtures/feeder_events.json` (ventana 2026-11-18 14:00–14:30 UTC).
+
+```bash
+BOB_TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:<puerto>/postgres npm test
+```
+Sin `BOB_TEST_DATABASE_URL` corren solo los tests puros; los de lectura se saltan.
+
 ---
 
 ## PARTE 3 — Decisiones del documento que quedan abiertas para ti
