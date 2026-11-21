@@ -121,6 +121,11 @@ const SIM_OFF = [
   'tick', 'restartSim', 'applyTimeframe', 'openActionables', 'openWho', 'openChannelActionables',
   'openFaqActionables', 'openBobee', 'openSidebar', 'openAnomaliesModal', 'openAlertsModal',
   'openAlarmsModal', 'openActionsModal', 'toggleDashCh', 'downloadReport',
+  // A tick that ran before the stop leaves timers behind that redraw the
+  // ranked lists and widgets seconds later; their redraws go too.
+  'renderDynList', 'initDynList', 'renderAccTemas', 'renderFAQ', 'applyIndustryContent',
+  'renderMetrics', 'renderLollipops', 'updateLollipop', 'renderChannelDisplay', 'resortChannelDisplay',
+  'updateSesDisplay', 'updateAvailableRow',
 ]
 
 function stopSimulation() {
