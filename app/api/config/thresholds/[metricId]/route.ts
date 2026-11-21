@@ -1,7 +1,7 @@
 // BOb v3 · GET /api/config/thresholds/:metricId — one config + its responses.
 //          PUT /api/config/thresholds/:metricId — upsert on (org_id, metric_id).
 import { NextRequest } from 'next/server'
-import { getRouteClient } from '@/lib/supabase'
+import { configDb } from '@/lib/bob/config-db.ts'
 import { requireAuth } from '@/lib/auth'
 import { ok, badReq, handle } from '@/lib/api-response'
 
@@ -11,7 +11,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ metricId: 
   try {
     const { org_id } = await requireAuth(['admin', 'analyst', 'viewer'])
     const { metricId } = await ctx.params
-    const sb = await getRouteClient()
+    const sb = await configDb(org_id)
     const { data: cfg, error } = await sb
       .from('threshold_configs')
       .select('id, metric_id, upper_bound, lower_bound, peak_mode, peak_windows')
@@ -49,7 +49,7 @@ export async function PUT(request: NextRequest, ctx: { params: Promise<{ metricI
       peak_windows: body.peak_windows ?? [],
       updated_at: new Date().toISOString(),
     }
-    const sb = await getRouteClient()
+    const sb = await configDb(org_id)
     const { data, error } = await sb
       .from('threshold_configs')
       .upsert(row, { onConflict: 'org_id,metric_id' })

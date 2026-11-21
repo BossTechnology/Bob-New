@@ -1,12 +1,12 @@
 // BOb v3 · GET /api/config/thresholds — all threshold configs for the org.
-import { getRouteClient } from '@/lib/supabase'
+import { configDb } from '@/lib/bob/config-db.ts'
 import { requireAuth } from '@/lib/auth'
 import { ok, handle } from '@/lib/api-response'
 
 export async function GET() {
   try {
     const { org_id } = await requireAuth(['admin', 'analyst', 'viewer'])
-    const sb = await getRouteClient()
+    const sb = await configDb(org_id)
     const { data, error } = await sb
       .from('threshold_configs')
       .select('id, metric_id, upper_bound, lower_bound, peak_mode, peak_windows')

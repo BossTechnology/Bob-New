@@ -5,7 +5,7 @@
 // (Not in the original spec — added so the simulator can persist edits to an
 // existing rule instead of creating a duplicate row on every save.)
 import { NextRequest } from 'next/server'
-import { getRouteClient } from '@/lib/supabase'
+import { configDb } from '@/lib/bob/config-db.ts'
 import { requireAuth } from '@/lib/auth'
 import { ok, badReq, handle } from '@/lib/api-response'
 
@@ -25,7 +25,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ key: strin
   try {
     const { org_id } = await requireAuth(['admin', 'analyst', 'viewer'])
     const { key: metricId } = await ctx.params
-    const sb = await getRouteClient()
+    const sb = await configDb(org_id)
 
     const { data: rules, error } = await sb
       .from('anomaly_rules')
@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest, ctx: { params: Promise<{ key: st
     for (const k of UPDATABLE) if (k in body) patch[k] = body[k]
     if (!Object.keys(patch).length) return badReq('No updatable fields provided')
 
-    const sb = await getRouteClient()
+    const sb = await configDb(org_id)
     const { data, error } = await sb
       .from('anomaly_rules')
       .update(patch)
@@ -97,7 +97,7 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ key: st
   try {
     const { org_id } = await requireAuth(['admin', 'analyst'])
     const { key: id } = await ctx.params
-    const sb = await getRouteClient()
+    const sb = await configDb(org_id)
     const { error } = await sb.from('anomaly_rules').delete().eq('id', id).eq('org_id', org_id)
     if (error) throw error
     return ok({ deleted: true })
