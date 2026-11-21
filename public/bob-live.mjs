@@ -32,7 +32,15 @@ export function durationText(ms) {
 }
 
 // One cell, as the /bob pages paint it (app/bob/screen-parts.tsx, CellText).
+// With Slice 3 the cell carries its state (bob.bob_cell_rollup): anything but
+// observed is painted by state, never as a figure; the cause goes in a title.
+const STATE_TEXT = { not_applicable: '', not_configured: 'No configurado', pending: 'Pendiente', not_observed: '—' }
 export function cellText(cell, format = plain) {
+  const st = cell && cell.state
+  if (st && st.state !== 'observed') {
+    return { text: STATE_TEXT[st.state] ?? '—', cls: st.state === 'not_configured' ? 'bob-notconf' : 'bob-norow', title: st.reasons.join(', ') }
+  }
+  if (st && cell.kind === 'no_row') return { text: format(st.value ?? 0), cls: 'bob-zero', title: st.reasons.join(', ') }
   if (!cell || cell.kind === 'no_row') return { text: 'sin fila', cls: 'bob-norow' }
   if (cell.kind === 'zero') return { text: '0', cls: 'bob-zero' }
   return { text: format(cell.value), cls: '' }
@@ -77,8 +85,10 @@ export function failureText(status, error) {
 
 const $ = (id) => document.getElementById(id)
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
-const span = ({ text, cls }, title = '') =>
-  `<span class="${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span>`
+const span = ({ text, cls, title: own }, title = '') => {
+  const t = title || own || ''
+  return `<span class="${cls}"${t ? ` title="${esc(t)}"` : ''}>${esc(text)}</span>`
+}
 const noProjection = (title = '') => span({ text: NO_PROJECTION, cls: 'bob-noproj' }, title)
 
 async function read(name, query) {
@@ -106,6 +116,7 @@ html.bob-live #headerLogo{pointer-events:none}
 .bob-noproj{color:var(--gray-light,#999);font-style:italic;font-size:12px;font-weight:500;letter-spacing:normal;line-height:1.2}
 .stat-val .bob-noproj,.stat-val .bob-norow,.m-pct .bob-norow{font-size:10px}
 .bob-zero{color:inherit}
+.bob-notconf{color:var(--red,#BD4444);font-size:10px;font-weight:500}
 #bobLiveBar{font-size:11px;color:var(--gray-mid,#666);padding:4px 20px;border-bottom:1px solid var(--gray-border,#eee)}
 #bobLiveBar.bad{color:var(--red,#BD4444)}
 .bob-lp{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;flex:1;position:relative;padding-bottom:26px}

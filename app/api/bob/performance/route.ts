@@ -9,8 +9,8 @@ export function GET(request: Request) {
   return screenJson(request, async (orgId, q) => {
     const r = await readPerformance(orgId, q)
     return {
-      window: r.window, watermark: r.watermark, channels: r.channels, cellStateView: r.cellStateView,
-      matrix: buildMatrix(r.counts, r.responseTimes, r.selected),
+      window: r.window, watermark: r.watermark, channels: r.channels, cellStates: r.cells !== null,
+      matrix: buildMatrix(r.counts, r.responseTimes, r.selected, r.cells),
     }
   })
 }

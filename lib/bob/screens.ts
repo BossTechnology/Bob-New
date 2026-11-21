@@ -4,12 +4,15 @@
 //
 // Which declaration each figure needs follows the Slice 3 spec §4
 // (BOb-engine, docs/slice-3-absent-not-zero.md). The states themselves are
-// Slice 3's to resolve, in bob.v_cell_state; until that view exists this file
-// only says what was read (no row, a written zero, a value), never more.
+// resolved in the database (bob.bob_cell_rollup) and only attached here; with
+// no rollup this file says what was read (no row, a written zero, a value).
 import {
-  LABEL_FAILURE_ROWS, cellOf, countRow, declaredBy,
+  LABEL_FAILURE_ROWS, cellOf, countRow, declaredBy, withStates,
   type Cell, type Channel, type CountAggregate, type MatrixRow,
 } from './matrix.ts'
+import { stateForChannel, stateOf, type CellState } from './cell-state.ts'
+
+const tag = (cell: Cell, state: Cell['state']): Cell => (state ? { ...cell, state } : cell)
 
 // A figure of the demo that none of the eight projections carries.
 export type NotProjection = { kind: 'not_projection'; note: string }
@@ -39,20 +42,25 @@ function durationCells(rows: number, n: number, sum_ms: number, open: number): {
   }
 }
 
-export function buildInteractions(durations: DurationByChannel[], channels: Channel[]): InteractionsScreen {
+export function buildInteractions(
+  durations: DurationByChannel[], channels: Channel[], cells: CellState[] | null = null,
+): InteractionsScreen {
   const sum = (f: (d: DurationByChannel) => number) => durations.reduce((s, d) => s + f(d), 0)
   const total = durationCells(sum((d) => d.rows), sum((d) => d.n), sum((d) => d.sum_ms), sum((d) => d.open))
+  // interaction_duration belongs to the conversation: actor_type `user` (O2).
+  const st = stateOf(cells, 'interaction_duration', 'user')
   return {
     sessions: {
       kind: 'not_projection',
       note: 'el contrato 0.5.3 no nombra una cifra de sesiones (session_count es el denominador de cada métrica)',
     },
-    avgDuration: total.avg,
-    closed: total.closed,
+    avgDuration: tag(total.avg, st),
+    closed: tag(total.closed, st),
     byChannel: channels.map((channel) => {
       const d = durations.find((x) => x.channel_id === channel.id)
       const c = d ? durationCells(d.rows, d.n, d.sum_ms, d.open) : durationCells(0, 0, 0, 0)
-      return { channel, avgDuration: c.avg, closed: c.closed }
+      const cs = stateForChannel(st, channel.id)
+      return { channel, avgDuration: tag(c.avg, cs), closed: tag(c.closed, cs) }
     }),
     durationDeclaredBy: declaredBy({ kind: 'capability', capability: 'resolution' }, channels) ?? [],
   }
@@ -92,34 +100,39 @@ export type QualityScreen = {
 // Slice 3 §4: ORGA needs orga_conversation, MECA needs meca_rum.
 const SOURCE_CAPABILITY: Record<SentimentSource, string> = { orga: 'orga_conversation', meca: 'meca_rum' }
 
-function panel(source: SentimentSource, aggs: SentimentAggregate[], channels: Channel[]): SentimentPanel {
+function panel(
+  source: SentimentSource, aggs: SentimentAggregate[], channels: Channel[], cells: CellState[] | null,
+): SentimentPanel {
+  // A channel figure: actor_type null. The state covers the panel as a whole.
+  const st = stateOf(cells, source, null)
   const mine = aggs.filter((a) => a.source === source)
   const sum = (f: (a: SentimentAggregate) => number) => mine.reduce((s, a) => s + f(a), 0)
   const readings = sum((a) => a.readings)
   const states = {} as Record<SentimentState, Cell>
-  for (const st of SENTIMENT_STATES) {
-    const a = mine.filter((x) => x.state === st)
+  for (const s0 of SENTIMENT_STATES) {
+    const a = mine.filter((x) => x.state === s0)
     const rows = a.reduce((s, x) => s + x.rows, 0)
-    states[st] = cellOf(rows, a.reduce((s, x) => s + x.readings, 0), a.reduce((s, x) => s + x.open, 0), readings)
+    states[s0] = tag(cellOf(rows, a.reduce((s, x) => s + x.readings, 0), a.reduce((s, x) => s + x.open, 0), readings), st)
   }
   const rows = sum((a) => a.rows)
   const open = sum((a) => a.open)
   return {
     source,
     states,
-    total: cellOf(rows, readings, open, null),
-    closings: source === 'orga' ? cellOf(rows, sum((a) => a.closings), open, null) : { kind: 'no_row' },
+    total: tag(cellOf(rows, readings, open, null), st),
+    closings: source === 'orga' ? tag(cellOf(rows, sum((a) => a.closings), open, null), st) : { kind: 'no_row' },
     declaredBy: declaredBy({ kind: 'capability', capability: SOURCE_CAPABILITY[source] }, channels) ?? [],
   }
 }
 
 export function buildQuality(
   sentiment: SentimentAggregate[], counts: CountAggregate[], channels: Channel[],
+  cells: CellState[] | null = null,
 ): QualityScreen {
   return {
     nps: { kind: 'not_projection', note: 'ninguna de las ocho proyecciones lo lleva' },
-    orga: panel('orga', sentiment, channels),
-    meca: panel('meca', sentiment, channels),
-    labelFailures: LABEL_FAILURE_ROWS.map((spec) => countRow(spec, counts, channels, ['user'])),
+    orga: panel('orga', sentiment, channels, cells),
+    meca: panel('meca', sentiment, channels, cells),
+    labelFailures: LABEL_FAILURE_ROWS.map((spec) => withStates(countRow(spec, counts, channels, ['user']), ['user'], cells)),
   }
 }

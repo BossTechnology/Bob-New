@@ -96,9 +96,11 @@ La reconciliación de fantasmas no se programa en BOb (pasa al feeder).
   de la caja entra con su papel.
 - **P-2 · «Sesiones».** Cerrado (Henry, 2026-11-21): se pinta «sin proyección» hasta que el
   contrato la nombre. Ni `n` de `interaction_duration` ni `handled` de `proj_actor_metrics`.
-- **P-3 · Slice 3.** Los estados de celda los resuelve `bob.v_cell_state`, que no existe. El
-  enganche está en `lib/bob/cell-state.ts`: mientras la vista no exista, la app pinta lo que lee
-  (sin fila, cero, valor) y no inventa estados.
+- **P-3 · Slice 3.** Los estados de celda los resuelve BOb-engine en `bob.bob_cell_state` y los
+  agrega `bob.bob_cell_rollup` (PR #40 de BOb-engine). `lib/bob/cell-state.ts` lee el rollup bajo
+  la misma transacción de `bob_app` y las pantallas solo pintan: estado → pintura, motivo → frase.
+  Si la base todavía no tiene esas funciones, la app pinta lo que lee (sin fila, cero, valor) y no
+  inventa estados.
 - **P-4 · El simulador.** Cerrado. Cuando `/api/bob/*` responde, `public/bob-live.mjs` para la
   simulación y pinta las tres pantallas: Sesiones, NPS, Disponibles, Calidad de respuesta, Temas,
   Acciones, Preguntas y Palabras dicen «sin proyección»; Ánimo & Sentimiento son barras por estado

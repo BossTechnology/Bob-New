@@ -14,7 +14,7 @@ import {
   type ActorType, type Channel, type CountAggregate, type DurationAggregate,
 } from './matrix.ts'
 import { asBobApp } from './db.ts'
-import { hasCellStateView } from './cell-state.ts'
+import { readCellStates, type CellState } from './cell-state.ts'
 import type { DurationByChannel, SentimentAggregate } from './screens.ts'
 import { BobConfigError, boxOrgId } from './runtime.ts'
 
@@ -128,7 +128,8 @@ export type PerformanceRead = {
   counts: CountAggregate[]
   responseTimes: DurationAggregate[]
   presence: Presence[]
-  cellStateView: boolean
+  // Slice 3's rollup over the selection and window; null without Slice 3.
+  cells: CellState[] | null
 }
 
 type Query = { from?: string; to?: string; channel?: string; range?: string; tz?: string }
@@ -188,7 +189,7 @@ export async function readPerformance(orgId: string, q: Query, source?: Pool): P
     const [counts, responseTimes, presence] = [
       await readMetricCounts(db, w), await readResponseTimes(db, w), await readPresence(db, w),
     ]
-    return { orgId, ...scope, counts, responseTimes, presence, cellStateView: await hasCellStateView(db) }
+    return { orgId, ...scope, counts, responseTimes, presence, cells: await readCellStates(db, orgId, w) }
   }, source)
 }
 
@@ -218,18 +219,18 @@ export async function readSentiment(db: PoolClient, w: Window): Promise<Sentimen
   }))
 }
 
-export type InteractionsRead = Scope & { orgId: string; durations: DurationByChannel[]; cellStateView: boolean }
+export type InteractionsRead = Scope & { orgId: string; durations: DurationByChannel[]; cells: CellState[] | null }
 
 export async function readInteractions(orgId: string, q: Query, source?: Pool): Promise<InteractionsRead> {
   return asBobApp(orgId, async (db) => {
     const scope = await readScope(db, q)
     const durations = await readInteractionDurations(db, scope.window)
-    return { orgId, ...scope, durations, cellStateView: await hasCellStateView(db) }
+    return { orgId, ...scope, durations, cells: await readCellStates(db, orgId, scope.window) }
   }, source)
 }
 
 export type QualityRead = Scope & {
-  orgId: string; sentiment: SentimentAggregate[]; counts: CountAggregate[]; cellStateView: boolean
+  orgId: string; sentiment: SentimentAggregate[]; counts: CountAggregate[]; cells: CellState[] | null
 }
 
 export async function readQuality(orgId: string, q: Query, source?: Pool): Promise<QualityRead> {
@@ -237,6 +238,6 @@ export async function readQuality(orgId: string, q: Query, source?: Pool): Promi
     const scope = await readScope(db, q)
     const sentiment = await readSentiment(db, scope.window)
     const counts = await readMetricCounts(db, scope.window)
-    return { orgId, ...scope, sentiment, counts, cellStateView: await hasCellStateView(db) }
+    return { orgId, ...scope, sentiment, counts, cells: await readCellStates(db, orgId, scope.window) }
   }, source)
 }

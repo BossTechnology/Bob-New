@@ -19,12 +19,8 @@
 - CI en GitHub (`5625cfe`): los dos jobs nuevos («Lint, typecheck and unit tests» y «Schema bob as bob_app (live tests)») y los dos de Vercel en verde. El PR #30 se fusionó a `main` (`b4a7c72`).
 
 ## Pendiente
-- **P-3 · Slice 3.** La spec ya está fusionada en BOb-engine (PRs #27, #28, #30 y #32), pero no es `bob.v_cell_state`:
-  - es la función `bob_cell_state(org, channels[], from, to)`, invoker, bajo RLS (R4);
-  - al lado van `bob_cell_rollup`, con cobertura, y `v_ai_cell_state`, una vista definer para BObee (R6).
-  
-  La construcción es el PR #40 de BOb-engine (rama `slice-3-absent-not-zero`). Está abierto y no se fusiona hasta que Federico acepte la 0.6; antes falta corregir los ceros que el alimentador escribe para métricas que no cuenta. El enganche de `lib/bob/cell-state.ts` tiene que llamar a esa función.
-- **Matriz de Performance** (`/bob/performance`, PR #29, fusionado): cuando el Slice 3 esté fusionado, pasarla a `bob_cell_state` en un PR nuevo. Con eso entran los seis estados, los motivos y los marcadores D-18/D-19; hoy calcula «no configurado» solo con `channel_capabilities` e `idle_bound_seconds`.
+- **P-3 · Slice 3.** Las tres pantallas y `/api/bob/*` leen los estados de `bob.bob_cell_rollup` (rama `slice-3-cell-states`, PR borrador). Se fusiona después del PR #40 de BOb-engine; hasta entonces, en una base sin Slice 3 todo se pinta como antes. Falta subir `BOB_ENGINE_REF` del CI a un BOb-engine con el Slice 3 cuando se fusione.
+  - El total de cada fila de la matriz no tiene rollup propio (`bob_cell_rollup` es por actor): hoy se pinta observado si algún actor lo está y, si no, el primer estado en el orden del §2. Pedir a BOb-engine un rollup sobre actores para que esa regla tampoco viva en TypeScript.
 - **P-4 · El simulador.** Hecho en la rama `bob-simulator-real-data` (PR abierto, sin fusionar): en la caja pinta `/api/bob/*` y no inventa nada. Queda fuera: los paneles de configuración de reglas del simulador están ocultos en la caja; las reglas se editan por `/api/config/*`.
 - Las acciones de respuesta necesitan el binding de AutoBotz (Slice 6, PR #26 de BOb-engine); en la caja responden 409.
 - `npm run build` se corta una vez con `SecurityFatalError` (Next 16.4.2). Ya estaba en `main`.

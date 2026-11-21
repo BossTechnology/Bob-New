@@ -1,10 +1,11 @@
 // The Performance matrix, built from projection aggregates.
 //
-// Pure: no database, no imports. lib/bob/projection-reader.ts reads the rows
-// and hands them here. The one rule this file exists to keep is contract §5:
-// a cell with no projection row is NOT a zero. Absent, zero and not configured
-// are three states, and the Slice 3 grill decides how the product renders
-// them. Until then each is shown as what it is.
+// Pure: no database. lib/bob/projection-reader.ts reads the rows and hands
+// them here. The one rule this file exists to keep is contract §5: a cell with
+// no projection row is NOT a zero. The cell's state (Slice 3) is resolved in
+// the database by bob.bob_cell_rollup and attached here as it comes; nothing
+// in this file decides a state.
+import { stateOf, type CellState, type StateInfo } from './cell-state.ts'
 
 export const DEMO_ACTORS = ['user', 'asa', 'human'] as const
 export type ActorType = 'user' | 'asa' | 'human' | 'arep'
@@ -34,10 +35,13 @@ export type DurationAggregate = {
   open: number
 }
 
-export type Cell =
+// What was read from the projections, plus the Slice 3 state when the
+// database has it. The figure is shown only when the state is observed.
+export type Cell = (
   | { kind: 'no_row' }
   | { kind: 'zero'; rows: number; open: number }
   | { kind: 'value'; value: number; rows: number; open: number; pct: number | null }
+) & { state?: StateInfo }
 
 export type Channel = {
   id: string
@@ -75,7 +79,7 @@ export const MATRIX_ROWS: RowSpec[] = [
     metric: 'response_time', source: { kind: 'capability', capability: 'response_time' },
   },
   {
-    id: 'quality', label: 'Calidad de respuesta', table: null,
+    id: 'quality', label: 'Calidad de respuesta', table: null, metric: 'response_quality',
     source: { kind: 'not_projection', note: 'ninguna de las ocho la lleva (coherence, diferida)' },
   },
   {
@@ -200,14 +204,49 @@ export function emptyRow(spec: RowSpec, channels: Channel[], actors: ActorType[]
   return { spec, total: NO_ROW, cells, declaredBy: declaredBy(spec.source, channels) }
 }
 
+// Attaches the rollup's state to each actor cell of a row. The row total has
+// no rollup of its own (bob_cell_rollup is per actor type), so it carries the
+// actor states as they are: observed if any actor is, otherwise the first of
+// them in §2's order. That mirrors the rollup over channels; see the PR note.
+export function withStates(row: MatrixRow, actors: ActorType[], cells: CellState[] | null): MatrixRow {
+  if (!cells || !row.spec.metric) return row
+  const out = { ...row, cells: { ...row.cells } }
+  const infos: StateInfo[] = []
+  for (const a of actors) {
+    const info = stateOf(cells, row.spec.metric, a)
+    if (info) { out.cells[a] = { ...out.cells[a], state: info }; infos.push(info) }
+  }
+  const total = totalState(infos)
+  if (total) out.total = { ...out.total, state: total }
+  return out
+}
+
+const RANK = ['not_applicable', 'not_configured', 'pending', 'not_observed', 'observed'] as const
+
+export function totalState(infos: StateInfo[]): StateInfo | undefined {
+  const counted = infos.filter((i) => i.state !== 'not_applicable')
+  const pool = counted.length ? counted : infos
+  if (!pool.length) return undefined
+  const observed = pool.filter((i) => i.state === 'observed')
+  if (observed.length) {
+    return {
+      state: 'observed', reasons: [], provisional: observed.some((i) => i.provisional),
+      coverage: observed[0].coverage, value: observed.reduce((s, i) => s + (i.value ?? 0), 0),
+    }
+  }
+  return [...pool].sort((a, b) => RANK.indexOf(a.state) - RANK.indexOf(b.state))[0]
+}
+
 export function buildMatrix(
   counts: CountAggregate[], durations: DurationAggregate[], channels: Channel[],
+  cells: CellState[] | null = null,
 ): { actors: ActorType[]; rows: MatrixRow[]; labelFailures: MatrixRow[] } {
   const actors = actorsFor([...counts, ...durations])
-  const build = (spec: RowSpec) =>
+  const build = (spec: RowSpec) => withStates(
     spec.table === 'proj_metric_counts' ? countRow(spec, counts, channels, actors)
       : spec.table === 'proj_durations' ? durationRow(spec, durations, channels, actors)
-        : emptyRow(spec, channels, actors)
+        : emptyRow(spec, channels, actors),
+    actors, cells)
   return {
     actors,
     rows: MATRIX_ROWS.map(build),

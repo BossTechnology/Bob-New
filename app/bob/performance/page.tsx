@@ -9,7 +9,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireScreen } from '@/lib/bob/screen-gate.ts'
-import { ScreenNav, Unavailable, Forbidden, SliceThreeNote } from '../screen-parts'
+import { ScreenNav, Unavailable, Forbidden, SliceThreeNote, StatePaint } from '../screen-parts'
+import { stateTitle } from '@/lib/bob/cell-state.ts'
 import {
   ACTOR_LABEL, buildMatrix,
   type ActorType, type Cell, type Channel, type MatrixRow,
@@ -47,7 +48,7 @@ export default async function PerformanceMatrixPage({ searchParams }: { searchPa
     )
   }
 
-  const matrix = buildMatrix(read.counts, read.responseTimes, read.selected)
+  const matrix = buildMatrix(read.counts, read.responseTimes, read.selected, read.cells)
   const { from, to } = read.window
   const qs = (channel?: string) => {
     const p = new URLSearchParams({ from: from.toISOString(), to: to.toISOString() })
@@ -85,7 +86,7 @@ export default async function PerformanceMatrixPage({ searchParams }: { searchPa
       </div>
 
       <Legend />
-      <SliceThreeNote present={read.cellStateView} />
+      <SliceThreeNote present={read.cells !== null} />
 
       <div className={styles.sectionLabel}>Canales seleccionados</div>
       <ChannelTable channels={read.selected} />
@@ -108,7 +109,7 @@ function Head({ actors, title }: { actors: ActorType[]; title: string }) {
 
 function Row({ row, actors }: { row: MatrixRow; actors: ActorType[] }) {
   const isTime = row.spec.table === 'proj_durations'
-  if (row.spec.table === null) {
+  if (row.spec.table === null && !row.total.state) {
     // A demo row no projection carries: there is no row to be absent.
     const none = <span className={styles.noRow} title="ninguna de las ocho tablas lo lleva">sin proyección</span>
     return (
@@ -157,6 +158,10 @@ function Source({ row }: { row: MatrixRow }) {
 function CellView({ cell, time = false, pct = false, unit = '' }: {
   cell: Cell; time?: boolean; pct?: boolean; unit?: string
 }) {
+  const st = cell.state
+  if (st && st.state !== 'observed') return <StatePaint info={st} />
+  // Observed with no row: a declared-absent actor, a zero by declaration (F-32).
+  if (st && cell.kind === 'no_row') return <span className={styles.zero} title={stateTitle(st)}>{st.value ?? 0}{unit}</span>
   if (cell.kind === 'no_row') return <span className={styles.noRow} title="sin fila de proyección">sin fila</span>
   const open = cell.open > 0 ? <sup title={`${cell.open} de ${cell.rows} filas sin sellar`}>*</sup> : null
   if (cell.kind === 'zero') {
