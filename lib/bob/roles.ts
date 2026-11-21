@@ -4,9 +4,9 @@
 // whose `active` is not true, has no role, and the box answers 403 on
 // /bob/*, /api/bob/* and /api/config/*. There is no viewer fallback.
 //
-// P-1 (inventario): bob.users has a policy for `authenticated` only, so under
-// bob_app no row is visible yet and every box account is a 403 until
-// BOb-engine adds a policy for bob_app.
+// The roles BOb serves are admin, analyst and viewer; `service` and `demo`
+// rows are no role in the box either. bob_app reads only its own
+// organization's users (BOb-engine #34, which closed P-1).
 import type { Pool } from 'pg'
 import { asBobApp } from './db.ts'
 

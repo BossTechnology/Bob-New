@@ -3,7 +3,7 @@
 > Actualizar al cerrar cada sesión. Es lo primero que lee la siguiente.
 
 ## Tarea actual
-- Capa de datos de bob-web sobre el esquema `bob` de BOb-engine, como `bob_app`, con el `org_id` de la caja y sin la service role (requisito §4.2, puntos 1 a 5, de los insumos de Bzzz «lo mínimo de la etapa 4»). Rama `bob-schema-data-layer`, PR abierto, sin fusionar.
+- Capa de datos de bob-web sobre el esquema `bob` de BOb-engine, como `bob_app`, con el `org_id` de la caja y sin la service role (requisito §4.2, puntos 1 a 5, de los insumos de Bzzz «lo mínimo de la etapa 4»). Fusionada en `main` con los PR #30 y #32. Este cierre (P-1 tras BOb-engine #34): rama `bob-roles-after-engine-34`.
 
 ## Hecho
 - Inventario de todo lo que tocaba la service role, PostgREST o las tablas de la demo, en tres categorías y con dueño: `docs/bob-schema-data-layer/inventario.md`.
@@ -11,13 +11,14 @@
 - Sesión contra el GoTrue de la caja en su raíz, en cada petición: GoTrue caído = 503 (visto con un GoTrue falso parado), token rechazado = `/login`. Lista de rutas servidas (`lib/bob/surface.ts`); lo demás, 404.
 - Pantallas `/bob/interactions` y `/bob/quality` (más `/api/bob/*`) sobre `proj_durations`, `proj_sentiment` y `proj_metric_counts`; «sin fila» nunca es 0; Sesiones y NPS «sin proyección» (P-2 cerrado por Henry el 2026-11-21: Sesiones sigue así hasta que el contrato la nombre).
 - `/api/config/*` (umbrales, anomalías, reglas de texto, canales de notificación, respuestas) contra `bob` como `bob_app` en la caja, con el mismo código de ruta. Fuera de la caja, PostgREST como antes.
+- P-1 cerrado por BOb-engine #34 (rama `bob-roles-after-engine-34`, con el CI fijado a BOb-engine `6be2909`, que incluye #33, #34 y #35): `bob_app` lee los usuarios de su organización. Henry decidió «sin fila, 403»: sin fila, inactiva, de otra organización o con papel `service`/`demo`, 403; un admin activo entra con su papel (5 tests en vivo en `lib/bob/roles.test.ts`).
+- Prueba de punta a punta del modo caja tras BOb-engine #34 (local, `next dev`, GoTrue falso, stack `bob-v1`, con un login temporal sin privilegios miembro de `bob_app`, borrado al terminar): el admin del fixture entra; las tres pantallas, `/api/bob/quality` y `/auth/me` responden 200; un umbral se guarda, se relee y queda en `bob` bajo el tenant A; un `peak_mode` inválido da 400. Salieron dos arreglos: los `numeric` (`upper_bound`, `lower_bound`) vuelven como número, igual que con PostgREST, y `process.exit` pasa a `instrumentation-node.ts` para que no entre en el build de Edge.
 - 80 tests (los en vivo sobre el fixture de BOb-engine recargado en `bob-v1`), lint y typecheck en verde. `npm run build` pasa al reintentar (el aviso de seguridad de Next 16.4.2 ya estaba).
 - Hallazgos de la imagen local (sesión de insumos, PR #31), en la rama `bob-box-startup-health`: el arranque rechazado ahora sale del proceso con código 1 (visto con `next dev`: sale con los motivos), y `/api/health` responde 503 en ~2,1 s contra una base y un GoTrue que no contestan (antes ~6 s; 11 s en su imagen).
 - Revisión del PR #30 atendida: 403 sin fila en `bob.users`, errores genéricos en la caja, pool con topes, ventana de 31 días, proxy sobre todas las rutas, errores de tabla como `Error` con código, login privilegiado rechazado, CI con job en vivo (`.github/workflows/ci.yml`). 80 tests en verde en vivo con `BOB_REQUIRE_LIVE=1`.
 - CI en GitHub (`5625cfe`): los dos jobs nuevos («Lint, typecheck and unit tests» y «Schema bob as bob_app (live tests)») y los dos de Vercel en verde. El PR #30 se fusionó a `main` (`b4a7c72`).
 
 ## Pendiente
-- **P-1 · Papel del usuario en la caja.** Henry (2026-11-21): sin fila o `active` no verdadero = 403 en `/bob/*`, `/api/bob/*` y `/api/config/*`. Como `bob.users` no tiene política para `bob_app`, **hoy en la caja todo sale 403**. BOb-engine lo cerró en su #34 (`bob_app` lee los usuarios de su organización). En bob-web falta el ajuste: los tests de papeles para el nuevo comportamiento (`8b1add5`) y fijar el CI a un BOb-engine con #34 (`BOB_ENGINE_REF`), en un PR aparte.
 - **P-3 · Slice 3.** La spec ya está fusionada en BOb-engine (PRs #27, #28, #30 y #32), pero no es `bob.v_cell_state`:
   - es la función `bob_cell_state(org, channels[], from, to)`, invoker, bajo RLS (R4);
   - al lado van `bob_cell_rollup`, con cobertura, y `v_ai_cell_state`, una vista definer para BObee (R6).
@@ -34,10 +35,9 @@
   - tres inferidos: los drill-downs del Slice 7, el conteo de fallas del clasificador del Slice 4 y la fila de afirmaciones sin fundamento del Slice 5.
   
   No bloquea la construcción; solo cambia qué consumidores prueba el DONE.
-- Nada en este repo. P-1 espera la política de BOb-engine: hasta entonces la caja no es usable (todo 403).
 
 ## Siguiente paso
-- Que Henry revise y fusione el PR #30. Con P-1 cerrado, probar lectura y escritura de reglas en la caja de punta a punta. Luego P-4 (simulador sobre `/api/bob/*`) y la imagen (`output: 'standalone'`, Dockerfile), que no entran en este PR.
+- Que Henry revise y fusione el PR de `bob-roles-after-engine-34`. Luego P-4 (simulador sobre `/api/bob/*`) y la imagen (`output: 'standalone'`, Dockerfile), que no entran en este PR.
 
 ## Notas de sesión
 <!-- AAAA-MM-DD: una o dos líneas -->

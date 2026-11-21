@@ -12,7 +12,7 @@ concurrency:
 env:
   # The BOb-engine commit whose schema `bob` and fixture the live tests read.
   # Bump it by hand when the contract moves.
-  BOB_ENGINE_REF: 5be756a8fcfb656aefa87e3a7c84fd453a8eb00c
+  BOB_ENGINE_REF: 6be2909525d4403390280bff5416c47edc46e9be
   # Same CLI version as BOb-engine's own CI.
   SUPABASE_CLI_VERSION: 2.120.0
 

@@ -14,11 +14,14 @@ import { asBobApp } from './db.ts'
 import { BobDbError } from './db-error.ts'
 
 const COMMON = ['id', 'org_id', 'created_at']
-export const TABLES: Record<string, { columns: string[]; jsonb?: string[] }> = {
+// `numeric` columns come back from pg as strings; PostgREST gives them to the
+// simulator as JSON numbers, so they are converted on the way out.
+export const TABLES: Record<string, { columns: string[]; jsonb?: string[]; numeric?: string[] }> = {
   threshold_configs: {
     columns: [...COMMON, 'metric_id', 'upper_bound', 'lower_bound', 'peak_mode', 'peak_windows',
       'updated_at', 'scope_kind', 'scope_ref'],
     jsonb: ['peak_windows'],
+    numeric: ['upper_bound', 'lower_bound'],
   },
   anomaly_rules: {
     columns: [...COMMON, 'metric_id', 'rule_type', 'name', 'condition', 'keywords', 'freq_threshold',
@@ -95,8 +98,12 @@ export class TableQuery implements PromiseLike<TableResult> {
       return { data: null, error: new BobDbError((e as Error).message, 'BOB_QUERY') }
     }
     try {
-      const rows = await asBobApp(this.orgId, async (db) => (await db.query(sql.text, sql.values)).rows,
-        this.source, { write: this.op !== 'select' })
+      const numeric = TABLES[this.table].numeric ?? []
+      const rows = (await asBobApp(this.orgId, async (db) => (await db.query(sql.text, sql.values)).rows,
+        this.source, { write: this.op !== 'select' })).map((r) => {
+        for (const c of numeric) if (typeof r[c] === 'string') r[c] = Number(r[c])
+        return r
+      })
       if (this.one) {
         if (rows.length > 1) return { data: null, error: new BobDbError('more than one row', 'PGRST116') }
         if (rows.length === 0) {

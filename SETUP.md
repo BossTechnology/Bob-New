@@ -173,8 +173,8 @@ En modo caja:
 - Cada petición se valida contra GoTrue. GoTrue caído: 503, nunca `/login`. Token rechazado:
   `/login`. Las cookies de sesión son de BOb (`bob-at`, `bob-rt`, `httpOnly`).
 - Una cuenta sin fila en `bob.users`, o con `active` distinto de verdadero, recibe 403 en
-  `/bob/*`, `/api/bob/*` y `/api/config/*` (Henry, 2026-11-21). Mientras `bob.users` no tenga
-  política para `bob_app` (P-1), eso es toda cuenta.
+  `/bob/*`, `/api/bob/*` y `/api/config/*` (Henry, 2026-11-21). `bob_app` lee los usuarios de su
+  organización desde BOb-engine #34; el papel sale de esa fila.
 - Ningún error de la base llega al cliente: 503 si no responde, 4xx por código (409 duplicado,
   403 RLS, 400 dato inválido, 404 sin fila), 500 genérico para lo demás; el detalle, al log.
 - La conexión tiene tope: 3 s para conseguir cliente, 5 s por sentencia, ventanas de lectura de
