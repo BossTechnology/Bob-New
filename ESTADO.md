@@ -12,6 +12,7 @@
 - Pantallas `/bob/interactions` y `/bob/quality` (más `/api/bob/*`) sobre `proj_durations`, `proj_sentiment` y `proj_metric_counts`; «sin fila» nunca es 0; Sesiones y NPS «sin proyección» (P-2 cerrado por Henry el 2026-11-21: Sesiones sigue así hasta que el contrato la nombre).
 - `/api/config/*` (umbrales, anomalías, reglas de texto, canales de notificación, respuestas) contra `bob` como `bob_app` en la caja, con el mismo código de ruta. Fuera de la caja, PostgREST como antes.
 - P-1 cerrado por BOb-engine #34 (rama `bob-roles-after-engine-34`, con el CI fijado a BOb-engine `6be2909`, que incluye #33, #34 y #35): `bob_app` lee los usuarios de su organización. Henry decidió «sin fila, 403»: sin fila, inactiva, de otra organización o con papel `service`/`demo`, 403; un admin activo entra con su papel (5 tests en vivo en `lib/bob/roles.test.ts`).
+- Prueba de punta a punta del modo caja tras BOb-engine #34 (local, `next dev`, GoTrue falso, stack `bob-v1`, con un login temporal sin privilegios miembro de `bob_app`, borrado al terminar): el admin del fixture entra; las tres pantallas, `/api/bob/quality` y `/auth/me` responden 200; un umbral se guarda, se relee y queda en `bob` bajo el tenant A; un `peak_mode` inválido da 400. Salieron dos arreglos: los `numeric` (`upper_bound`, `lower_bound`) vuelven como número, igual que con PostgREST, y `process.exit` pasa a `instrumentation-node.ts` para que no entre en el build de Edge.
 - 80 tests (los en vivo sobre el fixture de BOb-engine recargado en `bob-v1`), lint y typecheck en verde. `npm run build` pasa al reintentar (el aviso de seguridad de Next 16.4.2 ya estaba).
 - Hallazgos de la imagen local (sesión de insumos, PR #31), en la rama `bob-box-startup-health`: el arranque rechazado ahora sale del proceso con código 1 (visto con `next dev`: sale con los motivos), y `/api/health` responde 503 en ~2,1 s contra una base y un GoTrue que no contestan (antes ~6 s; 11 s en su imagen).
 - Revisión del PR #30 atendida: 403 sin fila en `bob.users`, errores genéricos en la caja, pool con topes, ventana de 31 días, proxy sobre todas las rutas, errores de tabla como `Error` con código, login privilegiado rechazado, CI con job en vivo (`.github/workflows/ci.yml`). 80 tests en verde en vivo con `BOB_REQUIRE_LIVE=1`.
@@ -27,7 +28,7 @@
 - Nada.
 
 ## Siguiente paso
-- Que Henry revise y fusione el PR de `bob-roles-after-engine-34`. Probar lectura y escritura de reglas en la caja de punta a punta con una cuenta admin (no hecho tras #34). Luego P-4 (simulador sobre `/api/bob/*`) y la imagen (`output: 'standalone'`, Dockerfile), que no entran en este PR.
+- Que Henry revise y fusione el PR de `bob-roles-after-engine-34`. Luego P-4 (simulador sobre `/api/bob/*`) y la imagen (`output: 'standalone'`, Dockerfile), que no entran en este PR.
 
 ## Notas de sesión
 <!-- AAAA-MM-DD: una o dos líneas -->

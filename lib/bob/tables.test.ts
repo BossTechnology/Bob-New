@@ -69,12 +69,16 @@ test('a threshold round-trips through bob as bob_app', { skip }, async () => {
   const up = await t.from('threshold_configs').upsert(row, { onConflict: 'org_id,metric_id' })
     .select('id, metric_id, upper_bound, peak_windows').single()
   assert.equal(up.error, null)
-  assert.equal(Number(up.data.upper_bound), 5)
+  // numeric comes back as a JSON number, as PostgREST gives it to the
+  // simulator outside the box (pg alone would give the string "5").
+  assert.strictEqual(up.data.upper_bound, 5)
   assert.deepEqual(up.data.peak_windows, [{ from: '09:00', to: '11:00' }])
   const again = await t.from('threshold_configs').upsert({ ...row, upper_bound: 7 }, { onConflict: 'org_id,metric_id' })
     .select('id, upper_bound').single()
   assert.equal(again.data.id, up.data.id)
-  assert.equal(Number(again.data.upper_bound), 7)
+  assert.strictEqual(again.data.upper_bound, 7)
+  const none = await t.from('threshold_configs').select('lower_bound').eq('metric_id', METRIC).single()
+  assert.strictEqual(none.data.lower_bound, null)
 
   const got = await t.from('threshold_configs').select('id').eq('org_id', TENANT_A).eq('metric_id', METRIC).maybeSingle()
   assert.equal(got.data.id, up.data.id)

@@ -4,15 +4,12 @@
 // and the process exits so the container does not stay `running`
 // (lib/bob/startup.ts). If the database is not up yet, the first read checks
 // the login again. Outside the box it does nothing.
+//
+// Next's pattern for Node-only code: the import sits inside the NEXT_RUNTIME
+// check, so the Edge build leaves it out.
 export async function register() {
-  if (process.env.NEXT_RUNTIME !== 'nodejs') return
-  const { assertBoxEnv, isBox } = await import('./lib/bob/runtime.ts')
-  if (!isBox()) return
-  const { startBox } = await import('./lib/bob/startup.ts')
-  await startBox({
-    assertEnv: () => assertBoxEnv(),
-    checkLogin: async () => (await import('./lib/bob/db.ts')).checkLoginAtStartup(),
-    exit: (code) => process.exit(code),
-    log: (m) => console.error(m),
-  })
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const { registerNode } = await import('./instrumentation-node.ts')
+    await registerNode()
+  }
 }
