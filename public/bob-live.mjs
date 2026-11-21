@@ -73,6 +73,56 @@ export function failureText(status, error) {
   return 'No se pudo leer bob. Se reintenta cada minuto.'
 }
 
+// Thresholds in the box. Only figures bob paints take one, stored under the
+// simulator's own keys: bob.threshold_configs was built to map to
+// metricCfg[mid] (BOb-engine, 20260729130000_v3_config_persistence.sql).
+// Nothing here evaluates a threshold or colours a breach: that rule belongs to
+// the engine (Slice 5), not to TypeScript. `row` is the matrix row it sits on.
+export const THRESHOLD_TARGETS = {
+  avgtime: { label: 'Tiempo Prom.', unit: 'min', row: null },
+  res: { label: 'Resueltos', unit: '', row: 'resolved' },
+  aba: { label: 'Abandonados', unit: '', row: 'abandoned' },
+  des: { label: 'Desambiguación', unit: '', row: 'disambiguation' },
+  der: { label: 'Derivaciones', unit: '', row: 'escalations' },
+  alu: { label: 'Alucinaciones', unit: '', row: 'hallucinations' },
+}
+
+// The PUT body for /api/config/thresholds/:metricId. Peak settings are kept
+// as they are: this editor only sets the bounds. An empty field is no bound.
+export function thresholdBody(form, current) {
+  const parse = (raw, name) => {
+    const t = String(raw ?? '').trim()
+    if (t === '') return { value: null }
+    const n = Number(t.replace(',', '.'))
+    if (!Number.isFinite(n)) return { error: `El límite ${name} no es un número.` }
+    if (n < 0) return { error: `El límite ${name} no puede ser negativo.` }
+    return { value: n }
+  }
+  const upper = parse(form.upper, 'superior')
+  if (upper.error) return { ok: false, error: upper.error }
+  const lower = parse(form.lower, 'inferior')
+  if (lower.error) return { ok: false, error: lower.error }
+  if (upper.value !== null && lower.value !== null && lower.value > upper.value) {
+    return { ok: false, error: 'El límite inferior no puede pasar del superior.' }
+  }
+  return {
+    ok: true,
+    body: {
+      upper_bound: upper.value,
+      lower_bound: lower.value,
+      peak_mode: current?.peak_mode ?? 'off',
+      peak_windows: current?.peak_windows ?? [],
+    },
+  }
+}
+
+export function saveFailureText(status, error = '') {
+  if (status === 403) return 'Tu papel en bob no permite editar umbrales (hace falta admin o analyst).'
+  if (status === 400) return `No se guardó: ${error}`
+  if (status === 503) return 'bob no disponible en este momento; no se guardó.'
+  return 'No se pudo guardar el umbral.'
+}
+
 // ── DOM ─────────────────────────────────────────────────────────────────────
 
 const $ = (id) => document.getElementById(id)
@@ -113,6 +163,20 @@ html.bob-live #headerLogo{pointer-events:none}
 .bob-lp-bar{width:10px;border-radius:3px 3px 0 0;background:var(--black,#111)}
 .bob-lp-bar.meca{background:var(--accent,#C6E7FF);outline:1px solid var(--black,#111)}
 .bob-lp-num{font-size:10px;color:var(--gray-mid,#666);text-align:center;line-height:1.3}
+html.bob-live .bob-editable,html.bob-live .bob-editable *{cursor:pointer!important}
+html.bob-live .bob-editable:hover{background:var(--gray-bg,#f6f6f6)}
+#bobThreshold{margin:auto;border:1px solid var(--gray-border,#ddd);border-radius:12px;padding:20px;width:min(360px,calc(100vw - 32px));font:13px 'DM Sans',sans-serif;color:var(--black,#111)}
+#bobThreshold::backdrop{background:rgba(0,0,0,.25)}
+#bobThreshold h3{font-size:15px;margin-bottom:4px}
+#bobThreshold .hint{font-size:11px;color:var(--gray-mid,#666);margin-bottom:14px;line-height:1.4}
+#bobThreshold label{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+#bobThreshold input{width:120px;padding:6px 8px;border:1px solid var(--gray-border,#ddd);border-radius:6px;font:inherit}
+#bobThreshold .msg{min-height:16px;font-size:12px;margin:4px 0 10px}
+#bobThreshold .msg.bad{color:var(--red,#BD4444)}
+#bobThreshold .btns{display:flex;justify-content:flex-end;gap:8px}
+#bobThreshold button{padding:7px 14px;border-radius:6px;border:1px solid var(--gray-border,#ddd);background:#fff;font:inherit;cursor:pointer}
+#bobThreshold button.primary{background:var(--black,#111);color:#fff;border-color:var(--black,#111)}
+#bobThreshold button:disabled{opacity:.5;cursor:default}
 `
 
 // The simulation's entry points, turned off once bob answers. They are
@@ -209,12 +273,16 @@ function paintPerformance(d) {
   const rt = row('response_time')
   fill(statRows[0], actors.map((a) => span(cellText(rt.cells[a], durationText))))
   fill(statRows[1], actors.map(() => noProjection(row('quality')?.spec.source.note ?? '')))
-  $('metricsBox').innerHTML = m.rows.filter((r) => !IN_STATS.includes(r.spec.id)).map((r) => `
-    <div class="m-row" title="${esc(r.spec.note ?? '')}">
+  $('metricsBox').innerHTML = m.rows.filter((r) => !IN_STATS.includes(r.spec.id)).map((r) => {
+    const key = targetOfRow(r.spec.id)
+    const edit = key ? ` bob-editable" data-threshold="${key}` : ''
+    return `
+    <div class="m-row${edit}" title="${esc(key ? 'Editar umbral' : (r.spec.note ?? ''))}">
       <div class="m-icon"></div>
       <div class="m-name">${esc(r.spec.label)}</div><div class="m-total">${span(cellText(r.total))}</div>
       ${actors.map((a, i) => `<div class="m-pct${i === 1 ? ' ai' : ''}">${span(cellText(r.cells[a]))}</div>`).join('')}
-    </div>`).join('')
+    </div>`
+  }).join('')
   if (m.actors.includes('arep')) {
     $('metricsBox').insertAdjacentHTML('beforeend',
       '<div class="m-row"><div class="m-name bob-noproj">AREP no cabe en esta vista: ver /bob/performance</div></div>')
@@ -291,6 +359,101 @@ async function refresh() {
   ENDPOINTS.forEach((name, i) => paintOrBlank(name, results[i]))
 }
 
+// ── Threshold editor ────────────────────────────────────────────────────────
+
+const targetOfRow = (rowId) => Object.keys(THRESHOLD_TARGETS).find((k) => THRESHOLD_TARGETS[k].row === rowId)
+
+async function configCall(metricId, init) {
+  try {
+    const res = await fetch(`/api/config/thresholds/${encodeURIComponent(metricId)}`, {
+      cache: 'no-store', redirect: 'manual', ...init,
+      headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) },
+    })
+    const json = (res.headers.get('content-type') ?? '').includes('application/json')
+    return { status: res.status, body: json ? await res.json() : null }
+  } catch {
+    return { status: 0, body: null }
+  }
+}
+
+function thresholdDialog() {
+  let d = $('bobThreshold')
+  if (d) return d
+  d = document.createElement('dialog')
+  d.id = 'bobThreshold'
+  d.innerHTML = `<form method="dialog">
+      <h3></h3>
+      <div class="hint">En la caja nada evalúa todavía este umbral: se guarda en bob para cuando el motor lo haga. Campo vacío = sin límite.</div>
+      <label>Límite superior <span><input name="upper" inputmode="decimal" autocomplete="off"> <span class="unit"></span></span></label>
+      <label>Límite inferior <span><input name="lower" inputmode="decimal" autocomplete="off"> <span class="unit"></span></span></label>
+      <div class="msg" role="status"></div>
+      <div class="btns"><button type="button" value="cancel">Cancelar</button><button type="submit" class="primary">Guardar</button></div>
+    </form>`
+  d.querySelector('button[value=cancel]').addEventListener('click', () => d.close())
+  document.body.appendChild(d)
+  return d
+}
+
+async function openThresholdEditor(metricId) {
+  const target = THRESHOLD_TARGETS[metricId]
+  if (!target) return
+  const d = thresholdDialog()
+  const form = d.querySelector('form')
+  const msg = d.querySelector('.msg')
+  const save = d.querySelector('button.primary')
+  const say = (text, bad = false) => { msg.textContent = text; msg.classList.toggle('bad', bad) }
+  d.querySelector('h3').textContent = `Umbral · ${target.label}`
+  d.querySelectorAll('.unit').forEach((u) => { u.textContent = target.unit })
+  form.upper.value = ''
+  form.lower.value = ''
+  save.disabled = true
+  say('Leyendo…')
+  d.showModal()
+
+  const got = await configCall(metricId)
+  let current = null
+  if (got.body?.ok) {
+    current = got.body.data
+    form.upper.value = current?.upper_bound ?? ''
+    form.lower.value = current?.lower_bound ?? ''
+    say(current ? '' : 'Sin umbral guardado.')
+    save.disabled = false
+  } else {
+    say(failureText(got.status, got.body?.error ?? ''), true)
+  }
+
+  form.onsubmit = async (e) => {
+    e.preventDefault()
+    const b = thresholdBody({ upper: form.upper.value, lower: form.lower.value }, current)
+    if (!b.ok) { say(b.error, true); return }
+    save.disabled = true
+    say('Guardando…')
+    const put = await configCall(metricId, { method: 'PUT', body: JSON.stringify(b.body) })
+    save.disabled = false
+    if (put.body?.ok) {
+      current = put.body.data
+      say('Umbral guardado.')
+      setTimeout(() => d.open && d.close(), 700)
+    } else {
+      say(saveFailureText(put.status, put.body?.error ?? ''), true)
+    }
+  }
+}
+
+function enableThresholds() {
+  window.openActionables = (metricId) => { openThresholdEditor(metricId) }
+  // The simulator opens Tiempo Prom. from the Response Time label too; in bob
+  // they are two measures (interaction_duration and response_time), so only
+  // the Tiempo Prom. card edits it.
+  const tr = $('lbl-tr')
+  if (tr) tr.onclick = null
+  $('avgTimeNum')?.closest('.card-panel')?.classList.add('bob-editable')
+  $('metricsBox')?.addEventListener('click', (e) => {
+    const row = e.target.closest?.('[data-threshold]')
+    if (row) openThresholdEditor(row.dataset.threshold)
+  })
+}
+
 export async function start() {
   const first = await read(ENDPOINTS[0], currentQuery())
   if (!liveMode(first.status, first.json)) {
@@ -303,6 +466,7 @@ export async function start() {
   document.documentElement.classList.add('bob-live')
   stopSimulation()
   for (const name of ENDPOINTS) BLANK[name]()
+  enableThresholds()
   // The window controls now read bob instead of rescaling invented numbers.
   window.onTimeChange = (v) => {
     $('drWrap')?.classList.toggle('show', v === 'custom')

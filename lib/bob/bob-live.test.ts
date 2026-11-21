@@ -4,7 +4,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  cellText, durationText, failureText, liveMode, screenQuery, sentimentBars,
+  THRESHOLD_TARGETS, cellText, durationText, failureText, liveMode, saveFailureText, screenQuery,
+  sentimentBars, thresholdBody,
 } from '../../public/bob-live.mjs'
 
 test('a cell paints as what it is: no row, a written zero, or a value', () => {
@@ -56,4 +57,37 @@ test('a failed read says why, and never falls back to invented figures', () => {
   assert.match(failureText(503, 'Identity unavailable'), /no disponible/)
   assert.match(failureText(400, 'ventana demasiado larga (máximo 31 días)'), /31 días/)
   assert.match(failureText(500, 'Read failed'), /No se pudo leer/)
+})
+
+// Thresholds in the box: only for figures bob paints, under the simulator's
+// own keys (threshold_configs "maps to metricCfg[mid]", BOb-engine
+// 20260729130000). Nothing here evaluates a threshold: that is Slice 5's.
+test('only the figures bob paints take a threshold, under the simulator\'s keys', () => {
+  assert.deepEqual(Object.keys(THRESHOLD_TARGETS).sort(), ['aba', 'alu', 'avgtime', 'der', 'des', 'res'])
+  assert.equal(THRESHOLD_TARGETS.res.row, 'resolved')
+  assert.equal(THRESHOLD_TARGETS.avgtime.unit, 'min')
+  for (const none of ['sessions', 'nps', 'quality', 'sentiment', 'temas', 'acciones', 'faq', 'words']) {
+    assert.equal((THRESHOLD_TARGETS as Record<string, unknown>)[none], undefined, none)
+  }
+})
+
+test('a threshold body keeps peak settings and refuses what is not a bound', () => {
+  const current = { peak_mode: 'manual', peak_windows: [{ from: '09:00', to: '11:00' }] }
+  assert.deepEqual(thresholdBody({ upper: '12', lower: '' }, current), {
+    ok: true, body: { upper_bound: 12, lower_bound: null, peak_mode: 'manual', peak_windows: current.peak_windows },
+  })
+  assert.deepEqual(thresholdBody({ upper: '', lower: ' 2.5 ' }, null), {
+    ok: true, body: { upper_bound: null, lower_bound: 2.5, peak_mode: 'off', peak_windows: [] },
+  })
+  // Both empty clears the bounds, which is a valid save.
+  assert.equal(thresholdBody({ upper: '', lower: '' }, null).ok, true)
+  assert.match(thresholdBody({ upper: 'abc', lower: '' }, null).error ?? '', /número/)
+  assert.match(thresholdBody({ upper: '-1', lower: '' }, null).error ?? '', /negativ/)
+  assert.match(thresholdBody({ upper: '5', lower: '9' }, null).error ?? '', /inferior/)
+})
+
+test('a refused save says why', () => {
+  assert.match(saveFailureText(403), /papel/)
+  assert.match(saveFailureText(400, 'Invalid peak_mode'), /Invalid peak_mode/)
+  assert.match(saveFailureText(503), /no disponible/)
 })

@@ -106,3 +106,9 @@ La reconciliación de fantasmas no se programa en BOb (pasa al feeder).
   BObee, alertas, alarmas, acciones, anomalías y los paneles de detalle se ocultan. Si una lectura
   falla, sus cifras muestran «—», nunca lo simulado. Fuera de la caja la API responde 404 y el
   simulador sigue como antes.
+- **Umbrales en la caja.** Un clic en Tiempo Prom. o en Resueltos, Abandonados, Desambiguación,
+  Derivaciones o Alucinaciones abre un editor de límite superior e inferior que lee y escribe
+  `/api/config/thresholds/:metricId` con las claves del simulador (`avgtime`, `res`, `aba`, `des`,
+  `der`, `alu`), como el puente de la demo. Conserva `peak_mode` y `peak_windows`. Las cifras sin
+  proyección no llevan umbral. Nada evalúa el umbral en la caja ni pinta su incumplimiento: esa
+  regla es del motor (Slice 5).
