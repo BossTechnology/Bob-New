@@ -3,7 +3,7 @@
 > Actualizar al cerrar cada sesión. Es lo primero que lee la siguiente.
 
 ## Tarea actual
-- Capa de datos de bob-web sobre el esquema `bob` de BOb-engine, como `bob_app`, con el `org_id` de la caja y sin la service role (requisito §4.2, puntos 1 a 5, de los insumos de Bzzz «lo mínimo de la etapa 4»). Fusionada en `main` con los PR #30 y #32. Este cierre (P-1 tras BOb-engine #34): rama `bob-roles-after-engine-34`.
+- Capa de datos de bob-web sobre el esquema `bob` de BOb-engine, como `bob_app`, con el `org_id` de la caja y sin la service role (requisito §4.2, puntos 1 a 5, de los insumos de Bzzz «lo mínimo de la etapa 4»). Todo fusionado en `main`: PR #30, #32, #34 (P-1), #35 (P-4), #36 (umbrales) y #31 (imagen). Lo que queda es probarlo en una caja real.
 
 ## Hecho
 - Inventario de todo lo que tocaba la service role, PostgREST o las tablas de la demo, en tres categorías y con dueño: `docs/bob-schema-data-layer/inventario.md`.
@@ -16,6 +16,8 @@
 - 80 tests (los en vivo sobre el fixture de BOb-engine recargado en `bob-v1`), lint y typecheck en verde. `npm run build` pasa al reintentar (el aviso de seguridad de Next 16.4.2 ya estaba).
 - Hallazgos de la imagen local (sesión de insumos, PR #31), en la rama `bob-box-startup-health`: el arranque rechazado ahora sale del proceso con código 1 (visto con `next dev`: sale con los motivos), y `/api/health` responde 503 en ~2,1 s contra una base y un GoTrue que no contestan (antes ~6 s; 11 s en su imagen).
 - Revisión del PR #30 atendida: 403 sin fila en `bob.users`, errores genéricos en la caja, pool con topes, ventana de 31 días, proxy sobre todas las rutas, errores de tabla como `Error` con código, login privilegiado rechazado, CI con job en vivo (`.github/workflows/ci.yml`). 80 tests en verde en vivo con `BOB_REQUIRE_LIVE=1`.
+- P-4 (PR #35): en la caja el simulador pinta `/api/bob/*` y no inventa nada; «sin fila» y «sin proyección» a la vista; Ánimo como barras por estado; los botones de ventana mandan `range` y el desfase del navegador. Paneles sin equivalente en `bob`, ocultos. El arreglo de las listas que se rellenaban con datos simulados (`4bd24a4`) entró con #36.
+- Umbrales en la caja (PR #36): editor de límites para Tiempo Prom. y las cinco filas de conteo, bajo las claves del simulador. Viewer: lee y recibe 403 al guardar (visto en caja local). Nada evalúa los umbrales todavía (Slice 5).
 - CI en GitHub (`5625cfe`): los dos jobs nuevos («Lint, typecheck and unit tests» y «Schema bob as bob_app (live tests)») y los dos de Vercel en verde. El PR #30 se fusionó a `main` (`b4a7c72`).
 
 ## Pendiente
@@ -24,8 +26,7 @@
   - al lado van `bob_cell_rollup`, con cobertura, y `v_ai_cell_state`, una vista definer para BObee (R6).
   
   La construcción es el PR #40 de BOb-engine (rama `slice-3-absent-not-zero`). Está abierto y no se fusiona hasta que Federico acepte la 0.6; antes falta corregir los ceros que el alimentador escribe para métricas que no cuenta. El enganche de `lib/bob/cell-state.ts` tiene que llamar a esa función.
-- **Matriz de Performance** (`/bob/performance`, PR #29, fusionado): cuando el Slice 3 esté fusionado, pasarla a `bob_cell_state` en un PR nuevo. Con eso entran los seis estados, los motivos y los marcadores D-18/D-19; hoy calcula «no configurado» solo con `channel_capabilities` e `idle_bound_seconds`.
-- **P-4 · El simulador.** Hecho en la rama `bob-simulator-real-data` (PR abierto, sin fusionar): en la caja pinta `/api/bob/*` y no inventa nada. Umbrales: rama `bob-simulator-thresholds`, encima de la de P-4, edita en la caja los límites de Tiempo Prom. y de las cinco filas de conteo, bajo las claves del simulador (`threshold_configs` se diseñó como `metricCfg[mid]`). Sigue fuera: alertas, alarmas, acciones, anomalías y reglas de texto, y la evaluación de umbrales (Slice 5).
+- **Matriz de Performance** (`/bob/performance`, PR #29, fusionado): pasarla a los estados del Slice 3. En curso en el PR #37 de bob-web (borrador, rama `slice-3-cell-states`), que se fusiona después del PR #40 de BOb-engine. Con eso entran los seis estados, los motivos y los marcadores D-18/D-19; hoy calcula «no configurado» solo con `channel_capabilities` e `idle_bound_seconds`.
 - Las acciones de respuesta necesitan el binding de AutoBotz (Slice 6, PR #26 de BOb-engine); en la caja responden 409.
 - `npm run build` se corta una vez con `SecurityFatalError` (Next 16.4.2). Ya estaba en `main`.
 
@@ -37,10 +38,11 @@
   No bloquea la construcción; solo cambia qué consumidores prueba el DONE.
 
 ## Siguiente paso
-- Que Henry revise y fusione el PR de `bob-roles-after-engine-34`. Luego P-4 (simulador sobre `/api/bob/*`) y la imagen (`output: 'standalone'`, Dockerfile), que no entran en este PR.
+- Probar en una caja real con la imagen de `main`. La lista de verificación está en las notas compartidas de la sesión (`bob-web-real-box-checklist.md`). Lo primero que vigilar: la primera conexión a la base, que en local tardó ~15 s y dio un 503 hasta reintentar.
 
 ## Notas de sesión
 <!-- AAAA-MM-DD: una o dos líneas -->
+- 2026-11-21 (cierre): #34, #35, #36 y #31 fusionados. #35 entró sin `4bd24a4`; viajó en #36, retargeteado a `main`. Caso viewer de los umbrales probado en caja local (papel cambiado a viewer y devuelto a admin; login temporal borrado).
 - 2026-11-21 (P-4): simulador probado en modo caja local (GoTrue falso, login temporal `bob_web_e2e` ya borrado): las tres pantallas leen `bob`, Este Mes pide `range=month&tz=300`, y una lectura fallida deja «—» con aviso en rojo. Fuera de la caja la API da 404 y la simulación sigue.
 - 2026-11-21: revisión del PR #27 de BOb-engine (spec del Slice 3) publicada como comentario; sus siete puntos quedaron resueltos en main con los PRs #28 y #30. Arrancó la construcción del Slice 3 en su propia sesión. Las tres notas de estado de la rama del PR #29 (`ab04e33`, `079e6f5`, `081641b`) no entraron en el merge; su contenido vigente está aquí.
 - 2026-11-21 (noche): revisión del PR #30 atendida y CI añadido. El commit del workflow lo hizo Henry a mano (los permisos de la sesión no dejan commitear `.github/workflows`). Las fallas en vivo vistas a medio camino eran del stack compartido (reinicios, `GRANT bob_app` perdido, contenedor «unhealthy» con `select 1` de 5 s), no del código.
