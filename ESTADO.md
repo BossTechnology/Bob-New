@@ -18,12 +18,22 @@
 
 ## Pendiente
 - **P-1 · Papel del usuario en la caja.** Henry (2026-11-21): sin fila o `active` no verdadero = 403 en `/bob/*`, `/api/bob/*` y `/api/config/*`. Como `bob.users` no tiene política para `bob_app`, **hoy en la caja todo sale 403**. BOb-engine lo cerró en su #34 (`bob_app` lee los usuarios de su organización). En bob-web falta el ajuste: los tests de papeles para el nuevo comportamiento (`8b1add5`) y fijar el CI a un BOb-engine con #34 (`BOB_ENGINE_REF`), en un PR aparte.
-- **P-3 · Slice 3.** `bob.v_cell_state` no existe; enganche en `lib/bob/cell-state.ts`.
+- **P-3 · Slice 3.** La spec ya está fusionada en BOb-engine (PRs #27, #28, #30 y #32), pero no es `bob.v_cell_state`:
+  - es la función `bob_cell_state(org, channels[], from, to)`, invoker, bajo RLS (R4);
+  - al lado van `bob_cell_rollup`, con cobertura, y `v_ai_cell_state`, una vista definer para BObee (R6).
+  
+  La construcción es el PR #40 de BOb-engine (rama `slice-3-absent-not-zero`). Está abierto y no se fusiona hasta que Federico acepte la 0.6; antes falta corregir los ceros que el alimentador escribe para métricas que no cuenta. El enganche de `lib/bob/cell-state.ts` tiene que llamar a esa función.
+- **Matriz de Performance** (`/bob/performance`, PR #29, fusionado): cuando el Slice 3 esté fusionado, pasarla a `bob_cell_state` en un PR nuevo. Con eso entran los seis estados, los motivos y los marcadores D-18/D-19; hoy calcula «no configurado» solo con `channel_capabilities` e `idle_bound_seconds`.
 - **P-4 · El simulador.** `dashboard.html` sigue pintando cifras inventadas y está apagado en la caja. Conectarlo a `/api/bob/*`.
 - Las acciones de respuesta necesitan el binding de AutoBotz (Slice 6, PR #26 de BOb-engine); en la caja responden 409.
 - `npm run build` se corta una vez con `SecurityFatalError` (Next 16.4.2). Ya estaba en `main`.
 
 ## Bloqueado
+- BOB-7 (Relevo), turno de Federico: ¿son cuatro o siete los consumidores del Slice 3? El Word dice cuatro en el §2 y siete en el §3. El 21-11 se le dejó la lista para que la confirme:
+  - los cuatro del §2;
+  - tres inferidos: los drill-downs del Slice 7, el conteo de fallas del clasificador del Slice 4 y la fila de afirmaciones sin fundamento del Slice 5.
+  
+  No bloquea la construcción; solo cambia qué consumidores prueba el DONE.
 - Nada en este repo. P-1 espera la política de BOb-engine: hasta entonces la caja no es usable (todo 403).
 
 ## Siguiente paso
@@ -31,6 +41,7 @@
 
 ## Notas de sesión
 <!-- AAAA-MM-DD: una o dos líneas -->
+- 2026-11-21: revisión del PR #27 de BOb-engine (spec del Slice 3) publicada como comentario; sus siete puntos quedaron resueltos en main con los PRs #28 y #30. Arrancó la construcción del Slice 3 en su propia sesión. Las tres notas de estado de la rama del PR #29 (`ab04e33`, `079e6f5`, `081641b`) no entraron en el merge; su contenido vigente está aquí.
 - 2026-11-21 (noche): revisión del PR #30 atendida y CI añadido. El commit del workflow lo hizo Henry a mano (los permisos de la sesión no dejan commitear `.github/workflows`). Las fallas en vivo vistas a medio camino eran del stack compartido (reinicios, `GRANT bob_app` perdido, contenedor «unhealthy» con `select 1` de 5 s), no del código.
 - 2026-11-21 (tarde): el stack compartido `bob-v1` se movió al puerto 54322 y otra sesión lo reinicia a menudo; tras cada reinicio se pierde `GRANT bob_app`. Recargar con `scripts/ci/load-bob-world.mjs` antes de correr los tests.
 - 2026-11-21: modo caja probado con un GoTrue falso local y el stack `bob-v1` (login, lectura de las tres pantallas, 503 con GoTrue parado, arranque rechazado). El stack compartido lo reinició otra sesión a mitad de trabajo: recargar el fixture antes de los tests.
