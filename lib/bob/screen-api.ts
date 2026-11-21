@@ -1,10 +1,10 @@
-// The three screens as JSON, for the simulator to read later (inventario
+// The three screens as JSON, read by the simulator (public/bob-live.mjs,
 // P-4). Same gate, same reads and same builders as the /bob pages: a figure
 // with no row arrives as { kind: 'no_row' }, never as 0.
 import { screenGate } from './screen-gate.ts'
 import { BobConfigError, UnknownChannelError, boxOrgId } from './projection-reader.ts'
 
-type Query = { from?: string; to?: string; channel?: string }
+type Query = { from?: string; to?: string; channel?: string; range?: string; tz?: string }
 
 export async function screenJson<T>(request: Request, read: (orgId: string, q: Query) => Promise<T>) {
   const gate = await screenGate()
@@ -15,6 +15,7 @@ export async function screenJson<T>(request: Request, read: (orgId: string, q: Q
   const p = new URL(request.url).searchParams
   const q: Query = {
     from: p.get('from') ?? undefined, to: p.get('to') ?? undefined, channel: p.get('channel') ?? undefined,
+    range: p.get('range') ?? undefined, tz: p.get('tz') ?? undefined,
   }
   try {
     return Response.json({ ok: true, data: await read(boxOrgId(), q) }, { headers: { 'Cache-Control': 'no-store' } })

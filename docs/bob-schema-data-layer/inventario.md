@@ -82,7 +82,8 @@ La reconciliación de fantasmas no se programa en BOb (pasa al feeder).
 | `/api/channels`, `/api/channels/:id` (canales de negocio) | `bob.channels` cambió (`source_key`, capacidades); el alta de canales es aprovisionamiento | **BOb-engine** |
 | `/api/admin/{orgs,seed,metrics/usage}` | Service role. La organización la crea el aprovisionamiento de la caja; `seed` es de la demo | **BOb-engine** |
 | `/auth/reset-password`, `/auth/confirm-reset` | Correo de GoTrue en la caja: no hay salida a internet en v1 | **Bzzz** (Henry) |
-| `public/dashboard.html`, `public/coop.html` (el simulador) | Pinta cifras inventadas; en una caja de cliente parecerían reales | **bob-web** (P-4) |
+| `public/coop.html` | Pinta cifras inventadas; en una caja de cliente parecerían reales | **bob-web** |
+| `public/dashboard.html` (el simulador) | En la caja deja de simular y pinta `/api/bob/*` con `public/bob-live.mjs` (P-4) | servido con sesión |
 | `lib/features.ts` | Nadie lo llama | — |
 
 ## Pendientes que salen del inventario
@@ -97,5 +98,11 @@ La reconciliación de fantasmas no se programa en BOb (pasa al feeder).
 - **P-3 · Slice 3.** Los estados de celda los resuelve `bob.v_cell_state`, que no existe. El
   enganche está en `lib/bob/cell-state.ts`: mientras la vista no exista, la app pinta lo que lee
   (sin fila, cero, valor) y no inventa estados.
-- **P-4 · El simulador.** `dashboard.html` sigue pintando lo que inventa. Las pantallas reales son
-  `/bob/*` y `/api/bob/*`. Conectar el simulador a ellas es el paso siguiente.
+- **P-4 · El simulador.** Cerrado. Cuando `/api/bob/*` responde, `public/bob-live.mjs` para la
+  simulación y pinta las tres pantallas: Sesiones, NPS, Disponibles, Calidad de respuesta, Temas,
+  Acciones, Preguntas y Palabras dicen «sin proyección»; Ánimo & Sentimiento son barras por estado
+  (ORGA y MECA, nunca sumadas); los botones de ventana mandan `range` (`now`, `today`, `week`,
+  `month`) y el desfase del navegador, y la API calcula el inicio local. Sin equivalente en `bob`,
+  BObee, alertas, alarmas, acciones, anomalías y los paneles de detalle se ocultan. Si una lectura
+  falla, sus cifras muestran «—», nunca lo simulado. Fuera de la caja la API responde 404 y el
+  simulador sigue como antes.

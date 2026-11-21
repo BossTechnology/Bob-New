@@ -16,7 +16,7 @@ import { boxProxy } from '@/lib/bob/box-proxy.ts'
 type CookieToSet = { name: string; value: string; options: CookieOptions }
 
 // What the matcher used to leave out, outside the box.
-const STATIC = /^\/(?:_next\/image|favicon\.ico)$|\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|json|woff2?)$/
+const STATIC = /^\/(?:_next\/image|favicon\.ico)$|\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|m?js|json|woff2?)$/
 
 // `/api/cron` is listed here because the scheduler calls it with a bearer token
 // and no session cookie. Without it the guard answered every scheduled run with

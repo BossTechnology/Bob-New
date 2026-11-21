@@ -137,3 +137,41 @@ test('the window is capped: a request cannot read back to 1970', () => {
   const d = resolveWindow({}, wm)
   assert.equal(d.to.getTime() - d.from.getTime(), 24 * 3600_000)
 })
+
+// The simulator's four buttons (P-4). Each ends at the watermark's bucket; the
+// start is local to the viewer, whose offset arrives as `tz` in minutes, the
+// sign of Date.getTimezoneOffset() (Bogotá is +300).
+test('range=now is the last bucket up to the watermark', () => {
+  const wm = new Date('2026-11-18T14:32:00Z')
+  const w = resolveWindow({ range: 'now' }, wm)
+  assert.equal(w.to.toISOString(), '2026-11-18T14:35:00.000Z')
+  assert.equal(w.from.toISOString(), '2026-11-18T14:30:00.000Z')
+})
+
+test('range=today, week and month start at the viewer\'s local midnight', () => {
+  const wm = new Date('2026-11-18T14:32:00Z') // Wed 18 Nov, 09:32 in Bogotá
+  const tz = '300'
+  assert.equal(resolveWindow({ range: 'today', tz }, wm).from.toISOString(), '2026-11-18T05:00:00.000Z')
+  // Weeks start on Sunday, as the simulator's own label does.
+  assert.equal(resolveWindow({ range: 'week', tz }, wm).from.toISOString(), '2026-11-15T05:00:00.000Z')
+  assert.equal(resolveWindow({ range: 'month', tz }, wm).from.toISOString(), '2026-11-01T05:00:00.000Z')
+  // Without tz the day is UTC's.
+  assert.equal(resolveWindow({ range: 'today' }, wm).from.toISOString(), '2026-11-18T00:00:00.000Z')
+})
+
+test('range uses the day the watermark falls in, even right after a local midnight', () => {
+  // 05:00Z is exactly midnight in Bogotá: the window is the bucket that ends there, not empty.
+  const wm = new Date('2026-11-18T05:00:00Z')
+  const w = resolveWindow({ range: 'today', tz: '300' }, wm)
+  assert.equal(w.to.toISOString(), '2026-11-18T05:00:00.000Z')
+  assert.equal(w.from.toISOString(), '2026-11-17T05:00:00.000Z')
+})
+
+test('an unknown range or offset is refused, and from/to win over range', () => {
+  const wm = new Date('2026-11-18T14:32:00Z')
+  assert.throws(() => resolveWindow({ range: 'year' }, wm), /ventana/)
+  assert.throws(() => resolveWindow({ range: 'today', tz: 'x' }, wm), /ventana/)
+  assert.throws(() => resolveWindow({ range: 'today', tz: '9999' }, wm), /ventana/)
+  const w = resolveWindow({ range: 'month', from: '2026-11-17T00:00:00Z', to: '2026-11-18T00:00:00Z' }, wm)
+  assert.equal(w.from.toISOString(), '2026-11-17T00:00:00.000Z')
+})

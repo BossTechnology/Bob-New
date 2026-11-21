@@ -19,7 +19,7 @@
 ## Pendiente
 - **P-1 · Papel del usuario en la caja.** Henry (2026-11-21): sin fila o `active` no verdadero = 403 en `/bob/*`, `/api/bob/*` y `/api/config/*`. Como `bob.users` no tiene política para `bob_app`, **hoy en la caja todo sale 403**. BOb-engine lo cerró en su #34 (`bob_app` lee los usuarios de su organización). En bob-web falta el ajuste: los tests de papeles para el nuevo comportamiento (`8b1add5`) y fijar el CI a un BOb-engine con #34 (`BOB_ENGINE_REF`), en un PR aparte.
 - **P-3 · Slice 3.** `bob.v_cell_state` no existe; enganche en `lib/bob/cell-state.ts`.
-- **P-4 · El simulador.** `dashboard.html` sigue pintando cifras inventadas y está apagado en la caja. Conectarlo a `/api/bob/*`.
+- **P-4 · El simulador.** Hecho en la rama `bob-simulator-real-data` (PR abierto, sin fusionar): en la caja pinta `/api/bob/*` y no inventa nada. Queda fuera: los paneles de configuración de reglas del simulador están ocultos en la caja; las reglas se editan por `/api/config/*`.
 - Las acciones de respuesta necesitan el binding de AutoBotz (Slice 6, PR #26 de BOb-engine); en la caja responden 409.
 - `npm run build` se corta una vez con `SecurityFatalError` (Next 16.4.2). Ya estaba en `main`.
 
@@ -31,6 +31,7 @@
 
 ## Notas de sesión
 <!-- AAAA-MM-DD: una o dos líneas -->
+- 2026-11-21 (P-4): simulador probado en modo caja local (GoTrue falso, login temporal `bob_web_e2e` ya borrado): las tres pantallas leen `bob`, Este Mes pide `range=month&tz=300`, y una lectura fallida deja «—» con aviso en rojo. Fuera de la caja la API da 404 y la simulación sigue.
 - 2026-11-21 (noche): revisión del PR #30 atendida y CI añadido. El commit del workflow lo hizo Henry a mano (los permisos de la sesión no dejan commitear `.github/workflows`). Las fallas en vivo vistas a medio camino eran del stack compartido (reinicios, `GRANT bob_app` perdido, contenedor «unhealthy» con `select 1` de 5 s), no del código.
 - 2026-11-21 (tarde): el stack compartido `bob-v1` se movió al puerto 54322 y otra sesión lo reinicia a menudo; tras cada reinicio se pierde `GRANT bob_app`. Recargar con `scripts/ci/load-bob-world.mjs` antes de correr los tests.
 - 2026-11-21: modo caja probado con un GoTrue falso local y el stack `bob-v1` (login, lectura de las tres pantallas, 503 con GoTrue parado, arranque rechazado). El stack compartido lo reinició otra sesión a mitad de trabajo: recargar el fixture antes de los tests.

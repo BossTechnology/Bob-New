@@ -20,7 +20,7 @@ test('category (iii) is off in the box until bob has an equivalent', () => {
     '/api/metrics/trend', '/api/sentiment', '/api/admin/seed', '/api/admin/orgs',
     '/api/config', '/api/config/export', '/api/config/import', '/api/config/autobotz',
     '/api/config/alerts', '/api/channels', '/api/reports/generate', '/api/rules',
-    '/auth/reset-password', '/auth/confirm-reset', '/dashboard.html', '/coop.html',
+    '/auth/reset-password', '/auth/confirm-reset', '/coop.html', '/icon/bob-bee.png', '/demo.js',
   ]) assert.equal(boxAccess(p), 'off', p)
 })
 
@@ -70,4 +70,13 @@ test('every route in app/ resolves to one access, and new ones default to off', 
     '/bob/interactions', '/bob/performance', '/bob/quality',
     '/login',
   ])
+})
+
+// P-4: the simulator paints bob's projections in the box, so it and its
+// painter are served with a session. The rest of public/ stays off.
+test('the simulator and its painter need a session in the box', () => {
+  for (const p of ['/dashboard.html', '/bob-live.mjs']) assert.equal(boxAccess(p), 'session', p)
+  for (const p of ['/dashboard.htm', '/dashboard.html/x', '/bob-live.js', '/coop.html']) {
+    assert.equal(boxAccess(p), 'off', p)
+  }
 })

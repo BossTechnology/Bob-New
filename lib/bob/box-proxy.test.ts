@@ -33,7 +33,7 @@ const req = (path: string) => new NextRequest(`http://box.test${path}`)
 const passes = (r: Response) => r.headers.get('x-middleware-next') === '1'
 
 test('a route that is off answers 404, whatever its extension', async () => {
-  for (const p of ['/api/reports/x.json', '/api/alerts/a.js', '/x.css', '/dashboard.html', '/icon/bob-bee.png']) {
+  for (const p of ['/api/reports/x.json', '/api/alerts/a.js', '/x.css', '/coop.html', '/icon/bob-bee.png']) {
     assert.equal((await boxProxy(req(p), deps())).status, 404, p)
   }
 })

@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BOb — Business Observer | Boss.Technology</title>
+<!-- P-4: hidden until bob-live.mjs knows whether bob answers, so the box never shows an invented figure. -->
+<style>html.bob-pending main{visibility:hidden}</style>
+<script>document.documentElement.classList.add('bob-pending')</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -7388,5 +7391,6 @@ init();
   setTimeout(function(){ hydrate().catch(function(){}); },600);
 })();
 </script>
+<script type="module" src="/bob-live.mjs" onerror="document.documentElement.classList.remove('bob-pending')"></script>
 </body>
 </html>
