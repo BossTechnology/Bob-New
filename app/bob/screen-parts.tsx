@@ -21,7 +21,17 @@ export function ScreenNav({ current }: { current: (typeof SCREENS)[number][0] })
 export function Unavailable() {
   return (
     <main className={styles.page}>
-      <p className={styles.error}>La identidad de la caja no responde. BOb no sirve nada hasta que vuelva.</p>
+      <p className={styles.error}>La identidad de la caja o su base no responde. BOb no sirve nada hasta que vuelva.</p>
+    </main>
+  )
+}
+
+// No row in bob.users, or inactive (Henry, 2026-11-21). The proxy already
+// answers 403; this is what a page says if it is reached anyway.
+export function Forbidden() {
+  return (
+    <main className={styles.page}>
+      <p className={styles.error}>Esta cuenta no tiene acceso a BOb en esta caja.</p>
     </main>
   )
 }

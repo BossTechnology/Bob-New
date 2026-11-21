@@ -26,7 +26,9 @@ export async function requireBoxAuth(allowedRoles: string[]) {
   if (s.kind === 'unavailable') throw new ApiError(503, 'Identity unavailable')
   if (s.kind === 'none') throw new ApiError(401, 'Unauthorized')
   const org_id = boxOrgId()
+  // No row in bob.users, or inactive: 403 (Henry, 2026-11-21; P-1).
   const role = await boxRole(org_id, s.user.id)
+  if (!role) throw new ApiError(403, 'This account has no access to BOb in this box')
   if (!allowedRoles.includes(role)) throw new ApiError(403, `Role ${role} is not permitted for this endpoint`)
   return { user_id: s.user.id, org_id, role }
 }

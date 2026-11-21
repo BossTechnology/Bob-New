@@ -142,12 +142,22 @@ async function readScope(db: PoolClient, q: Query): Promise<Scope> {
   // would read as not configured.
   if (q.channel && selected.length === 0) throw new UnknownChannelError(q.channel)
   const watermark = await readWatermark(db)
+  const { from, to } = resolveWindow(q, watermark)
+  return { channels, selected, watermark, window: { from, to, channelIds: selected.map((c) => c.id) } }
+}
+
+// At most 31 days per read (review of PR #30, point 3): with a pool of four
+// clients, an open-ended ?from=1970-01-01 could hold them all.
+export const MAX_WINDOW_MS = 31 * 24 * 3600_000
+
+export function resolveWindow(q: Query, watermark: Date | null): { from: Date; to: Date } {
   const to = q.to ? new Date(q.to) : ceilToBucket(watermark ?? new Date())
   const from = q.from ? new Date(q.from) : new Date(to.getTime() - 288 * BUCKET_MS)
   if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from >= to) {
     throw new BobConfigError('ventana inválida')
   }
-  return { channels, selected, watermark, window: { from, to, channelIds: selected.map((c) => c.id) } }
+  if (to.getTime() - from.getTime() > MAX_WINDOW_MS) throw new BobConfigError('ventana demasiado larga (máximo 31 días)')
+  return { from, to }
 }
 
 export async function readPerformance(orgId: string, q: Query, source?: Pool): Promise<PerformanceRead> {

@@ -10,6 +10,7 @@ export async function screenJson<T>(request: Request, read: (orgId: string, q: Q
   const gate = await screenGate()
   if (gate === 'not_found') return Response.json({ ok: false, error: 'Not found' }, { status: 404 })
   if (gate === 'login') return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+  if (gate === 'forbidden') return Response.json({ ok: false, error: 'Forbidden' }, { status: 403 })
   if (gate === 'unavailable') return Response.json({ ok: false, error: 'Identity unavailable' }, { status: 503 })
   const p = new URL(request.url).searchParams
   const q: Query = {

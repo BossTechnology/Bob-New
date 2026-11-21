@@ -8,7 +8,7 @@ import { test, after } from 'node:test'
 import assert from 'node:assert/strict'
 import pg from 'pg'
 import {
-  UnknownChannelError, asBobApp, readInteractions, readPerformance, readQuality,
+  MAX_WINDOW_MS, UnknownChannelError, asBobApp, readInteractions, readPerformance, readQuality, resolveWindow,
 } from './projection-reader.ts'
 import { buildMatrix } from './matrix.ts'
 import { buildInteractions, buildQuality } from './screens.ts'
@@ -125,4 +125,15 @@ test('an unknown channel is refused, not read as an empty selection', { skip }, 
   await assert.rejects(
     readPerformance(TENANT_A, { ...WINDOW, channel: 'bbbbbbbb-2222-4000-8000-00000000000c' }, pool!),
     UnknownChannelError)
+})
+
+test('the window is capped: a request cannot read back to 1970', () => {
+  const wm = new Date('2026-11-18T14:30:00Z')
+  assert.throws(() => resolveWindow({ from: '1970-01-01' }, wm), /ventana/)
+  assert.throws(() => resolveWindow({ from: '2026-01-01T00:00:00Z', to: '2026-11-18T00:00:00Z' }, wm), /ventana/)
+  const w = resolveWindow({ from: '2026-11-01T00:00:00Z', to: '2026-11-18T00:00:00Z' }, wm)
+  assert.ok(w.to.getTime() - w.from.getTime() <= MAX_WINDOW_MS)
+  // The default (24 h before the watermark) is well inside the cap.
+  const d = resolveWindow({}, wm)
+  assert.equal(d.to.getTime() - d.from.getTime(), 24 * 3600_000)
 })

@@ -49,6 +49,14 @@ test('tables and columns outside the allowlist are refused', () => {
   assert.throws(() => q('threshold_configs').select('id, organizations(name)'), /unsupported select/)
 })
 
+test('a refused query comes back as an Error with its code, not a plain object', async () => {
+  // Routes do `if (error) throw error`; a plain object reached the client as
+  // "[object Object]" (review of PR #30, point 5).
+  const r = await q('alerts').select('*')
+  assert.ok(r.error instanceof Error)
+  assert.equal(r.error.code, 'BOB_QUERY')
+})
+
 test('an update or a delete with no filter is refused', () => {
   assert.throws(() => q('text_rules').update({ name: 'x' }).compile(), /needs a filter/)
   assert.throws(() => q('text_rules').delete().compile(), /needs a filter/)

@@ -10,7 +10,7 @@ import {
   BobConfigError, UnknownChannelError, boxOrgId, readQuality, type QualityRead,
 } from '@/lib/bob/projection-reader.ts'
 import {
-  CellText, ChannelPicker, Declared, NoProjection, ReadError, ScreenNav, SliceThreeNote, Unavailable, windowQs,
+  CellText, ChannelPicker, Declared, NoProjection, ReadError, ScreenNav, SliceThreeNote, Unavailable, Forbidden, windowQs,
 } from '../screen-parts'
 import styles from '../performance/matrix.module.css'
 
@@ -19,7 +19,9 @@ export const dynamic = 'force-dynamic'
 type Search = Promise<{ from?: string; to?: string; channel?: string }>
 
 export default async function QualityPage({ searchParams }: { searchParams: Search }) {
-  if ((await requireScreen()) === 'unavailable') return <Unavailable />
+  const gate = await requireScreen()
+  if (gate === 'unavailable') return <Unavailable />
+  if (gate === 'forbidden') return <Forbidden />
   const q = await searchParams
   let read: QualityRead
   try {

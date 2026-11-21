@@ -11,6 +11,7 @@
 // unknown table or column is an error, not a silent drop.
 import type { Pool } from 'pg'
 import { asBobApp } from './db.ts'
+import { BobDbError } from './db-error.ts'
 
 const COMMON = ['id', 'org_id', 'created_at']
 export const TABLES: Record<string, { columns: string[]; jsonb?: string[] }> = {
@@ -35,7 +36,7 @@ export const TABLES: Record<string, { columns: string[]; jsonb?: string[] }> = {
   },
 }
 
-export type TableError = { message: string; code?: string }
+export type TableError = BobDbError
 export type TableResult = { data: any; error: TableError | null } // eslint-disable-line @typescript-eslint/no-explicit-any
 
 type Op = 'select' | 'insert' | 'update' | 'upsert' | 'delete'
@@ -91,23 +92,23 @@ export class TableQuery implements PromiseLike<TableResult> {
     try {
       sql = this.compile()
     } catch (e) {
-      return { data: null, error: { message: (e as Error).message, code: 'BOB_QUERY' } }
+      return { data: null, error: new BobDbError((e as Error).message, 'BOB_QUERY') }
     }
     try {
       const rows = await asBobApp(this.orgId, async (db) => (await db.query(sql.text, sql.values)).rows,
         this.source, { write: this.op !== 'select' })
       if (this.one) {
-        if (rows.length > 1) return { data: null, error: { message: 'more than one row', code: 'PGRST116' } }
+        if (rows.length > 1) return { data: null, error: new BobDbError('more than one row', 'PGRST116') }
         if (rows.length === 0) {
           return this.one === 'maybe' ? { data: null, error: null }
-            : { data: null, error: { message: 'no row', code: 'PGRST116' } }
+            : { data: null, error: new BobDbError('no row', 'PGRST116') }
         }
         return { data: rows[0], error: null }
       }
       return { data: this.op === 'select' || this.returning ? rows : null, error: null }
     } catch (e) {
       const err = e as { message?: string; code?: string }
-      return { data: null, error: { message: err.message ?? String(e), code: err.code } }
+      return { data: null, error: new BobDbError(err.message ?? String(e), err.code) }
     }
   }
 

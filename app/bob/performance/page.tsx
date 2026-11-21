@@ -9,7 +9,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireScreen } from '@/lib/bob/screen-gate.ts'
-import { ScreenNav, Unavailable, SliceThreeNote } from '../screen-parts'
+import { ScreenNav, Unavailable, Forbidden, SliceThreeNote } from '../screen-parts'
 import {
   ACTOR_LABEL, buildMatrix,
   type ActorType, type Cell, type Channel, type MatrixRow,
@@ -25,7 +25,9 @@ export const dynamic = 'force-dynamic'
 type Search = Promise<{ from?: string; to?: string; channel?: string }>
 
 export default async function PerformanceMatrixPage({ searchParams }: { searchParams: Search }) {
-  if ((await requireScreen()) === 'unavailable') return <Unavailable />
+  const gate = await requireScreen()
+  if (gate === 'unavailable') return <Unavailable />
+  if (gate === 'forbidden') return <Forbidden />
   const q = await searchParams
 
   let read: PerformanceRead

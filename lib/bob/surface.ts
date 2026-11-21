@@ -25,7 +25,8 @@ const SESSION: string[] = [
   '/api/config/responses/',
 ]
 
-// Next's own assets. Static files under public/ (icons) never reach the proxy.
+// Next's own assets. Files under public/ (the simulator, its icons) reach the
+// proxy and are off: no box screen uses them.
 const ASSETS = ['/_next/', '/favicon.ico']
 
 function matches(path: string, rule: string): boolean {

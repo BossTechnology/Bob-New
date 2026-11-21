@@ -8,7 +8,7 @@ import {
   BobConfigError, UnknownChannelError, boxOrgId, readInteractions, type InteractionsRead,
 } from '@/lib/bob/projection-reader.ts'
 import {
-  CellText, ChannelPicker, Declared, NoProjection, ReadError, ScreenNav, SliceThreeNote, Unavailable, windowQs,
+  CellText, ChannelPicker, Declared, NoProjection, ReadError, ScreenNav, SliceThreeNote, Unavailable, Forbidden, windowQs,
 } from '../screen-parts'
 import styles from '../performance/matrix.module.css'
 
@@ -18,7 +18,9 @@ type Search = Promise<{ from?: string; to?: string; channel?: string }>
 const minutes = (ms: number) => `${(ms / 60_000).toFixed(1)} min`
 
 export default async function InteractionsPage({ searchParams }: { searchParams: Search }) {
-  if ((await requireScreen()) === 'unavailable') return <Unavailable />
+  const gate = await requireScreen()
+  if (gate === 'unavailable') return <Unavailable />
+  if (gate === 'forbidden') return <Forbidden />
   const q = await searchParams
   let read: InteractionsRead
   try {

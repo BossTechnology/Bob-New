@@ -14,11 +14,13 @@
 - 61 tests (los en vivo sobre el fixture de BOb-engine recargado en `bob-v1`), lint y typecheck en verde. `npm run build` pasa al reintentar (el aviso de seguridad de Next 16.4.2 ya estaba).
 
 ## Pendiente
-- **P-1 · Papel del usuario en la caja.** `bob.users` no tiene política para `bob_app`: toda cuenta entra como `viewer` y las escrituras de `/api/config/*` dan 403. Dueño: BOb-engine (política) o Henry (P-5 de los insumos).
+- **P-1 · Papel del usuario en la caja.** Henry (2026-11-21): sin fila o `active` no verdadero = 403 en `/bob/*`, `/api/bob/*` y `/api/config/*`. Como `bob.users` no tiene política para `bob_app`, **hoy en la caja todo sale 403**. Dueño: BOb-engine (política) o Henry (P-5 de los insumos).
 - **P-3 · Slice 3.** `bob.v_cell_state` no existe; enganche en `lib/bob/cell-state.ts`.
 - **P-4 · El simulador.** `dashboard.html` sigue pintando cifras inventadas y está apagado en la caja. Conectarlo a `/api/bob/*`.
 - Las acciones de respuesta necesitan el binding de AutoBotz (Slice 6, PR #26 de BOb-engine); en la caja responden 409.
 - `npm run build` se corta una vez con `SecurityFatalError` (Next 16.4.2). Ya estaba en `main`.
+
+- Revisión del PR #30: hechos los puntos 1 a 5 y el chequeo de `session_user` privilegiado. **Falta el punto 6** (job de CI con Postgres; BOb-engine es público, se puede clonar en CI y correr `supabase start` + `load-world`).
 
 ## Bloqueado
 - Nada en este repo. P-1 espera respuesta.
