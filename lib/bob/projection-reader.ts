@@ -1,21 +1,24 @@
-// Reads BOb's projections for the Performance matrix.
+// Reads BOb's projections for the three demo screens: Performance,
+// Interactions and Quality.
 //
 // P5 §3.3 and §3.4: the application reads as `bob_app`, under the claim of one
-// `org_id`, and never with the service role. Every read here runs in one
-// read-only transaction that switches to `bob_app` and sets the claim, so the
-// tenant policy (`org_id = (auth.jwt() ->> 'org_id')::uuid`) applies to every
-// row returned. If the role switch does not hold, nothing is read.
+// `org_id`, and never with the service role. Every read here goes through
+// asBobApp (db.ts): one read-only transaction as bob_app with the claim set.
 //
-// BOB_DATABASE_URL is server-only: the box's `bob/app.env`, or locally the
+// The connection is the box's `bob/app.env` (runtime.ts), or locally the
 // BOb-engine Supabase stack. BOB_ORG_ID is the box's single organisation
 // (P5, one organisation per box; Q6 keeps it as provisioning configuration).
-import { Pool, type PoolClient } from 'pg'
+import type { Pool, PoolClient } from 'pg'
 import {
   BUCKET_MS, ceilToBucket,
   type ActorType, type Channel, type CountAggregate, type DurationAggregate,
 } from './matrix.ts'
+import { asBobApp } from './db.ts'
+import { hasCellStateView } from './cell-state.ts'
+import type { DurationByChannel, SentimentAggregate } from './screens.ts'
+import { BobConfigError, boxOrgId } from './runtime.ts'
 
-export class BobConfigError extends Error {}
+export { asBobApp, BobConfigError, boxOrgId }
 export class UnknownChannelError extends Error {}
 
 export const PROJECTIONS = [
@@ -38,43 +41,6 @@ const SEALED: Record<Projection, boolean> = {
   proj_metric_counts: true, proj_sentiment: true, proj_durations: true,
   proj_channel_health: true, proj_rum_signals: true, proj_actor_metrics: true,
   proj_detections: false, proj_deliveries: false,
-}
-
-let pool: Pool | null = null
-function getPool(): Pool {
-  const url = process.env.BOB_DATABASE_URL
-  if (!url) throw new BobConfigError('BOB_DATABASE_URL no está definida')
-  pool ??= new Pool({ connectionString: url, max: 4 })
-  return pool
-}
-
-export function boxOrgId(): string {
-  const id = process.env.BOB_ORG_ID
-  if (!id || !/^[0-9a-f-]{36}$/i.test(id)) throw new BobConfigError('BOB_ORG_ID no está definida o no es un UUID')
-  return id
-}
-
-// One transaction as bob_app under the tenant's claim. Exported for tests.
-export async function asBobApp<T>(
-  orgId: string, fn: (db: PoolClient) => Promise<T>, source: Pool = getPool(),
-): Promise<T> {
-  const db = await source.connect()
-  try {
-    await db.query('BEGIN READ ONLY')
-    await db.query('SET LOCAL ROLE bob_app')
-    await db.query("SELECT set_config('request.jwt.claims', $1, true)",
-      [JSON.stringify({ org_id: orgId, role: 'bob_app' })])
-    const { rows } = await db.query('SELECT current_user AS u')
-    if (rows[0]?.u !== 'bob_app') throw new Error(`lectura como ${rows[0]?.u}, no como bob_app`)
-    const out = await fn(db)
-    await db.query('COMMIT')
-    return out
-  } catch (e) {
-    await db.query('ROLLBACK').catch(() => {})
-    throw e
-  } finally {
-    db.release()
-  }
 }
 
 const num = (v: unknown) => (v === null || v === undefined ? 0 : Number(v))
@@ -162,29 +128,84 @@ export type PerformanceRead = {
   counts: CountAggregate[]
   responseTimes: DurationAggregate[]
   presence: Presence[]
+  cellStateView: boolean
 }
 
-export async function readPerformance(
-  orgId: string,
-  q: { from?: string; to?: string; channel?: string },
-  source?: Pool,
-): Promise<PerformanceRead> {
+type Query = { from?: string; to?: string; channel?: string }
+type Scope = { channels: Channel[]; selected: Channel[]; window: Window; watermark: Date | null }
+
+// Channels, the selection and the window, shared by the three screens.
+async function readScope(db: PoolClient, q: Query): Promise<Scope> {
+  const channels = await readChannels(db)
+  const selected = q.channel ? channels.filter((c) => c.id === q.channel) : channels
+  // An unknown id is not an empty selection: with nothing selected every row
+  // would read as not configured.
+  if (q.channel && selected.length === 0) throw new UnknownChannelError(q.channel)
+  const watermark = await readWatermark(db)
+  const to = q.to ? new Date(q.to) : ceilToBucket(watermark ?? new Date())
+  const from = q.from ? new Date(q.from) : new Date(to.getTime() - 288 * BUCKET_MS)
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from >= to) {
+    throw new BobConfigError('ventana inválida')
+  }
+  return { channels, selected, watermark, window: { from, to, channelIds: selected.map((c) => c.id) } }
+}
+
+export async function readPerformance(orgId: string, q: Query, source?: Pool): Promise<PerformanceRead> {
   return asBobApp(orgId, async (db) => {
-    const channels = await readChannels(db)
-    const selected = q.channel ? channels.filter((c) => c.id === q.channel) : channels
-    // An unknown id is not an empty selection: with nothing selected every row
-    // would read as not configured.
-    if (q.channel && selected.length === 0) throw new UnknownChannelError(q.channel)
-    const watermark = await readWatermark(db)
-    const to = q.to ? new Date(q.to) : ceilToBucket(watermark ?? new Date())
-    const from = q.from ? new Date(q.from) : new Date(to.getTime() - 288 * BUCKET_MS)
-    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from >= to) {
-      throw new BobConfigError('ventana inválida')
-    }
-    const w: Window = { from, to, channelIds: selected.map((c) => c.id) }
+    const scope = await readScope(db, q)
+    const w = scope.window
     const [counts, responseTimes, presence] = [
       await readMetricCounts(db, w), await readResponseTimes(db, w), await readPresence(db, w),
     ]
-    return { orgId, channels, selected, window: w, watermark, counts, responseTimes, presence }
+    return { orgId, ...scope, counts, responseTimes, presence, cellStateView: await hasCellStateView(db) }
+  }, source)
+}
+
+export async function readInteractionDurations(db: PoolClient, w: Window): Promise<DurationByChannel[]> {
+  const { rows } = await db.query(`
+    SELECT channel_id, count(*)::int AS rows, sum(n) AS n, sum(sum_ms) AS sum_ms,
+           count(*) FILTER (WHERE NOT sealed)::int AS open
+      FROM bob.proj_durations
+     WHERE measure = 'interaction_duration'
+       AND bucket_start >= $1 AND bucket_start < $2 AND channel_id = ANY($3::uuid[])
+     GROUP BY channel_id`, [w.from, w.to, w.channelIds])
+  return rows.map((r) => ({
+    channel_id: r.channel_id, rows: r.rows, n: num(r.n), sum_ms: num(r.sum_ms), open: r.open,
+  }))
+}
+
+export async function readSentiment(db: PoolClient, w: Window): Promise<SentimentAggregate[]> {
+  const { rows } = await db.query(`
+    SELECT source, state, count(*)::int AS rows, sum(reading_count) AS readings,
+           sum(closing_count) AS closings, count(*) FILTER (WHERE NOT sealed)::int AS open
+      FROM bob.proj_sentiment
+     WHERE bucket_start >= $1 AND bucket_start < $2 AND channel_id = ANY($3::uuid[])
+     GROUP BY source, state`, [w.from, w.to, w.channelIds])
+  return rows.map((r) => ({
+    source: r.source, state: r.state, rows: r.rows,
+    readings: num(r.readings), closings: num(r.closings), open: r.open,
+  }))
+}
+
+export type InteractionsRead = Scope & { orgId: string; durations: DurationByChannel[]; cellStateView: boolean }
+
+export async function readInteractions(orgId: string, q: Query, source?: Pool): Promise<InteractionsRead> {
+  return asBobApp(orgId, async (db) => {
+    const scope = await readScope(db, q)
+    const durations = await readInteractionDurations(db, scope.window)
+    return { orgId, ...scope, durations, cellStateView: await hasCellStateView(db) }
+  }, source)
+}
+
+export type QualityRead = Scope & {
+  orgId: string; sentiment: SentimentAggregate[]; counts: CountAggregate[]; cellStateView: boolean
+}
+
+export async function readQuality(orgId: string, q: Query, source?: Pool): Promise<QualityRead> {
+  return asBobApp(orgId, async (db) => {
+    const scope = await readScope(db, q)
+    const sentiment = await readSentiment(db, scope.window)
+    const counts = await readMetricCounts(db, scope.window)
+    return { orgId, ...scope, sentiment, counts, cellStateView: await hasCellStateView(db) }
   }, source)
 }

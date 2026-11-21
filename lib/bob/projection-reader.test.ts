@@ -7,8 +7,11 @@
 import { test, after } from 'node:test'
 import assert from 'node:assert/strict'
 import pg from 'pg'
-import { UnknownChannelError, asBobApp, readPerformance } from './projection-reader.ts'
+import {
+  UnknownChannelError, asBobApp, readInteractions, readPerformance, readQuality,
+} from './projection-reader.ts'
 import { buildMatrix } from './matrix.ts'
+import { buildInteractions, buildQuality } from './screens.ts'
 
 const URL = process.env.BOB_TEST_DATABASE_URL
 const TENANT_A = 'aaaaaaaa-0000-4000-8000-000000000001'
@@ -67,6 +70,55 @@ test('rows the feeder wrote as zeros read as zero, not no_row', { skip }, async 
   }
   // label_missing was never written there (lag NULL never seals): no_row.
   assert.equal(m.labelFailures.find((r) => r.spec.id === 'label_missing')!.cells.user.kind, 'no_row')
+})
+
+test('Interactions: no interaction_duration row reads as no_row, not 0', { skip }, async () => {
+  const read = await readInteractions(TENANT_A, WINDOW, pool!)
+  assert.deepEqual(read.durations, [])
+  const s = buildInteractions(read.durations, read.selected)
+  assert.equal(s.avgDuration.kind, 'no_row')
+  assert.equal(s.closed.kind, 'no_row')
+  for (const c of s.byChannel) assert.equal(c.avgDuration.kind, 'no_row')
+  assert.equal(s.sessions.kind, 'not_projection')
+  assert.equal(read.channels.length, 3)
+})
+
+test('Quality: ORGA reads its rows by state; MECA has none and is no_row', { skip }, async () => {
+  const read = await readQuality(TENANT_A, WINDOW, pool!)
+  const q = buildQuality(read.sentiment, read.counts, read.selected)
+  assert.equal(q.orga.total.kind, 'value')
+  assert.ok(q.orga.total.kind === 'value' && q.orga.total.value >= 2)
+  assert.equal(q.orga.states.s0.kind, 'no_row')
+  assert.equal(q.meca.total.kind, 'no_row')
+  for (const st of ['s0', 's1', 's2', 's3', 's4'] as const) assert.equal(q.meca.states[st].kind, 'no_row')
+  assert.deepEqual(q.meca.declaredBy, [])
+  assert.equal(q.nps.kind, 'not_projection')
+})
+
+test('Quality: the written label-failure zeros stay zeros', { skip }, async () => {
+  const read = await readQuality(TENANT_A, { ...WINDOW, channel: WEBSITE_A }, pool!)
+  const q = buildQuality(read.sentiment, read.counts, read.selected)
+  const kinds = Object.fromEntries(q.labelFailures.map((r) => [r.spec.id, r.cells.user.kind]))
+  assert.deepEqual(kinds, { abstained: 'zero', classifier_down: 'zero', label_missing: 'no_row' })
+})
+
+test('Quality: the claim scopes sentiment to the tenant', { skip }, async () => {
+  const a = await readQuality(TENANT_A, WINDOW, pool!)
+  const b = await readQuality(TENANT_B, WINDOW, pool!)
+  assert.equal(b.sentiment.some((s) => s.state === 's1'), false)
+  assert.equal(a.sentiment.some((s) => s.state === 's4'), false)
+})
+
+test('the Slice 3 view is looked for, not assumed', { skip }, async () => {
+  const read = await readInteractions(TENANT_A, WINDOW, pool!)
+  assert.equal(typeof read.cellStateView, 'boolean')
+})
+
+test('writes as bob_app are refused under a read transaction and allowed under a write one', { skip }, async () => {
+  await assert.rejects(asBobApp(TENANT_A, (db) => db.query(
+    "UPDATE bob.threshold_configs SET peak_mode = peak_mode WHERE false"), pool!))
+  await asBobApp(TENANT_A, (db) => db.query(
+    "UPDATE bob.threshold_configs SET peak_mode = peak_mode WHERE false"), pool!, { write: true })
 })
 
 test('an unknown channel is refused, not read as an empty selection', { skip }, async () => {
