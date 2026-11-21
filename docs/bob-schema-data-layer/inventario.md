@@ -16,8 +16,9 @@ BOb-engine (`bob-v1`, migraciones hasta `20261121100200`).
   su dueño.
 
 **La bandera:** `BOB_CAJA=1`. Con ella la app corre en modo caja: lo de (ii) y (iii) responde 404
-(`lib/bob/surface.ts`), lo de (i) lee `bob` como `bob_app` y la sesión se valida contra el GoTrue
-de la caja. Sin ella, la demo de Vercel sigue igual que hoy.
+(`lib/bob/surface.ts`, una lista de lo permitido: una ruta nueva nace apagada), lo de (i) lee `bob`
+como `bob_app` y la sesión se valida contra el GoTrue de la caja. Sin ella, la demo de Vercel
+sigue igual que hoy.
 
 ## Qué usa de verdad la demo
 
@@ -81,13 +82,15 @@ La reconciliación de fantasmas no se programa en BOb (pasa al feeder).
 | `/api/channels`, `/api/channels/:id` (canales de negocio) | `bob.channels` cambió (`source_key`, capacidades); el alta de canales es aprovisionamiento | **BOb-engine** |
 | `/api/admin/{orgs,seed,metrics/usage}` | Service role. La organización la crea el aprovisionamiento de la caja; `seed` es de la demo | **BOb-engine** |
 | `/auth/reset-password`, `/auth/confirm-reset` | Correo de GoTrue en la caja: no hay salida a internet en v1 | **Bzzz** (Henry) |
+| `public/dashboard.html`, `public/coop.html` (el simulador) | Pinta cifras inventadas; en una caja de cliente parecerían reales | **bob-web** (P-4) |
 | `lib/features.ts` | Nadie lo llama | — |
 
 ## Pendientes que salen del inventario
 
 - **P-1 · El papel del usuario en la caja.** `bob.users` solo tiene política para
   `authenticated`. Como `bob_app`, bajo el claim, no se ve ninguna fila. Mientras eso siga así,
-  toda cuenta entra como `viewer` (lee, no escribe). Dueño: BOb-engine (política de `users` para
+  toda cuenta entra como `viewer` (lee, no escribe): en la caja, las escrituras de
+  `/api/config/*` responden 403 hasta que se cierre. Dueño: BOb-engine (política de `users` para
   `bob_app`) o Henry (P-5 de los insumos).
 - **P-2 · «Sesiones».** Pregunta para Henry: ¿se pinta como `n` de `interaction_duration`
   (conversaciones cerradas en la ventana), como `handled` de `proj_actor_metrics`, o «sin
