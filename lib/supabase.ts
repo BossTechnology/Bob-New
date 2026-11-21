@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { isBox } from './bob/runtime.ts'
 
 type CookieToSet = { name: string; value: string; options: CookieOptions }
 
@@ -12,6 +13,8 @@ const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY
 // cron routes and service functions." Never call from a user-reachable path
 // without first validating the request.
 export function getServiceClient() {
+  // P5 §3.4: no BOb component in a box holds the service role.
+  if (isBox()) throw new Error('service role is not available in the box')
   if (!URL || !SERVICE) throw new Error('Supabase service env vars not configured')
   return createClient(URL, SERVICE, { auth: { persistSession: false } })
 }
@@ -21,6 +24,9 @@ export const getSupabase = getServiceClient
 
 // Route Handler client — respects RLS using the user's session cookie (§8.2).
 export async function getRouteClient() {
+  // In the box there is no PostgREST and no NEXT_PUBLIC_ configuration: bob is
+  // read through lib/bob/db.ts and the session through lib/bob/session.ts.
+  if (isBox()) throw new Error('PostgREST is not available in the box')
   if (!URL || !ANON) throw new Error('Supabase public env vars not configured')
   const cookieStore = await cookies()
   return createServerClient(URL, ANON, {

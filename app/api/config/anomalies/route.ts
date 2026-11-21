@@ -1,6 +1,6 @@
 // BOb v3 · POST /api/config/anomalies — create an anomaly rule (known or unknown).
 import { NextRequest } from 'next/server'
-import { getRouteClient } from '@/lib/supabase'
+import { configDb } from '@/lib/bob/config-db.ts'
 import { requireAuth } from '@/lib/auth'
 import { created, badReq, handle } from '@/lib/api-response'
 
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       keywords: body.keywords ?? null,
       freq_threshold: body.freq_threshold ?? null,
     }
-    const sb = await getRouteClient()
+    const sb = await configDb(org_id)
     const { data, error } = await sb.from('anomaly_rules').insert(row).select().single()
     if (error) throw error
     return created(data)

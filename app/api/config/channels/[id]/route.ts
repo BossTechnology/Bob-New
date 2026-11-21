@@ -2,7 +2,7 @@
 //          DELETE /api/config/channels/:id — delete a channel, first disconnecting
 //          it from any response_rules that reference it (confirmRemoveCh parity).
 import { NextRequest } from 'next/server'
-import { getRouteClient } from '@/lib/supabase'
+import { configDb } from '@/lib/bob/config-db.ts'
 import { requireAuth } from '@/lib/auth'
 import { ok, badReq, handle } from '@/lib/api-response'
 
@@ -17,7 +17,7 @@ export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: str
     if ('values' in body) patch.values = body.values
     if (Object.keys(patch).length === 1) return badReq('Nothing to update')
 
-    const sb = await getRouteClient()
+    const sb = await configDb(org_id)
     const { data, error } = await sb
       .from('notification_channels')
       .update(patch)
@@ -36,7 +36,7 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: str
   try {
     const { org_id } = await requireAuth(['admin', 'analyst'])
     const { id } = await ctx.params
-    const sb = await getRouteClient()
+    const sb = await configDb(org_id)
 
     // Disconnect this channel from every response rule that references it.
     const { data: refs, error: refErr } = await sb

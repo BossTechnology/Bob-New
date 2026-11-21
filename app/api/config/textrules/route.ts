@@ -1,6 +1,6 @@
 // BOb v3 · POST /api/config/textrules — create a content rule for a text metric.
 import { NextRequest } from 'next/server'
-import { getRouteClient } from '@/lib/supabase'
+import { configDb } from '@/lib/bob/config-db.ts'
 import { requireAuth } from '@/lib/auth'
 import { created, badReq, handle } from '@/lib/api-response'
 
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       condition: body.condition,
       value: body.value != null ? String(body.value) : null,
     }
-    const sb = await getRouteClient()
+    const sb = await configDb(org_id)
     const { data, error } = await sb.from('text_rules').insert(row).select().single()
     if (error) throw error
     return created(data)

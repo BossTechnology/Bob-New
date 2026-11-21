@@ -3,11 +3,13 @@
 // real projection rows, unpolished. Each cell shows what was read: a value, a
 // written zero, or no row at all. Nothing absent is turned into 0.
 //
-// Off unless BOB_PERF_MATRIX=1, and only with Supabase auth configured: it
-// answers 404 otherwise, so a box or a deployment never serves it by accident.
+// In the box (BOB_CAJA=1) it is one of the three screens, behind the box's
+// GoTrue session. Outside the box it is off unless BOB_PERF_MATRIX=1, never in
+// Vercel production, and only with Supabase auth configured (screen-gate.ts).
 import Link from 'next/link'
-import { notFound, redirect } from 'next/navigation'
-import { getRouteClient } from '@/lib/supabase'
+import { notFound } from 'next/navigation'
+import { requireScreen } from '@/lib/bob/screen-gate.ts'
+import { ScreenNav, Unavailable, Forbidden, SliceThreeNote } from '../screen-parts'
 import {
   ACTOR_LABEL, buildMatrix,
   type ActorType, type Cell, type Channel, type MatrixRow,
@@ -22,19 +24,10 @@ export const dynamic = 'force-dynamic'
 
 type Search = Promise<{ from?: string; to?: string; channel?: string }>
 
-// proxy.ts lets every route through while Supabase auth is not configured.
-// This route does not: without auth it does not exist, and with auth it needs a
-// session. Checked here so the page never relies on the matcher alone.
-async function requireSession() {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) notFound()
-  const supabase = await getRouteClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-}
-
 export default async function PerformanceMatrixPage({ searchParams }: { searchParams: Search }) {
-  if (process.env.BOB_PERF_MATRIX !== '1' || process.env.VERCEL_ENV === 'production') notFound()
-  await requireSession()
+  const gate = await requireScreen()
+  if (gate === 'unavailable') return <Unavailable />
+  if (gate === 'forbidden') return <Forbidden />
   const q = await searchParams
 
   let read: PerformanceRead
@@ -64,6 +57,7 @@ export default async function PerformanceMatrixPage({ searchParams }: { searchPa
 
   return (
     <main className={styles.page}>
+      <ScreenNav current="performance" />
       <div className={styles.sectionLabel}>RENDIMIENTO · proyecciones reales (bob_app)</div>
       <p className={styles.meta}>
         org <code>{read.orgId}</code> · ventana <code>{from.toISOString()}</code> →{' '}
@@ -91,6 +85,7 @@ export default async function PerformanceMatrixPage({ searchParams }: { searchPa
       </div>
 
       <Legend />
+      <SliceThreeNote present={read.cellStateView} />
 
       <div className={styles.sectionLabel}>Canales seleccionados</div>
       <ChannelTable channels={read.selected} />

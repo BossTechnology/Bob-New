@@ -3,10 +3,20 @@
 // export `proxy`). Functionality is unchanged. Implemented with @supabase/ssr
 // (the doc's @supabase/auth-helpers-nextjs is deprecated and not compatible
 // with Next 16 / React 19).
+//
+// BOB_CAJA=1 (BOb v1 inside a box) takes a different path, boxProxy()
+// (lib/bob/box-proxy.ts): an allowlist of routes, the session checked against
+// the box's GoTrue on every request, the role in bob.users, and failing
+// closed. See docs/bob-schema-data-layer/inventario.md.
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { isBox } from '@/lib/bob/runtime.ts'
+import { boxProxy } from '@/lib/bob/box-proxy.ts'
 
 type CookieToSet = { name: string; value: string; options: CookieOptions }
+
+// What the matcher used to leave out, outside the box.
+const STATIC = /^\/(?:_next\/image|favicon\.ico)$|\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|json|woff2?)$/
 
 // `/api/cron` is listed here because the scheduler calls it with a bearer token
 // and no session cookie. Without it the guard answered every scheduled run with
@@ -16,13 +26,20 @@ type CookieToSet = { name: string; value: string; options: CookieOptions }
 const PUBLIC_PATHS = ['/login', '/signup', '/demo', '/auth', '/api/health', '/api/ai', '/api/cron']
 
 export async function proxy(request: NextRequest) {
+  if (isBox()) return boxProxy(request)
   let response = NextResponse.next({ request })
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   const path = request.nextUrl.pathname
 
+  // Static files pass, as when the matcher left them out (it now sees them
+  // so that the box can close them).
+  if (STATIC.test(path)) return response
   if (PUBLIC_PATHS.some((p) => path.startsWith(p))) return response
+  // The static simulator stays public outside the box, as before the matcher
+  // listed it (it is only matched so the box can close it).
+  if (path.endsWith('.html')) return response
 
   // If Supabase isn't configured yet, don't hard-block (lets the seeded demo
   // dashboard load during setup). Auth enforcement activates once env is set.
@@ -48,7 +65,9 @@ export async function proxy(request: NextRequest) {
   return response
 }
 
-// Exclude Next internals and static assets (incl. the static dashboard.html).
+// Every request but Next's static chunks. In the box, boxProxy decides on
+// each one (an API route ending in .json is still a route: review of PR #30,
+// point 4). Outside the box, static files pass as before (STATIC above).
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:html|svg|png|jpg|jpeg|gif|webp|ico|css|js|json|woff2?)$).*)'],
+  matcher: ['/((?!_next/static).*)'],
 }

@@ -7,7 +7,7 @@
 // the [metricId] folder). Not in the original spec — added so the simulator
 // can persist edits instead of creating a duplicate row on every save.
 import { NextRequest } from 'next/server'
-import { getRouteClient } from '@/lib/supabase'
+import { configDb } from '@/lib/bob/config-db.ts'
 import { requireAuth } from '@/lib/auth'
 import { ok, badReq, handle } from '@/lib/api-response'
 
@@ -18,7 +18,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ metricId: 
   try {
     const { org_id } = await requireAuth(['admin', 'analyst', 'viewer'])
     const { metricId } = await ctx.params
-    const sb = await getRouteClient()
+    const sb = await configDb(org_id)
     const { data: rules, error } = await sb
       .from('text_rules')
       .select('id, name, condition, value')
@@ -63,7 +63,7 @@ export async function PUT(request: NextRequest, ctx: { params: Promise<{ metricI
     for (const k of UPDATABLE) if (k in body) patch[k] = k === 'value' && body[k] != null ? String(body[k]) : body[k]
     if (!Object.keys(patch).length) return badReq('No updatable fields provided')
 
-    const sb = await getRouteClient()
+    const sb = await configDb(org_id)
     const { data, error } = await sb
       .from('text_rules')
       .update(patch)
@@ -82,7 +82,7 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ metricI
   try {
     const { org_id } = await requireAuth(['admin', 'analyst'])
     const { metricId: id } = await ctx.params
-    const sb = await getRouteClient()
+    const sb = await configDb(org_id)
     const { error } = await sb.from('text_rules').delete().eq('id', id).eq('org_id', org_id)
     if (error) throw error
     return ok({ deleted: true })
