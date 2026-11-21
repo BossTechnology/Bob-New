@@ -6,19 +6,23 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types 'lib/**/*.test.ts'"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.106.2",
     "next": "16.4.2",
+    "pg": "^8.23.1",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^26",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
