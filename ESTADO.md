@@ -25,7 +25,7 @@
   
   La construcción es el PR #40 de BOb-engine (rama `slice-3-absent-not-zero`). Está abierto y no se fusiona hasta que Federico acepte la 0.6; antes falta corregir los ceros que el alimentador escribe para métricas que no cuenta. El enganche de `lib/bob/cell-state.ts` tiene que llamar a esa función.
 - **Matriz de Performance** (`/bob/performance`, PR #29, fusionado): cuando el Slice 3 esté fusionado, pasarla a `bob_cell_state` en un PR nuevo. Con eso entran los seis estados, los motivos y los marcadores D-18/D-19; hoy calcula «no configurado» solo con `channel_capabilities` e `idle_bound_seconds`.
-- **P-4 · El simulador.** Hecho en la rama `bob-simulator-real-data` (PR abierto, sin fusionar): en la caja pinta `/api/bob/*` y no inventa nada. Queda fuera: los paneles de configuración de reglas del simulador están ocultos en la caja; las reglas se editan por `/api/config/*`.
+- **P-4 · El simulador.** Hecho en la rama `bob-simulator-real-data` (PR abierto, sin fusionar): en la caja pinta `/api/bob/*` y no inventa nada. Umbrales: rama `bob-simulator-thresholds`, encima de la de P-4, edita en la caja los límites de Tiempo Prom. y de las cinco filas de conteo, bajo las claves del simulador (`threshold_configs` se diseñó como `metricCfg[mid]`). Sigue fuera: alertas, alarmas, acciones, anomalías y reglas de texto, y la evaluación de umbrales (Slice 5).
 - Las acciones de respuesta necesitan el binding de AutoBotz (Slice 6, PR #26 de BOb-engine); en la caja responden 409.
 - `npm run build` se corta una vez con `SecurityFatalError` (Next 16.4.2). Ya estaba en `main`.
 
