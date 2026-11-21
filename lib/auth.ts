@@ -2,6 +2,8 @@
 import { getRouteClient } from './supabase'
 import { ApiError } from './api-response'
 import type { AuthContext } from './types'
+import { isBox } from './bob/runtime.ts'
+import { requireBoxAuth } from './bob/box-auth.ts'
 
 function decodeJwtPayload(token: string): Record<string, unknown> {
   try {
@@ -22,6 +24,8 @@ function decodeJwtPayload(token: string): Record<string, unknown> {
 export async function requireAuth(
   allowedRoles: string[] = ['admin', 'analyst', 'viewer'],
 ): Promise<AuthContext> {
+  // In the box: GoTrue of the box, the box's org, the role from bob.users.
+  if (isBox()) return requireBoxAuth(allowedRoles)
   const supabase = await getRouteClient()
   const { data: { session }, error } = await supabase.auth.getSession()
   if (error || !session) throw new ApiError(401, 'Unauthorized')
