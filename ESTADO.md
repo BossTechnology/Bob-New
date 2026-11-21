@@ -13,14 +13,14 @@
 - `/api/config/*` (umbrales, anomalías, reglas de texto, canales de notificación, respuestas) contra `bob` como `bob_app` en la caja, con el mismo código de ruta. Fuera de la caja, PostgREST como antes.
 - 61 tests (los en vivo sobre el fixture de BOb-engine recargado en `bob-v1`), lint y typecheck en verde. `npm run build` pasa al reintentar (el aviso de seguridad de Next 16.4.2 ya estaba).
 
+- Revisión del PR #30 atendida: 403 sin fila en `bob.users`, errores genéricos en la caja, pool con topes, ventana de 31 días, proxy sobre todas las rutas, errores de tabla como `Error` con código, login privilegiado rechazado, CI con job en vivo (`.github/workflows/ci.yml`). 80 tests en verde en vivo con `BOB_REQUIRE_LIVE=1`.
+
 ## Pendiente
 - **P-1 · Papel del usuario en la caja.** Henry (2026-11-21): sin fila o `active` no verdadero = 403 en `/bob/*`, `/api/bob/*` y `/api/config/*`. Como `bob.users` no tiene política para `bob_app`, **hoy en la caja todo sale 403**. Dueño: BOb-engine (política) o Henry (P-5 de los insumos).
 - **P-3 · Slice 3.** `bob.v_cell_state` no existe; enganche en `lib/bob/cell-state.ts`.
 - **P-4 · El simulador.** `dashboard.html` sigue pintando cifras inventadas y está apagado en la caja. Conectarlo a `/api/bob/*`.
 - Las acciones de respuesta necesitan el binding de AutoBotz (Slice 6, PR #26 de BOb-engine); en la caja responden 409.
 - `npm run build` se corta una vez con `SecurityFatalError` (Next 16.4.2). Ya estaba en `main`.
-
-- Revisión del PR #30: hechos los puntos 1 a 5 y el chequeo de `session_user` privilegiado. **Falta el punto 6** (job de CI con Postgres; BOb-engine es público, se puede clonar en CI y correr `supabase start` + `load-world`).
 
 ## Bloqueado
 - Nada en este repo. P-1 espera respuesta.
@@ -30,6 +30,7 @@
 
 ## Notas de sesión
 <!-- AAAA-MM-DD: una o dos líneas -->
+- 2026-11-21 (tarde): el stack compartido `bob-v1` se movió al puerto 54322 y otra sesión lo reinicia a menudo; tras cada reinicio se pierde `GRANT bob_app`. Recargar con `scripts/ci/load-bob-world.mjs` antes de correr los tests.
 - 2026-11-21: modo caja probado con un GoTrue falso local y el stack `bob-v1` (login, lectura de las tres pantallas, 503 con GoTrue parado, arranque rechazado). El stack compartido lo reinició otra sesión a mitad de trabajo: recargar el fixture antes de los tests.
 - 2026-11-20: matriz de Performance sobre proyecciones reales (local, stack bob-v1 en 58322 con `GRANT bob_app TO postgres`). 11 tests; los 4 de lectura necesitan `BOB_TEST_DATABASE_URL`. El sabotaje «sin fila = 0» los tumba.
 - 2026-10-28: puente AutoBotz desactivado sin borrar nada (ruling 1 de Federico, 23 oct). Slice 6 lo reemplaza con el registro real.

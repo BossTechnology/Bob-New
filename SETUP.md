@@ -136,7 +136,16 @@ El stack `bob-v1` es compartido: recargar el fixture antes de los tests, no rese
 ```bash
 BOB_TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:<puerto>/postgres npm test
 ```
-Sin `BOB_TEST_DATABASE_URL` corren solo los tests puros; los de lectura se saltan.
+Sin `BOB_TEST_DATABASE_URL` corren solo los tests puros; los de lectura se saltan. Para cargar el
+fixture y el alimentador sin resetear el stack:
+
+```bash
+BOB_ENGINE_DIR=../BOb-engine SUPABASE_DB_URL=postgresql://postgres:postgres@127.0.0.1:<puerto>/postgres node scripts/ci/load-bob-world.mjs
+```
+
+En CI (`.github/workflows/ci.yml`) el job «Schema bob as bob_app» levanta el stack de BOb-engine en
+el commit fijado en `BOB_ENGINE_REF`, carga el fixture y corre todos los tests con
+`BOB_REQUIRE_LIVE=1`: ahí, sin base de datos, el test `live-guard` falla en vez de saltarse.
 
 ### Modo caja (`BOB_CAJA=1`)
 BOb v1 dentro de una caja (insumos de Bzzz, «lo mínimo de la etapa 4», §4.2). Inventario de lo que
@@ -163,10 +172,20 @@ En modo caja:
   Twilio, Slack, los crons, `/auth/signup`, `/demo` y el simulador `dashboard.html`.
 - Cada petición se valida contra GoTrue. GoTrue caído: 503, nunca `/login`. Token rechazado:
   `/login`. Las cookies de sesión son de BOb (`bob-at`, `bob-rt`, `httpOnly`).
+- Una cuenta sin fila en `bob.users`, o con `active` distinto de verdadero, recibe 403 en
+  `/bob/*`, `/api/bob/*` y `/api/config/*` (Henry, 2026-11-21). Mientras `bob.users` no tenga
+  política para `bob_app` (P-1), eso es toda cuenta.
+- Ningún error de la base llega al cliente: 503 si no responde, 4xx por código (409 duplicado,
+  403 RLS, 400 dato inválido, 404 sin fila), 500 genérico para lo demás; el detalle, al log.
+- La conexión tiene tope: 3 s para conseguir cliente, 5 s por sentencia, ventanas de lectura de
+  31 días como máximo.
+- El proxy ve todas las rutas salvo `_next/static`: una ruta apagada da 404 aunque acabe en
+  `.json`, `.js` o `.css`.
 - `/api/health` responde 503 si `bob_app` o GoTrue no contestan.
 - No arranca si falta configuración o si el entorno trae `SUPABASE_SERVICE_ROLE_KEY`,
   `JWT_SECRET`, `BOB_DATABASE_URL`, la credencial de migración o claves de salida
-  (`instrumentation.ts`).
+  (`instrumentation.ts`). Tampoco si el login de la base es superusuario o `BYPASSRLS` (o miembro
+  de uno); si la base aún no responde al arrancar, la primera lectura lo comprueba y se niega.
 
 ---
 

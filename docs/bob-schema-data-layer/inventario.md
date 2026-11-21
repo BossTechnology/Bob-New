@@ -47,8 +47,8 @@ El resto de `app/api/*` es el backend de la discovery: ninguna pantalla de la de
 | `/api/config/responses`, `/responses/:id` | PostgREST | `bob.response_rules`, sin los campos `webhook_*` (BOb-engine los quitó) |
 | `/api/health` | service role contra `organizations` | `SELECT 1` como `bob_app` y `GET /health` de GoTrue; 503 si alguno no responde |
 | `/auth/login`, `/auth/logout`, `/auth/refresh`, `/auth/me` | `@supabase/ssr` con `NEXT_PUBLIC_SUPABASE_*` | GoTrue de la caja por dentro (`BOB_GOTRUE_URL`, sin `/auth/v1`), en tiempo de ejecución |
-| `proxy.ts` | deja pasar todo sin configuración de Supabase; error de `getUser()` = sin usuario | falla cerrado: sin configuración, 503; GoTrue caído, 503; 401 de GoTrue, a `/login` |
-| `lib/auth.ts` `requireAuth` | `org_id` y `app_role` del JWT (hook de Supabase) | `org_id` de `BOB_ORG_ID`; papel de `bob.users` (ver pendiente P-1) |
+| `proxy.ts` | deja pasar todo sin configuración de Supabase; error de `getUser()` = sin usuario | falla cerrado: sin configuración, 503; GoTrue caído, 503; 401 de GoTrue, a `/login`; sin fila en `bob.users`, 403. Ve todas las rutas salvo `_next/static` |
+| `lib/auth.ts` `requireAuth` | `org_id` y `app_role` del JWT (hook de Supabase) | `org_id` de `BOB_ORG_ID`; papel de `bob.users`; sin fila o inactiva, 403 (ver P-1) |
 
 ## (ii) Se apaga en v1
 
@@ -87,11 +87,11 @@ La reconciliación de fantasmas no se programa en BOb (pasa al feeder).
 
 ## Pendientes que salen del inventario
 
-- **P-1 · El papel del usuario en la caja.** `bob.users` solo tiene política para
-  `authenticated`. Como `bob_app`, bajo el claim, no se ve ninguna fila. Mientras eso siga así,
-  toda cuenta entra como `viewer` (lee, no escribe): en la caja, las escrituras de
-  `/api/config/*` responden 403 hasta que se cierre. Dueño: BOb-engine (política de `users` para
-  `bob_app`) o Henry (P-5 de los insumos).
+- **P-1 · El papel del usuario en la caja.** Henry decidió (2026-11-21, «Sin fila, 403»): una
+  cuenta sin fila en `bob.users`, o con `active` distinto de verdadero, recibe 403 en `/bob/*`,
+  `/api/bob/*` y `/api/config/*`; no hay `viewer` por omisión. `bob.users` solo tiene política
+  para `authenticated`, así que como `bob_app` no se ve ninguna fila: **hoy en la caja toda cuenta
+  recibe 403**. Lo cierra BOb-engine con una política de `users` para `bob_app`.
 - **P-2 · «Sesiones».** Cerrado (Henry, 2026-11-21): se pinta «sin proyección» hasta que el
   contrato la nombre. Ni `n` de `interaction_duration` ni `handled` de `proj_actor_metrics`.
 - **P-3 · Slice 3.** Los estados de celda los resuelve `bob.v_cell_state`, que no existe. El
