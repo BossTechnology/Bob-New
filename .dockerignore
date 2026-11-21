@@ -1,0 +1,18 @@
+# Only what the build needs goes into the image context.
+.git
+.claude
+node_modules
+.next
+out
+coverage
+Documentation
+docs
+*.md
+!README.md
+.env
+.env.*
+!.env.local.example
+validate.py
+tsconfig.tsbuildinfo
+Dockerfile
+.dockerignore
