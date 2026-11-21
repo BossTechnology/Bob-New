@@ -3,7 +3,8 @@
 // real projection rows, unpolished. Each cell shows what was read: a value, a
 // written zero, or no row at all. Nothing absent is turned into 0.
 //
-// Local and preview only: it answers 404 on Vercel production.
+// Off unless BOB_PERF_MATRIX=1, and only with Supabase auth configured: it
+// answers 404 otherwise, so a box or a deployment never serves it by accident.
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getRouteClient } from '@/lib/supabase'
@@ -12,7 +13,8 @@ import {
   type ActorType, type Cell, type Channel, type MatrixRow,
 } from '@/lib/bob/matrix.ts'
 import {
-  BobConfigError, PROJECTIONS, boxOrgId, readPerformance, type PerformanceRead,
+  BobConfigError, PROJECTIONS, UnknownChannelError, boxOrgId, readPerformance,
+  type PerformanceRead,
 } from '@/lib/bob/projection-reader.ts'
 import styles from './matrix.module.css'
 
@@ -20,17 +22,18 @@ export const dynamic = 'force-dynamic'
 
 type Search = Promise<{ from?: string; to?: string; channel?: string }>
 
-// The same rule as proxy.ts: once Supabase auth is configured, a session is
-// required. Checked here too so the page never relies on the matcher alone.
+// proxy.ts lets every route through while Supabase auth is not configured.
+// This route does not: without auth it does not exist, and with auth it needs a
+// session. Checked here so the page never relies on the matcher alone.
 async function requireSession() {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) notFound()
   const supabase = await getRouteClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 }
 
 export default async function PerformanceMatrixPage({ searchParams }: { searchParams: Search }) {
-  if (process.env.VERCEL_ENV === 'production') notFound()
+  if (process.env.BOB_PERF_MATRIX !== '1' || process.env.VERCEL_ENV === 'production') notFound()
   await requireSession()
   const q = await searchParams
 
@@ -38,7 +41,11 @@ export default async function PerformanceMatrixPage({ searchParams }: { searchPa
   try {
     read = await readPerformance(boxOrgId(), q)
   } catch (e) {
-    const msg = e instanceof BobConfigError ? e.message : `no se pudo leer: ${(e as Error).message}`
+    if (e instanceof UnknownChannelError) notFound()
+    // Our own configuration messages are safe to show; a database error is
+    // logged on the server and never rendered.
+    if (!(e instanceof BobConfigError)) console.error('bob/performance: read failed', e)
+    const msg = e instanceof BobConfigError ? e.message : 'No se pudieron leer las proyecciones.'
     return (
       <main className={styles.page}>
         <div className={styles.sectionLabel}>RENDIMIENTO · proyecciones</div>
@@ -123,7 +130,7 @@ function Row({ row, actors }: { row: MatrixRow; actors: ActorType[] }) {
         {row.spec.label}
         <Source row={row} />
       </div>
-      <div className={styles.mTotal}><CellView cell={row.total} /></div>
+      <div className={styles.mTotal}><CellView cell={row.total} unit={isTime ? ' resp.' : ''} /></div>
       {actors.map((a) => (
         <div key={a} className={styles.mPct + (a === 'asa' ? ' ' + styles.ai : '')}>
           <CellView cell={row.cells[a]} time={isTime} pct={!isTime} />
@@ -152,13 +159,15 @@ function Source({ row }: { row: MatrixRow }) {
   )
 }
 
-function CellView({ cell, time = false, pct = false }: { cell: Cell; time?: boolean; pct?: boolean }) {
+function CellView({ cell, time = false, pct = false, unit = '' }: {
+  cell: Cell; time?: boolean; pct?: boolean; unit?: string
+}) {
   if (cell.kind === 'no_row') return <span className={styles.noRow} title="sin fila de proyección">sin fila</span>
   const open = cell.open > 0 ? <sup title={`${cell.open} de ${cell.rows} filas sin sellar`}>*</sup> : null
   if (cell.kind === 'zero') {
-    return <span className={styles.zero} title={`${cell.rows} filas, todas en cero`}>0{open}</span>
+    return <span className={styles.zero} title={`${cell.rows} filas, todas en cero`}>0{unit}{open}</span>
   }
-  const v = time ? `${(cell.value / 1000).toFixed(1)} s` : String(cell.value)
+  const v = time ? `${(cell.value / 1000).toFixed(1)} s` : `${cell.value}${unit}`
   return (
     <span title={`${cell.rows} filas`}>
       {v}{open}

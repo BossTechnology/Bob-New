@@ -7,13 +7,14 @@
 import { test, after } from 'node:test'
 import assert from 'node:assert/strict'
 import pg from 'pg'
-import { asBobApp, readPerformance } from './projection-reader.ts'
+import { UnknownChannelError, asBobApp, readPerformance } from './projection-reader.ts'
 import { buildMatrix } from './matrix.ts'
 
 const URL = process.env.BOB_TEST_DATABASE_URL
 const TENANT_A = 'aaaaaaaa-0000-4000-8000-000000000001'
 const TENANT_B = 'bbbbbbbb-0000-4000-8000-000000000002'
 const WHATSAPP_A = 'aaaaaaaa-2222-4000-8000-000000000001'
+const WEBSITE_A = 'aaaaaaaa-2222-4000-8000-00000000000b'
 const WINDOW = { from: '2026-11-18T14:00:00Z', to: '2026-11-18T14:30:00Z' }
 const skip = URL ? false : 'BOB_TEST_DATABASE_URL not set'
 const pool = URL ? new pg.Pool({ connectionString: URL, max: 2 }) : null
@@ -53,4 +54,23 @@ test('the claim scopes the read: tenant B sees none of tenant A', { skip }, asyn
   assert.ok(b.channels.length > 0)
   assert.equal(b.channels.some((c) => c.id.startsWith('aaaaaaaa')), false)
   assert.equal(b.presence.some((p) => p.channel_id?.startsWith('aaaaaaaa')), false)
+})
+
+test('rows the feeder wrote as zeros read as zero, not no_row', { skip }, async () => {
+  // Website, 14:20: abstained and classifier_down written with event_count 0.
+  const read = await readPerformance(TENANT_A, { ...WINDOW, channel: WEBSITE_A }, pool!)
+  const m = buildMatrix(read.counts, read.responseTimes, read.selected)
+  for (const id of ['abstained', 'classifier_down']) {
+    const row = m.labelFailures.find((r) => r.spec.id === id)!
+    assert.equal(row.cells.user.kind, 'zero', id)
+    assert.equal(row.total.kind, 'zero', id)
+  }
+  // label_missing was never written there (lag NULL never seals): no_row.
+  assert.equal(m.labelFailures.find((r) => r.spec.id === 'label_missing')!.cells.user.kind, 'no_row')
+})
+
+test('an unknown channel is refused, not read as an empty selection', { skip }, async () => {
+  await assert.rejects(
+    readPerformance(TENANT_A, { ...WINDOW, channel: 'bbbbbbbb-2222-4000-8000-00000000000c' }, pool!),
+    UnknownChannelError)
 })

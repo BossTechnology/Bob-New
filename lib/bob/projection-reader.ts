@@ -16,6 +16,7 @@ import {
 } from './matrix.ts'
 
 export class BobConfigError extends Error {}
+export class UnknownChannelError extends Error {}
 
 export const PROJECTIONS = [
   'proj_metric_counts', 'proj_sentiment', 'proj_durations', 'proj_channel_health',
@@ -171,6 +172,9 @@ export async function readPerformance(
   return asBobApp(orgId, async (db) => {
     const channels = await readChannels(db)
     const selected = q.channel ? channels.filter((c) => c.id === q.channel) : channels
+    // An unknown id is not an empty selection: with nothing selected every row
+    // would read as not configured.
+    if (q.channel && selected.length === 0) throw new UnknownChannelError(q.channel)
     const watermark = await readWatermark(db)
     const to = q.to ? new Date(q.to) : ceilToBucket(watermark ?? new Date())
     const from = q.from ? new Date(q.from) : new Date(to.getTime() - 288 * BUCKET_MS)
