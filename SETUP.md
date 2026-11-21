@@ -181,11 +181,14 @@ En modo caja:
   31 días como máximo.
 - El proxy ve todas las rutas salvo `_next/static`: una ruta apagada da 404 aunque acabe en
   `.json`, `.js` o `.css`.
-- `/api/health` responde 503 si `bob_app` o GoTrue no contestan.
+- `/api/health` responde 503 si `bob_app` o GoTrue no contestan, en unos 2 s (las dos
+  comprobaciones en paralelo, 2 s cada una), dentro de los 5 s del healthcheck de Bzzz.
 - No arranca si falta configuración o si el entorno trae `SUPABASE_SERVICE_ROLE_KEY`,
   `JWT_SECRET`, `BOB_DATABASE_URL`, la credencial de migración o claves de salida
   (`instrumentation.ts`). Tampoco si el login de la base es superusuario o `BYPASSRLS` (o miembro
   de uno); si la base aún no responde al arrancar, la primera lectura lo comprueba y se niega.
+  Cuando se niega a arrancar, el proceso sale con código 1 (`lib/bob/startup.ts`): Next solo
+  registra un error de `register()`, y el contenedor se quedaba `running` respondiendo 500.
 
 ---
 

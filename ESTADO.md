@@ -12,16 +12,17 @@
 - Pantallas `/bob/interactions` y `/bob/quality` (más `/api/bob/*`) sobre `proj_durations`, `proj_sentiment` y `proj_metric_counts`; «sin fila» nunca es 0; Sesiones y NPS «sin proyección» (P-2 cerrado por Henry el 2026-11-21: Sesiones sigue así hasta que el contrato la nombre).
 - `/api/config/*` (umbrales, anomalías, reglas de texto, canales de notificación, respuestas) contra `bob` como `bob_app` en la caja, con el mismo código de ruta. Fuera de la caja, PostgREST como antes.
 - 80 tests (los en vivo sobre el fixture de BOb-engine recargado en `bob-v1`), lint y typecheck en verde. `npm run build` pasa al reintentar (el aviso de seguridad de Next 16.4.2 ya estaba).
+- Hallazgos de la imagen local (sesión de insumos, PR #31), en la rama `bob-box-startup-health`: el arranque rechazado ahora sale del proceso con código 1 (visto con `next dev`: sale con los motivos), y `/api/health` responde 503 en ~2,1 s contra una base y un GoTrue que no contestan (antes ~6 s; 11 s en su imagen).
 - Revisión del PR #30 atendida: 403 sin fila en `bob.users`, errores genéricos en la caja, pool con topes, ventana de 31 días, proxy sobre todas las rutas, errores de tabla como `Error` con código, login privilegiado rechazado, CI con job en vivo (`.github/workflows/ci.yml`). 80 tests en verde en vivo con `BOB_REQUIRE_LIVE=1`.
-- CI en GitHub (`5625cfe`): los dos jobs nuevos («Lint, typecheck and unit tests» y «Schema bob as bob_app (live tests)») y los dos de Vercel en verde. Auto-fix encendido en el PR #30; PR fusionable, sin fusionar.
+- CI en GitHub (`5625cfe`): los dos jobs nuevos («Lint, typecheck and unit tests» y «Schema bob as bob_app (live tests)») y los dos de Vercel en verde. El PR #30 se fusionó a `main` (`b4a7c72`).
 
 ## Pendiente
-- **P-1 · Papel del usuario en la caja.** Henry (2026-11-21): sin fila o `active` no verdadero = 403 en `/bob/*`, `/api/bob/*` y `/api/config/*`. Como `bob.users` no tiene política para `bob_app`, **hoy en la caja todo sale 403**. Lo cierra BOb-engine con una política de `bob.users` para `bob_app`; entonces el test P-1 de `lib/bob/roles.test.ts` falla a propósito y hay que afirmar ahí el rol del fixture.
+- **P-1 · Papel del usuario en la caja.** Henry (2026-11-21): sin fila o `active` no verdadero = 403 en `/bob/*`, `/api/bob/*` y `/api/config/*`. Como `bob.users` no tiene política para `bob_app`, **hoy en la caja todo sale 403**. BOb-engine lo cerró en su #34 (`bob_app` lee los usuarios de su organización). En bob-web falta el ajuste: los tests de papeles para el nuevo comportamiento (`8b1add5`) y fijar el CI a un BOb-engine con #34 (`BOB_ENGINE_REF`), en un PR aparte.
 - **P-3 · Slice 3.** La spec ya está fusionada en BOb-engine (PRs #27, #28, #30 y #32), pero no es `bob.v_cell_state`:
   - es la función `bob_cell_state(org, channels[], from, to)`, invoker, bajo RLS (R4);
   - al lado van `bob_cell_rollup`, con cobertura, y `v_ai_cell_state`, una vista definer para BObee (R6).
   
-  La construcción va en su propia sesión (slice-3-build, rama `slice-3-absent-not-zero-build` de BOb-engine) y termina en un PR abierto. El enganche de `lib/bob/cell-state.ts` tiene que llamar a esa función.
+  La construcción es el PR #40 de BOb-engine (rama `slice-3-absent-not-zero`). Está abierto y no se fusiona hasta que Federico acepte la 0.6; antes falta corregir los ceros que el alimentador escribe para métricas que no cuenta. El enganche de `lib/bob/cell-state.ts` tiene que llamar a esa función.
 - **Matriz de Performance** (`/bob/performance`, PR #29, fusionado): cuando el Slice 3 esté fusionado, pasarla a `bob_cell_state` en un PR nuevo. Con eso entran los seis estados, los motivos y los marcadores D-18/D-19; hoy calcula «no configurado» solo con `channel_capabilities` e `idle_bound_seconds`.
 - **P-4 · El simulador.** `dashboard.html` sigue pintando cifras inventadas y está apagado en la caja. Conectarlo a `/api/bob/*`.
 - Las acciones de respuesta necesitan el binding de AutoBotz (Slice 6, PR #26 de BOb-engine); en la caja responden 409.
