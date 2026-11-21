@@ -11,16 +11,22 @@
 ## Pendiente
 - Grill del Slice 3: corre en su propia sesión («Grill del Slice 3: ausente no es cero», worktree de BOb-engine), con `docs/slice-2-matrix/nota-slice-3.md` como entrada. Ya va por la Q14. D-14 sigue con tres estados, y el guion sirve para `not_observed` y `off_shift`, distinguidos por estado y motivo (opción A). La spec incluye los marcadores de D-14.
 - Cuando esa spec cierre, la matriz tiene que leer `bob_source_key_unset()` (D-19) y `telemetry_started_at` (D-18). Hoy calcula «no configurado» solo con `channel_capabilities` e `idle_bound_seconds`.
-- El texto exacto del Slice 3 y sus cuatro consumidores solo están en el Word adjunto a BOB-7 (`BOb_v1_Remaining_Work_2026-11-10.docx`). No se ha descargado.
+- Word de BOB-7 (`BOb_v1_Remaining_Work_2026-11-10.docx`, md5 `8365ae54…`) descargado con OK de Henry. No está en el repo. Para el Slice 3 dice:
+  - un solo mecanismo para nueve reglas;
+  - cuatro consumidores: los gráficos, la matriz de Performance, el panel de sentimiento y BObee;
+  - DONE: FR-32, UI-03, PR-10 y SR-2 pasan contra una sola implementación compartida.
+  
+  Los pasajes se le enviaron a la sesión del grill.
 - La vista toma el `org_id` de `BOB_ORG_ID` (una organización por caja), no del JWT del usuario: el login de la demo es otro proyecto de Supabase. Cuando la app corra en la caja, decidir si además se exige que coincidan (P5 §3.3).
 - `npm run build` compila, pero termina con `SecurityFatalError`: Next 16.4.2 tiene un aviso de seguridad. Ya estaba en `main` y no lo toca este PR.
 - Comprobar en la demo desplegada que el panel AutoBotz carga y que guardar un binding no envía nada a `/api/config/autobotz`. En local ya se vio; en producción no, porque pide sesión.
 
 ## Bloqueado
-- Nada.
+- Pregunta a Federico en BOB-7 (Relevo), con el turno pasado a él: ¿son cuatro o siete los consumidores del Slice 3? El Word dice «four consumers» en el §2 y «seven consumers» en el §3, y las instrucciones de BOB-7 dicen cuatro. La lista completa decide qué comparte la implementación del DONE del Slice 3.
 
 ## Siguiente paso
 - Henry revisa el PR #29.
+- Cuando Federico conteste en BOB-7, pasar la respuesta a la sesión del grill del Slice 3 (PR #27).
 - Antes de que la cadena de migraciones de BOb-engine llegue al proyecto de Supabase compartido, revisar qué más de la demo depende del esquema anterior al renombre (F-11). Con el puente apagado, AutoBotz ya no es uno de esos puntos.
 
 ## Notas de sesión
