@@ -4,6 +4,7 @@ Una línea por cambio entregado, en lenguaje de usuario.
 
 ## Sin publicar
 - Rendimiento, Interacciones, Calidad y el simulador pintan el estado de cada celda que resuelve BOb (Slice 3): «No aplica», «No configurado» con su motivo, «Pendiente», «—» (no observado) o la cifra; el motivo completo y la cobertura van en el título. Sin el Slice 3 en la base, se pintan como antes.
+- En la caja, el simulador deja editar el umbral (superior e inferior) de Tiempo Prom., Resueltos, Abandonados, Desambiguación, Derivaciones y Alucinaciones; se guarda en `bob` con un papel admin o analyst. Nada lo evalúa todavía.
 - El simulador (`dashboard.html`) pinta los datos de `bob` cuando `/api/bob/*` responde (en la caja): deja de inventar cifras, muestra «sin fila» y «sin proyección», oculta BObee, alertas, alarmas, acciones y los paneles de detalle, y los botones Ahora, Hoy, Esta semana y Este mes leen esa ventana. En la caja, `/` abre el simulador. Fuera de la caja sigue siendo el simulador de siempre.
 - Modo caja: si no puede arrancar, el proceso sale (el contenedor ya no queda `running`); `/api/health` responde 503 en unos 2 s cuando la base o GoTrue no contestan.
 - Modo caja: una cuenta sin fila activa en `bob.users` recibe 403; los errores de la base no llegan al cliente; la conexión tiene tope de tiempo y la ventana de lectura, de 31 días; el proxy cierra también las rutas apagadas que acaban en `.json`, `.js` o `.css`; no arranca con un login de base privilegiado.
