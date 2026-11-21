@@ -11,22 +11,23 @@
 - Sesión contra el GoTrue de la caja en su raíz, en cada petición: GoTrue caído = 503 (visto con un GoTrue falso parado), token rechazado = `/login`. Lista de rutas servidas (`lib/bob/surface.ts`); lo demás, 404.
 - Pantallas `/bob/interactions` y `/bob/quality` (más `/api/bob/*`) sobre `proj_durations`, `proj_sentiment` y `proj_metric_counts`; «sin fila» nunca es 0; Sesiones y NPS «sin proyección» (P-2 cerrado por Henry el 2026-11-21: Sesiones sigue así hasta que el contrato la nombre).
 - `/api/config/*` (umbrales, anomalías, reglas de texto, canales de notificación, respuestas) contra `bob` como `bob_app` en la caja, con el mismo código de ruta. Fuera de la caja, PostgREST como antes.
+- P-1 cerrado por BOb-engine #34: `bob_app` lee los usuarios de su organización. Henry decidió «sin fila, 403»: sin fila, inactiva, de otra organización o con papel `service`/`demo`, 403; un admin activo entra con su papel (5 tests en vivo en `lib/bob/roles.test.ts`).
 - 80 tests (los en vivo sobre el fixture de BOb-engine recargado en `bob-v1`), lint y typecheck en verde. `npm run build` pasa al reintentar (el aviso de seguridad de Next 16.4.2 ya estaba).
 - Revisión del PR #30 atendida: 403 sin fila en `bob.users`, errores genéricos en la caja, pool con topes, ventana de 31 días, proxy sobre todas las rutas, errores de tabla como `Error` con código, login privilegiado rechazado, CI con job en vivo (`.github/workflows/ci.yml`). 80 tests en verde en vivo con `BOB_REQUIRE_LIVE=1`.
 - CI en GitHub (`5625cfe`): los dos jobs nuevos («Lint, typecheck and unit tests» y «Schema bob as bob_app (live tests)») y los dos de Vercel en verde. Auto-fix encendido en el PR #30; PR fusionable, sin fusionar.
 
 ## Pendiente
-- **P-1 · Papel del usuario en la caja.** Henry (2026-11-21): sin fila o `active` no verdadero = 403 en `/bob/*`, `/api/bob/*` y `/api/config/*`. Como `bob.users` no tiene política para `bob_app`, **hoy en la caja todo sale 403**. Lo cierra BOb-engine con una política de `bob.users` para `bob_app`; entonces el test P-1 de `lib/bob/roles.test.ts` falla a propósito y hay que afirmar ahí el rol del fixture.
+- **CI fijado a BOb-engine con #34.** `BOB_ENGINE_REF` en `.github/workflows/ci.yml` pasa a `6be2909` (incluye #33, #34 y #35). El cambio está en el árbol sin commitear: los permisos de la sesión no dejan commitear `.github/workflows`; lo commitea Henry.
 - **P-3 · Slice 3.** `bob.v_cell_state` no existe; enganche en `lib/bob/cell-state.ts`.
 - **P-4 · El simulador.** `dashboard.html` sigue pintando cifras inventadas y está apagado en la caja. Conectarlo a `/api/bob/*`.
 - Las acciones de respuesta necesitan el binding de AutoBotz (Slice 6, PR #26 de BOb-engine); en la caja responden 409.
 - `npm run build` se corta una vez con `SecurityFatalError` (Next 16.4.2). Ya estaba en `main`.
 
 ## Bloqueado
-- Nada en este repo. P-1 espera la política de BOb-engine: hasta entonces la caja no es usable (todo 403).
+- Nada.
 
 ## Siguiente paso
-- Que Henry revise y fusione el PR #30. Con P-1 cerrado, probar lectura y escritura de reglas en la caja de punta a punta. Luego P-4 (simulador sobre `/api/bob/*`) y la imagen (`output: 'standalone'`, Dockerfile), que no entran en este PR.
+- Que Henry revise y fusione el PR #30. Probar lectura y escritura de reglas en la caja de punta a punta con una cuenta admin (no hecho tras #34). Luego P-4 (simulador sobre `/api/bob/*`) y la imagen (`output: 'standalone'`, Dockerfile), que no entran en este PR.
 
 ## Notas de sesión
 <!-- AAAA-MM-DD: una o dos líneas -->

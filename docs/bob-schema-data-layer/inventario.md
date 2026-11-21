@@ -89,9 +89,10 @@ La reconciliación de fantasmas no se programa en BOb (pasa al feeder).
 
 - **P-1 · El papel del usuario en la caja.** Henry decidió (2026-11-21, «Sin fila, 403»): una
   cuenta sin fila en `bob.users`, o con `active` distinto de verdadero, recibe 403 en `/bob/*`,
-  `/api/bob/*` y `/api/config/*`; no hay `viewer` por omisión. `bob.users` solo tiene política
-  para `authenticated`, así que como `bob_app` no se ve ninguna fila: **hoy en la caja toda cuenta
-  recibe 403**. Lo cierra BOb-engine con una política de `users` para `bob_app`.
+  `/api/bob/*` y `/api/config/*`; no hay `viewer` por omisión. Tampoco sirve un papel fuera de
+  admin, analyst y viewer (`service`, `demo`). **Cerrado** por BOb-engine #34 (2026-11-21):
+  `bob_app` lee los usuarios de su organización (`app_reads_org_users`), así que un admin activo
+  de la caja entra con su papel.
 - **P-2 · «Sesiones».** Cerrado (Henry, 2026-11-21): se pinta «sin proyección» hasta que el
   contrato la nombre. Ni `n` de `interaction_duration` ni `handled` de `proj_actor_metrics`.
 - **P-3 · Slice 3.** Los estados de celda los resuelve `bob.v_cell_state`, que no existe. El
