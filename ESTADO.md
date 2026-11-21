@@ -25,7 +25,7 @@
   
   La construcción es el PR #40 de BOb-engine (rama `slice-3-absent-not-zero`). Está abierto y no se fusiona hasta que Federico acepte la 0.6; antes falta corregir los ceros que el alimentador escribe para métricas que no cuenta. El enganche de `lib/bob/cell-state.ts` tiene que llamar a esa función.
 - **Matriz de Performance** (`/bob/performance`, PR #29, fusionado): cuando el Slice 3 esté fusionado, pasarla a `bob_cell_state` en un PR nuevo. Con eso entran los seis estados, los motivos y los marcadores D-18/D-19; hoy calcula «no configurado» solo con `channel_capabilities` e `idle_bound_seconds`.
-- **P-4 · El simulador.** `dashboard.html` sigue pintando cifras inventadas y está apagado en la caja. Conectarlo a `/api/bob/*`.
+- **P-4 · El simulador.** Hecho en la rama `bob-simulator-real-data` (PR abierto, sin fusionar): en la caja pinta `/api/bob/*` y no inventa nada. Queda fuera: los paneles de configuración de reglas del simulador están ocultos en la caja; las reglas se editan por `/api/config/*`.
 - Las acciones de respuesta necesitan el binding de AutoBotz (Slice 6, PR #26 de BOb-engine); en la caja responden 409.
 - `npm run build` se corta una vez con `SecurityFatalError` (Next 16.4.2). Ya estaba en `main`.
 
@@ -41,6 +41,7 @@
 
 ## Notas de sesión
 <!-- AAAA-MM-DD: una o dos líneas -->
+- 2026-11-21 (P-4): simulador probado en modo caja local (GoTrue falso, login temporal `bob_web_e2e` ya borrado): las tres pantallas leen `bob`, Este Mes pide `range=month&tz=300`, y una lectura fallida deja «—» con aviso en rojo. Fuera de la caja la API da 404 y la simulación sigue.
 - 2026-11-21: revisión del PR #27 de BOb-engine (spec del Slice 3) publicada como comentario; sus siete puntos quedaron resueltos en main con los PRs #28 y #30. Arrancó la construcción del Slice 3 en su propia sesión. Las tres notas de estado de la rama del PR #29 (`ab04e33`, `079e6f5`, `081641b`) no entraron en el merge; su contenido vigente está aquí.
 - 2026-11-21 (noche): revisión del PR #30 atendida y CI añadido. El commit del workflow lo hizo Henry a mano (los permisos de la sesión no dejan commitear `.github/workflows`). Las fallas en vivo vistas a medio camino eran del stack compartido (reinicios, `GRANT bob_app` perdido, contenedor «unhealthy» con `select 1` de 5 s), no del código.
 - 2026-11-21 (tarde): el stack compartido `bob-v1` se movió al puerto 54322 y otra sesión lo reinicia a menudo; tras cada reinicio se pierde `GRANT bob_app`. Recargar con `scripts/ci/load-bob-world.mjs` antes de correr los tests.

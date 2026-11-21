@@ -15,6 +15,8 @@ const PUBLIC: string[] = ['/login', '/auth/login', '/api/health']
 // without the slash.
 const SESSION: string[] = [
   '/',
+  // The simulator, painting bob's projections instead of inventing (P-4).
+  '/dashboard.html', '/bob-live.mjs',
   '/auth/logout', '/auth/refresh', '/auth/me',
   '/bob/',
   '/api/bob/',
@@ -25,8 +27,8 @@ const SESSION: string[] = [
   '/api/config/responses/',
 ]
 
-// Next's own assets. Files under public/ (the simulator, its icons) reach the
-// proxy and are off: no box screen uses them.
+// Next's own assets. Other files under public/ reach the proxy and are off,
+// but for the simulator and its painter, named in SESSION.
 const ASSETS = ['/_next/', '/favicon.ico']
 
 function matches(path: string, rule: string): boolean {

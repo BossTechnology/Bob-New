@@ -131,7 +131,7 @@ export type PerformanceRead = {
   cellStateView: boolean
 }
 
-type Query = { from?: string; to?: string; channel?: string }
+type Query = { from?: string; to?: string; channel?: string; range?: string; tz?: string }
 type Scope = { channels: Channel[]; selected: Channel[]; window: Window; watermark: Date | null }
 
 // Channels, the selection and the window, shared by the three screens.
@@ -150,9 +150,30 @@ async function readScope(db: PoolClient, q: Query): Promise<Scope> {
 // clients, an open-ended ?from=1970-01-01 could hold them all.
 export const MAX_WINDOW_MS = 31 * 24 * 3600_000
 
+// The simulator's buttons (P-4): now, today, this week, this month. The start
+// is the viewer's local midnight; `tz` is their offset in minutes with the sign
+// of Date.getTimezoneOffset(). The day is the one the window's last instant
+// falls in, so a watermark right on midnight reads the day that just ended.
+const RANGES = ['now', 'today', 'week', 'month'] as const
+const MAX_TZ_MIN = 14 * 60
+
+function rangeStart(range: string, tz: string | undefined, to: Date): Date {
+  if (!(RANGES as readonly string[]).includes(range)) throw new BobConfigError('ventana inválida')
+  if (range === 'now') return new Date(to.getTime() - BUCKET_MS)
+  const offset = tz === undefined ? 0 : Number(tz)
+  if (!Number.isInteger(offset) || Math.abs(offset) > MAX_TZ_MIN) throw new BobConfigError('ventana inválida')
+  // Local wall-clock time, carried in the UTC fields of a Date.
+  const local = new Date(to.getTime() - 1 - offset * 60_000)
+  const day = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate())
+  const start = range === 'today' ? day
+    : range === 'week' ? day - local.getUTCDay() * 86_400_000
+      : Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), 1)
+  return new Date(start + offset * 60_000)
+}
+
 export function resolveWindow(q: Query, watermark: Date | null): { from: Date; to: Date } {
   const to = q.to ? new Date(q.to) : ceilToBucket(watermark ?? new Date())
-  const from = q.from ? new Date(q.from) : new Date(to.getTime() - 288 * BUCKET_MS)
+  const from = q.from ? new Date(q.from) : q.range ? rangeStart(q.range, q.tz, to) : new Date(to.getTime() - 288 * BUCKET_MS)
   if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from >= to) {
     throw new BobConfigError('ventana inválida')
   }
