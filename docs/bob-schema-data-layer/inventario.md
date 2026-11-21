@@ -69,7 +69,7 @@ La reconciliación de fantasmas no se programa en BOb (pasa al feeder).
 
 | Qué | Por qué no se pasa | Dueño |
 |---|---|---|
-| «Sesiones» de INTERACCIONES | El contrato 0.5.3 no nombra una cifra de sesiones. `session_count` de §6.1 es el denominador de cada fila de métrica y se repite por métrica; sumarlo cuenta de más | **Henry** (pregunta abierta, abajo) |
+| «Sesiones» de INTERACCIONES | El contrato 0.5.3 no nombra una cifra de sesiones. `session_count` de §6.1 es el denominador de cada fila de métrica y se repite por métrica; sumarlo cuenta de más | **BOb-engine** (contrato; Henry decidió «sin proyección», P-2) |
 | NPS de CALIDAD | Ninguna de las ocho proyecciones lo lleva | **BOb-engine** (contrato) |
 | Respuestas de tipo `action` en `/api/config/responses` | `bob.response_rules` exige `autobotz_id` cuando el tipo es `action` (Slice 6) y el simulador manda un webhook | **BOb-engine**, Slice 6 (PR #26) |
 | `/api/config/autobotz`, `/autobotz/:id` | Ya apagado en el simulador (PR #24); `bob.autobotz` cambió de forma con el renombre | **BOb-engine**, Slice 6 |
@@ -92,9 +92,8 @@ La reconciliación de fantasmas no se programa en BOb (pasa al feeder).
   toda cuenta entra como `viewer` (lee, no escribe): en la caja, las escrituras de
   `/api/config/*` responden 403 hasta que se cierre. Dueño: BOb-engine (política de `users` para
   `bob_app`) o Henry (P-5 de los insumos).
-- **P-2 · «Sesiones».** Pregunta para Henry: ¿se pinta como `n` de `interaction_duration`
-  (conversaciones cerradas en la ventana), como `handled` de `proj_actor_metrics`, o «sin
-  proyección» hasta que el contrato la nombre? Hoy se pinta «sin proyección».
+- **P-2 · «Sesiones».** Cerrado (Henry, 2026-11-21): se pinta «sin proyección» hasta que el
+  contrato la nombre. Ni `n` de `interaction_duration` ni `handled` de `proj_actor_metrics`.
 - **P-3 · Slice 3.** Los estados de celda los resuelve `bob.v_cell_state`, que no existe. El
   enganche está en `lib/bob/cell-state.ts`: mientras la vista no exista, la app pinta lo que lee
   (sin fila, cero, valor) y no inventa estados.

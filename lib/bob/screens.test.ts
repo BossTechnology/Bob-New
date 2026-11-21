@@ -32,8 +32,11 @@ test('a written n = 0 is an observed zero, not no_row', () => {
   assert.equal(s.closed.kind, 'zero')
 })
 
-test('sessions have no projection behind them', () => {
-  const s = buildInteractions([], [WA])
+test('sessions have no projection behind them, even with closed conversations in the window', () => {
+  // Henry, 2026-11-21 (P-2): «Sesiones» stays «sin proyección» until the
+  // contract names it. The n of interaction_duration is not a session count.
+  assert.equal(buildInteractions([], [WA]).sessions.kind, 'not_projection')
+  const s = buildInteractions([{ channel_id: 'wa', rows: 1, n: 12, sum_ms: 60000, open: 0 }], [WA])
   assert.equal(s.sessions.kind, 'not_projection')
 })
 
