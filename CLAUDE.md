@@ -14,7 +14,7 @@ Guidance for Claude when working in this repository.
 - Write every commit as the repo author would. Imperative subject, `scope(area): summary` prefix, no emoji, no filler.
 - **Commit language: English**, matching existing history (`feat(backend+dashboard): persist anomaly & text rules`).
 
-Exception: `@anthropic-ai/sdk` is a real dependency of this app. Naming it in code, `package.json`, or a doc that explains the feature is fine. The ban is on attribution, not on the API.
+Exception: the Anthropic API is a real dependency of this app, called over HTTP from `lib/claude.ts` and `app/api/ai/route.ts` (no SDK package). Naming it in code, configuration, or a doc that explains the feature is fine. The ban is on attribution, not on the API.
 
 ## Sensitive data — never commit
 
