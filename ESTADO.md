@@ -27,7 +27,9 @@
 
   La construcción es el PR #40 de BOb-engine (rama `slice-3-absent-not-zero`). Está abierto y no se fusiona hasta que Federico acepte la 0.6; los ceros que el alimentador escribía para métricas que no cuenta ya se corrigieron (`74823ee`).
 
-  Lado bob-web: PR #37 (borrador, rama `slice-3-cell-states`). Rendimiento, Interacciones, Calidad y `/api/bob/*` leen los estados de `bob.bob_cell_rollup`; en una base sin Slice 3 todo se pinta como antes. Se fusiona después del PR #40. Falta subir `BOB_ENGINE_REF` del CI a un BOb-engine con el Slice 3 cuando se fusione.
+  Lado bob-web: PR #37 (borrador, rama `slice-3-cell-states`). Rendimiento, Interacciones, Calidad y `/api/bob/*` leen los estados de `bob.bob_cell_rollup`; en una base sin Slice 3 todo se pinta como antes. Se fusiona después del PR #40. Probado en local contra el #40: 111/111 en vivo. Desde entonces, las migraciones del #40 solo cambiaron de número.
+  - El CI de bob-web fija `BOB_ENGINE_REF` en `6be2909`, anterior al Slice 3: ahí los tests de estados solo pasan por el camino «sin Slice 3». Falta apuntarlo al head del #40 (`2647fce`) mientras siga abierto y, al fusionarse, al commit de la fusión en `main`.
+  - BOb-engine#43 (guard de tenancy para tablas con clave `id`) se fusiona después del #40; ya se puede fusionar y su CI está en verde.
   - El total de cada fila de la matriz no tiene rollup propio (`bob_cell_rollup` es por actor): hoy se pinta observado si algún actor lo está y, si no, el primer estado en el orden del §2. Pedir a BOb-engine un rollup sobre actores para que esa regla tampoco viva en TypeScript.
 - Las acciones de respuesta necesitan el binding de AutoBotz (Slice 6, PR #26 de BOb-engine); en la caja responden 409.
 - `npm run build` se corta una vez con `SecurityFatalError` (Next 16.4.2). Ya estaba en `main`.
