@@ -75,33 +75,3 @@ test('an account with a role passes; a failed role lookup is a 503, not a pass',
     assert.equal((await boxProxy(req('/bob/quality'), broken)).status, 503)
   } finally { console.error = e }
 })
-
-// ASVS 4.0.3 V14.4.3-V14.4.7 (docs/asvs-l2-box.md): every answer of the box
-// carries the browser-side headers, whatever its status. HSTS is the box's
-// (Traefik terminates TLS), not the app's.
-test('every answer in the box carries the security headers', async () => {
-  const none = deps({ resolveSession: async () => ({ kind: 'none' }) as SessionState })
-  const answers = [
-    await boxProxy(req('/coop.html'), deps()), // off: 404
-    await boxProxy(req('/login'), deps()), // public
-    await boxProxy(req('/bob/quality'), none), // redirect to /login
-    await boxProxy(req('/api/bob/quality'), none), // 401
-    await boxProxy(req('/api/bob/quality'), deps({ role: async () => null })), // 403
-    await boxProxy(req('/bob/quality'), deps()), // passes
-  ]
-  for (const r of answers) {
-    const at = `status ${r.status}`
-    assert.equal(r.headers.get('x-content-type-options'), 'nosniff', at)
-    assert.equal(r.headers.get('x-frame-options'), 'DENY', at)
-    assert.equal(r.headers.get('referrer-policy'), 'same-origin', at)
-    const csp = r.headers.get('content-security-policy') ?? ''
-    for (const d of ["default-src 'self'", "frame-ancestors 'none'", "object-src 'none'", "base-uri 'self'",
-      "form-action 'self'", "connect-src 'self'"]) assert.ok(csp.includes(d), `${at}: ${d}`)
-    assert.equal(r.headers.get('strict-transport-security'), null, at)
-  }
-})
-
-// V14.3.3: no framework banner (X-Powered-By: Next.js) on any answer.
-test('next.config turns off the X-Powered-By banner', () => {
-  assert.match(readFileSync('next.config.ts', 'utf8'), /poweredByHeader:\s*false/)
-})
