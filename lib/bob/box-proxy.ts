@@ -13,6 +13,7 @@ import { NextResponse, type NextRequest } from 'next/server.js'
 import { boxAccess } from './surface.ts'
 import { boxOrgId, gotrueUrl } from './runtime.ts'
 import { resolveSession, type CookieJar, type CookieOptions, type SessionState } from './session.ts'
+import { logSecurity } from './security-log.ts'
 import { boxRole, type Role } from './roles.ts'
 
 export type BoxProxyDeps = {
@@ -47,6 +48,7 @@ async function roleResponse(request: NextRequest, deps: BoxProxyDeps, userId: st
       : plain(503, 'BOb no puede leer su base. Vuelve a intentarlo en un momento.')
   }
   if (role) return NextResponse.next({ request })
+  logSecurity('access.no_role', { user: userId, method: request.method, path: request.nextUrl.pathname })
   return isApi
     ? NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
     : plain(403, 'Esta cuenta no tiene acceso a BOb en esta caja.')
