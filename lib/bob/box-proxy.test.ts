@@ -75,3 +75,57 @@ test('an account with a role passes; a failed role lookup is a 503, not a pass',
     assert.equal((await boxProxy(req('/bob/quality'), broken)).status, 503)
   } finally { console.error = e }
 })
+
+// ASVS 4.0.3 V4.2.2, V13.1.5, V13.2.3, V13.2.5: SameSite=Lax does not stop a
+// cross-site form from signing a browser in, nor a same-site sibling host
+// from writing with the session.
+const write = (path: string, headers: Record<string, string> = {}, method = 'POST') =>
+  new NextRequest(`http://box.test${path}`, { method, headers: { host: 'box.test', ...headers } })
+const JSON_TYPE = { 'content-type': 'application/json' }
+
+test('a write from another origin is refused before the session is read', async () => {
+  const d = deps({ resolveSession: async () => { throw new Error('must not be called') } })
+  for (const h of [
+    { 'sec-fetch-site': 'cross-site' },
+    { 'sec-fetch-site': 'same-site' },
+    { origin: 'https://evil.test' },
+    { origin: 'http://box.test:8081' },
+    { origin: 'null' },
+  ] as Record<string, string>[]) {
+    for (const [path, method] of [['/auth/login', 'POST'], ['/auth/logout', 'POST'], ['/api/config/thresholds/res', 'PUT'],
+      ['/api/config/responses/x', 'DELETE']]) {
+      const r = await boxProxy(write(path, { ...JSON_TYPE, ...h }, method), d)
+      assert.equal(r.status, 403, `${method} ${path} ${JSON.stringify(h)}`)
+    }
+  }
+})
+
+test('a body that is not JSON is refused', async () => {
+  for (const h of [
+    { 'content-type': 'text/plain' },
+    { 'content-type': 'application/x-www-form-urlencoded' },
+    { 'content-type': 'application/json-seq' },
+    { 'content-length': '12' },
+    { 'transfer-encoding': 'chunked' },
+  ] as Record<string, string>[]) {
+    assert.equal((await boxProxy(write('/auth/login', h), deps())).status, 415, JSON.stringify(h))
+  }
+})
+
+test('the box\'s own writes, and clients that are not browsers, pass', async () => {
+  for (const h of [
+    {},
+    { 'sec-fetch-site': 'same-origin', origin: 'http://box.test' },
+    // TLS ends at Traefik: the scheme differs, the host does not.
+    { origin: 'https://box.test' },
+    { 'content-type': 'application/json; charset=utf-8' },
+  ] as Record<string, string>[]) {
+    const r = await boxProxy(write('/api/config/thresholds/res', { ...JSON_TYPE, ...h }, 'PUT'), deps())
+    assert.ok(passes(r), JSON.stringify(h))
+  }
+  assert.ok(passes(await boxProxy(write('/auth/logout', { 'content-length': '0' }), deps())))
+})
+
+test('a read is never refused for where it comes from', async () => {
+  assert.ok(passes(await boxProxy(new NextRequest('http://box.test/login', { headers: { 'sec-fetch-site': 'cross-site' } }), deps())))
+})
