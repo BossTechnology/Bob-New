@@ -181,7 +181,7 @@ html.bob-live .bob-editable:hover{background:var(--gray-bg,#f6f6f6)}
 
 // The simulation's entry points, turned off once bob answers. They are
 // top-level function declarations of dashboard.html, so they live on window.
-const SIM_OFF = [
+export const SIM_OFF = [
   'tick', 'restartSim', 'applyTimeframe', 'openActionables', 'openWho', 'openChannelActionables',
   'openFaqActionables', 'openBobee', 'openSidebar', 'openAnomaliesModal', 'openAlertsModal',
   'openAlarmsModal', 'openActionsModal', 'toggleDashCh', 'downloadReport',
@@ -190,6 +190,14 @@ const SIM_OFF = [
   'renderDynList', 'initDynList', 'renderAccTemas', 'renderFAQ', 'applyIndustryContent',
   'renderMetrics', 'renderLollipops', 'updateLollipop', 'renderChannelDisplay', 'resortChannelDisplay',
   'updateSesDisplay', 'updateAvailableRow',
+  // These write stored configuration (labels, names, windows) into innerHTML
+  // without escaping. The box has its own editor, so none of them may run.
+  'switchActTab', 'renderAlarmsTab', 'renderActionsTab', 'renderActivityTab', 'renderAlertsTab',
+  'renderConfigTab', 'renderTextRulesCfg', 'renderThresholdsCfg', 'renderAnomaliesCfg', 'renderAutoBotzCfg',
+  'renderChannelsCfg', 'renderSessionsConfig', 'renderAvgTimeConfig', 'renderSentimentConfig',
+  'renderKeywordConfig', 'renderKeywordRules', 'renderQualityConfig', 'renderMetricColConfig',
+  'renderActBobeeTab', 'renderABFields', 'renderChannelsCfgOrBotz', 'renderAnomaliesTab',
+  'renderAnomaliesModal', 'renderAlertsModal', 'renderAlarmsModal', 'renderActionsModal',
 ]
 
 function stopSimulation() {
