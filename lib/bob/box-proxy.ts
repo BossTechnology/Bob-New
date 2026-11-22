@@ -14,6 +14,7 @@ import { boxAccess } from './surface.ts'
 import { boxOrgId, gotrueUrl } from './runtime.ts'
 import { resolveSession, type CookieJar, type CookieOptions, type SessionState } from './session.ts'
 import { boxRole, type Role } from './roles.ts'
+import { withSecurityHeaders } from './security-headers.ts'
 
 export type BoxProxyDeps = {
   gotrueUrl: () => string
@@ -52,7 +53,12 @@ async function roleResponse(request: NextRequest, deps: BoxProxyDeps, userId: st
     : plain(403, 'Esta cuenta no tiene acceso a BOb en esta caja.')
 }
 
+// Every answer, whatever its status, leaves with the security headers.
 export async function boxProxy(request: NextRequest, deps: BoxProxyDeps = DEFAULT_DEPS): Promise<NextResponse> {
+  return withSecurityHeaders(await decide(request, deps))
+}
+
+async function decide(request: NextRequest, deps: BoxProxyDeps): Promise<NextResponse> {
   const path = request.nextUrl.pathname
   const access = boxAccess(path)
   if (access === 'off') return plain(404, 'Not found')
