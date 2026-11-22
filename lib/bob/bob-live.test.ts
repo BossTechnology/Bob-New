@@ -91,3 +91,11 @@ test('a refused save says why', () => {
   assert.match(saveFailureText(400, 'Invalid peak_mode'), /Invalid peak_mode/)
   assert.match(saveFailureText(503), /no disponible/)
 })
+
+test('observed with no row is a plain 0, never a zero-length time', () => {
+  // For durations the rollup's value is the sample count n (F-32), not ms.
+  const state = { state: 'observed', reasons: ['actor_not_present'], provisional: false, value: 0 }
+  const asTime = (ms: number) => `${(ms / 1000).toFixed(1)} s`
+  assert.equal(cellText({ kind: 'no_row', state }, asTime).text, '0')
+  assert.equal(cellText({ kind: 'no_row', state: { ...state, value: null } }, asTime).text, '0')
+})

@@ -40,7 +40,8 @@ export function cellText(cell, format = plain) {
   if (st && st.state !== 'observed') {
     return { text: STATE_TEXT[st.state] ?? '—', cls: st.state === 'not_configured' ? 'bob-notconf' : 'bob-norow', title: st.reasons.join(', ') }
   }
-  if (st && cell.kind === 'no_row') return { text: format(st.value ?? 0), cls: 'bob-zero', title: st.reasons.join(', ') }
+  // Not formatted: for durations the rollup's value is the sample count, not a time.
+  if (st && cell.kind === 'no_row') return { text: String(st.value ?? 0), cls: 'bob-zero', title: st.reasons.join(', ') }
   if (!cell || cell.kind === 'no_row') return { text: 'sin fila', cls: 'bob-norow' }
   if (cell.kind === 'zero') return { text: '0', cls: 'bob-zero' }
   return { text: format(cell.value), cls: '' }

@@ -86,7 +86,8 @@ export function CellText({ cell, format = (v) => String(v), pct = false }: {
   const st = cell.state
   if (st && st.state !== 'observed') return <StatePaint info={st} />
   // Observed with no row: a declared-absent actor, a zero by declaration (F-32).
-  if (st && cell.kind === 'no_row') return <span className={styles.zero} title={stateTitle(st)}>{format(st.value ?? 0)}</span>
+  // Not formatted: for durations the rollup's value is the sample count, not a time.
+  if (st && cell.kind === 'no_row') return <span className={styles.zero} title={stateTitle(st)}>{st.value ?? 0}</span>
   if (cell.kind === 'no_row') return <span className={styles.noRow} title="sin fila de proyección">sin fila</span>
   const open = cell.open > 0 ? <sup title={`${cell.open} de ${cell.rows} filas sin sellar`}>*</sup> : null
   if (cell.kind === 'zero') return <span className={styles.zero} title={`${cell.rows} filas, en cero`}>0{open}</span>
