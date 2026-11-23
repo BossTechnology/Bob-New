@@ -3,7 +3,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { Attempts, KnownAddresses, accountKey, boxLogin, clientIp, type LoginDeps } from './login.ts'
+import { Attempts, KnownAddresses, accountKey, boxLogin, clientIp, onceForwardedShort, type LoginDeps } from './login.ts'
 import type { SessionResult } from './gotrue.ts'
 import { loginErrorText } from './login-text.ts'
 
@@ -149,4 +149,14 @@ test('known addresses expire and stay bounded', () => {
   assert.equal(k.has('a'), false, 'the oldest goes first')
   now = 2000
   assert.equal(k.has('d'), false)
+})
+
+test('a BOB_PROXY_HOPS larger than the real chain is reported once, not per request', () => {
+  const lines: string[] = []
+  const short = onceForwardedShort(2, (l) => { lines.push(l) })
+  assert.equal(clientIp('10.0.0.7', 2, short), 'direct')
+  assert.equal(clientIp(null, 2, short), 'direct')
+  assert.equal(clientIp('203.0.113.9, 10.0.0.7', 2, short), '203.0.113.9')
+  assert.equal(lines.length, 1)
+  assert.deepEqual([JSON.parse(lines[0]).event, JSON.parse(lines[0]).hops], ['proxy.forwarded_short', 2])
 })
