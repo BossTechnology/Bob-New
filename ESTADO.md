@@ -28,8 +28,8 @@
   La construcción es el PR #40 de BOb-engine (rama `slice-3-absent-not-zero`). Está abierto y no se fusiona hasta que Federico acepte la 0.6; los ceros que el alimentador escribía para métricas que no cuenta ya se corrigieron (`74823ee`).
 
   Lado bob-web: PR #37 (borrador, rama `slice-3-cell-states`). Rendimiento, Interacciones, Calidad y `/api/bob/*` leen los estados de `bob.bob_cell_rollup`; en una base sin Slice 3 todo se pinta como antes. Se fusiona después del PR #40. Probado en local el 22 nov contra `2647fce` del #40 (hasta su head actual, `7542401`, solo cambiaron docs): 115/115 en vivo, ninguno omitido. Corregido en `1265420`: una celda observada sin fila se pinta «0», no una duración de cero (en las duraciones el `value` del rollup es el número de muestras).
-  - El CI de bob-web fija `BOB_ENGINE_REF` en `6be2909`, anterior al Slice 3: ahí los tests de estados solo pasan por el camino «sin Slice 3». Falta apuntarlo al head del #40 (`7542401`; de `2647fce` a ese head solo cambiaron docs) mientras siga abierto y, al fusionarse, al commit de la fusión en `main`.
-  - BOb-engine#43 (guard de tenancy para tablas con clave `id`) se fusiona después del #40; ya se puede fusionar y su CI está en verde.
+  - El CI de bob-web fija `BOB_ENGINE_REF` en el head del #40 (`7542401`, commit `7e9f836`), así que el job en vivo corre contra el Slice 3. Cuando el #40 se fusione, hay que cambiarlo al commit de la fusión en `main`.
+  - BOb-engine#43 (guard de tenancy para tablas con clave `id`) va después del #40. Al 23 nov tiene conflicto y no tiene checks.
   - El total de cada fila de la matriz no tiene rollup propio (`bob_cell_rollup` es por actor): hoy se pinta observado si algún actor lo está y, si no, el primer estado en el orden del §2. Pedir a BOb-engine un rollup sobre actores para que esa regla tampoco viva en TypeScript.
 - Las acciones de respuesta necesitan el binding de AutoBotz (Slice 6, PR #26 de BOb-engine); en la caja responden 409.
 - `npm run build` se corta una vez con `SecurityFatalError` (Next 16.4.2). Ya estaba en `main`.
