@@ -1,6 +1,7 @@
-// The simulator writes values into innerHTML without escaping (a channel
-// label, a rule name, a peak window). In the box none of those writers may
-// run (ASVS 4.0.3 V5.3.3).
+// In the box none of the simulator's HTML writers run: the box has its own
+// threshold editor and needs none of them (ASVS 4.0.3 V5.3.3). This does not
+// rely on them encoding what they write; that is checked separately, for the
+// demo, by simulator-encoding.test.ts.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
