@@ -68,7 +68,10 @@ async function decide(request: NextRequest, deps: BoxProxyDeps): Promise<NextRes
   const access = boxAccess(path)
   if (access === 'off') return plain(404, 'Not found')
   const refused = refuseWrite(request.method, request.headers, request.headers.get('host') ?? request.nextUrl.host)
-  if (refused) return NextResponse.json({ ok: false, error: refused.error }, { status: refused.status })
+  if (refused) {
+    logSecurity('access.write_refused', { status: refused.status, method: request.method, path })
+    return NextResponse.json({ ok: false, error: refused.error }, { status: refused.status })
+  }
   if (access === 'public') return NextResponse.next({ request })
 
   let base: string
