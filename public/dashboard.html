@@ -2258,6 +2258,12 @@ function esc(s){
   if(s==null) return '';
   return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 }
+// Ids go into inline handlers (onclick="editCh('…')"), where esc does not help:
+// the browser decodes entities before the handler runs. A stored id is kept to
+// [\w-] where it enters the page; anything else is refused.
+function safeId(v){
+  return (typeof v==='string'&&/^[\w-]+$/.test(v))?v:null;
+}
 function switchActTab(tab){
   ['activity','alerts','alarms','actions','config','anomalies','bobee'].forEach(t=>{
     document.getElementById(`actContent-${t}`)?.classList.toggle('active',t===tab);
@@ -2881,11 +2887,11 @@ function renderTextRulesCfg(mid){
     const cond=TEXT_RULE_CONDITIONS.find(c=>c.id===r.condition)||TEXT_RULE_CONDITIONS[0];
     const respCards=(r.responses||[]).map((resp,ri)=>_anomRespCard(mid+'_tr','textrule-'+mid,i,resp,ri)).join('');
     const selChs=(r.responses||[]).filter(rr=>rr.channels?.length).map(rr=>{
-      return rr.channels.map(cid=>{const ch=(window._notifChannels||[]).find(x=>x.id===cid);return ch?`<span class="cfg-ch-pill">${_ncTypeIcon(ch.type)} ${esc(ch.label)}</span>`:''}).filter(Boolean).join('');
+      return rr.channels.map(cid=>{const ch=(window._notifChannels||[]).find(x=>x.id===cid);return ch?`<span class="cfg-ch-pill">${esc(_ncTypeIcon(ch.type))} ${esc(ch.label)}</span>`:''}).filter(Boolean).join('');
     }).join('');
 
     let valueField='';
-    if(r.condition==='keyword') valueField=`<input class="cfg-kw-input" value="${esc(r.value||'')}" placeholder="${cond.placeholder}" style="width:100%" onchange="metricCfg['${mid}'].textRules[${i}].value=this.value">`;
+    if(r.condition==='keyword') valueField=`<input class="cfg-kw-input" value="${esc(r.value||'')}" placeholder="${esc(cond.placeholder)}" style="width:100%" onchange="metricCfg['${mid}'].textRules[${i}].value=this.value">`;
     else if(r.condition==='ranking') valueField=`<div style="display:flex;gap:8px;align-items:center"><span style="font-size:10px;white-space:nowrap">Above position</span><input type="number" class="cfg-num" value="${esc(r.value||3)}" min="1" max="10" style="width:60px" onchange="metricCfg['${mid}'].textRules[${i}].value=parseInt(this.value)"></div>`;
     else if(r.condition==='frequency') valueField=`<div style="display:flex;gap:8px;align-items:center"><span style="font-size:10px;white-space:nowrap">Exceeds</span><input type="number" class="cfg-num" value="${esc(r.value||500)}" min="1" style="width:80px" onchange="metricCfg['${mid}'].textRules[${i}].value=parseInt(this.value)"><span style="font-size:10px">count</span></div>`;
     else if(r.condition==='newentry') valueField=`<div style="font-size:10px;color:var(--gray-mid);padding:4px 0">Automatically triggers when new items appear.</div>`;
@@ -2897,7 +2903,7 @@ function renderTextRulesCfg(mid){
         <button class="cfg-nc-remove" onclick="event.stopPropagation();_askDel('trule:${mid}:${i}',()=>renderTextRulesCfg('${mid}'))">\u00d7</button>
       </div>
       <select class="sb-select" style="width:100%;padding:5px 8px;font-size:11px;margin-bottom:8px" onchange="metricCfg['${mid}'].textRules[${i}].condition=this.value;renderTextRulesCfg('${mid}')">
-        ${TEXT_RULE_CONDITIONS.map(tc=>`<option value="${tc.id}" ${tc.id===r.condition?'selected':''}>${tc.label} \u2014 ${tc.hint}</option>`).join('')}
+        ${TEXT_RULE_CONDITIONS.map(tc=>`<option value="${tc.id}" ${tc.id===r.condition?'selected':''}>${esc(tc.label)} \u2014 ${esc(tc.hint)}</option>`).join('')}
       </select>
       ${valueField}
       <div class="cfg-hdrow" style="margin-top:10px">
@@ -2980,12 +2986,12 @@ function renderThresholdsCfg(mid){
     // Channel pills for compact row
     const selChs=(r.channels||[]).map(cid=>{
       const ch=(window._notifChannels||[]).find(x=>x.id===cid);
-      return ch?`<span class="cfg-ch-pill">${_ncTypeIcon(ch.type)} ${esc(ch.label)}</span>`:'';
+      return ch?`<span class="cfg-ch-pill">${esc(_ncTypeIcon(ch.type))} ${esc(ch.label)}</span>`:'';
     }).filter(Boolean).join('');
     // Expanded detail
     const allChs=_visibleComms(mid,r.type).map(ch=>{
       const on=(r.channels||[]).includes(ch.id);
-      return`<label class="cfg-nc-check"><input type="checkbox" ${on?'checked':''} onchange="toggleRC('${mid}',${i},'${ch.id}',this.checked)">${_ncTypeIcon(ch.type)} ${esc(ch.label)} ${_scopeChip(ch,mid)}</label>`;
+      return`<label class="cfg-nc-check"><input type="checkbox" ${on?'checked':''} onchange="toggleRC('${mid}',${i},'${ch.id}',this.checked)">${esc(_ncTypeIcon(ch.type))} ${esc(ch.label)} ${_scopeChip(ch,mid)}</label>`;
     }).join('');
     let detail='';
     if(r.type==='alert'||r.type==='alarm'){
@@ -3002,7 +3008,7 @@ function renderThresholdsCfg(mid){
     }
     return`${_delRow(`resp:${mid}:${i}`,name,0,`removeResponse('${mid}',${i})`,`_cancelDel(()=>renderThresholdsCfg('${mid}'))`)}
     <div class="cfg-resp-row" onclick="toggleRespOpen('${mid}',${i})" style="cursor:pointer">
-      <span>${icons[r.type]||''}</span><span style="font-weight:700;font-size:11px">${esc(r.type)}</span>
+      <span>${esc(icons[r.type]||'')}</span><span style="font-weight:700;font-size:11px">${esc(r.type)}</span>
       <input class="cfg-resp-name" value="${esc(name)}" placeholder="Name\u2026" onclick="event.stopPropagation()" onchange="metricCfg['${key}'].responses[${i}].name=this.value">
       ${selChs?'<div style="display:flex;gap:3px;flex-shrink:0">'+selChs+'</div>':''}
       <button class="cfg-nc-remove" onclick="event.stopPropagation();_askDel('resp:${mid}:${i}',()=>renderThresholdsCfg('${mid}'))">\u00d7</button>
@@ -3057,13 +3063,13 @@ function renderThresholdsCfg(mid){
   ${_thSec.threshold?`<div class="acc-body">${mechRow}
     <div class="cfg-selrow">
       <select class="sb-select" id="cfgTS" onchange="onTS('${mid}',this.value)" style="padding:7px 10px">
-        ${opts.map(o=>`<option value="${o.key}" ${o.key===sel?'selected':''}>${o.label}</option>`).join('')}
+        ${opts.map(o=>`<option value="${o.key}" ${o.key===sel?'selected':''}>${esc(o.label)}</option>`).join('')}
       </select>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <label class="cfg-toggle"><input type="checkbox" id="cfg-tc" ${cv!=null?'checked':''} onchange="document.getElementById('cfg-tv').disabled=!this.checked;commitThreshold('${mid}')"><span>Enabled</span></label>
-      <input type="number" class="cfg-num" id="cfg-tv" value="${esc(displayVal)}" placeholder="${dv||100}" ${cv==null?'disabled':''} min="0" style="width:90px" onchange="commitThreshold('${mid}')">
-      <span class="cfg-thresh-hint">${unit}</span>
+      <input type="number" class="cfg-num" id="cfg-tv" value="${esc(displayVal)}" placeholder="${esc(dv||100)}" ${cv==null?'disabled':''} min="0" style="width:90px" onchange="commitThreshold('${mid}')">
+      <span class="cfg-thresh-hint">${esc(unit)}</span>
     </div>
     ${peakHtml}</div>`:''}
   ${_thHead('responses',mid,'Responses',respSum)}
@@ -3087,7 +3093,7 @@ function _mechWeightRow(){
   return `<div class="act-section-hd">Mechanical vs Organic</div>
     <div style="font-size:11px;color:var(--gray-mid);line-height:1.5;margin-bottom:8px">
       How much weight RUM frustration signals carry against conversational sentiment.
-      Applies only to channels that emit RUM \u2014 currently ${chs||'none active'}.
+      Applies only to channels that emit RUM \u2014 currently ${esc(chs||'none active')}.
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
       <input type="range" class="sb-slider" min="0" max="100" value="${mw}" style="flex:1"
@@ -3324,8 +3330,8 @@ function doAddAResp(mid,path,i,type){
 function _anomRespCard(mid,path,ruleIdx,resp,ri){
   const icons={alert:'\u26a0',alarm:'\ud83d\udd14',action:'\u26a1'};
   const expanded=resp._open?'block':'none';
-  const selChs=(resp.channels||[]).map(cid=>{const ch=(window._notifChannels||[]).find(x=>x.id===cid);return ch?`<span class="cfg-ch-pill">${_ncTypeIcon(ch.type)} ${esc(ch.label)}</span>`:''}).filter(Boolean).join('');
-  const allChs=_visibleComms(mid,resp.type).map(ch=>{const on=(resp.channels||[]).includes(ch.id);return`<label class="cfg-nc-check"><input type="checkbox" ${on?'checked':''} onchange="toggleARC('${mid}','${path}',${ruleIdx},${ri},'${ch.id}',this.checked)">${_ncTypeIcon(ch.type)} ${esc(ch.label)} ${_scopeChip(ch,mid)}</label>`;}).join('');
+  const selChs=(resp.channels||[]).map(cid=>{const ch=(window._notifChannels||[]).find(x=>x.id===cid);return ch?`<span class="cfg-ch-pill">${esc(_ncTypeIcon(ch.type))} ${esc(ch.label)}</span>`:''}).filter(Boolean).join('');
+  const allChs=_visibleComms(mid,resp.type).map(ch=>{const on=(resp.channels||[]).includes(ch.id);return`<label class="cfg-nc-check"><input type="checkbox" ${on?'checked':''} onchange="toggleARC('${mid}','${path}',${ruleIdx},${ri},'${ch.id}',this.checked)">${esc(_ncTypeIcon(ch.type))} ${esc(ch.label)} ${_scopeChip(ch,mid)}</label>`;}).join('');
   let detail='';
   if(resp.type==='alert'||resp.type==='alarm'){
     detail=`<span class="cfg-lbl">Send to:</span>${resp.type==='alarm'?'<div class="scope-note">Alarms are company-wide, so only company-scoped channels are offered.</div>':''}<div style="display:flex;flex-direction:column;gap:3px;margin:3px 0 6px">${allChs||'<span style="font-size:10px;color:var(--gray-light)">No channels in scope — add one in AutoComm.</span>'}</div>
@@ -3336,7 +3342,7 @@ function _anomRespCard(mid,path,ruleIdx,resp,ri){
   }
   return`${_delRow(`aresp:${mid}:${path}:${ruleIdx}:${ri}`,resp.name||resp.type,0,`rules_removeResp('${mid}','${path}',${ruleIdx},${ri})`,`_cancelDel(()=>renderAnomaliesCfg('${mid}'))`)}
   <div class="cfg-resp-row" onclick="toggleAROpen('${mid}','${path}',${ruleIdx},${ri})" style="cursor:pointer;margin-bottom:2px">
-    <span>${icons[resp.type]||''}</span><span style="font-weight:700;font-size:11px">${esc(resp.type)}</span>
+    <span>${esc(icons[resp.type]||'')}</span><span style="font-weight:700;font-size:11px">${esc(resp.type)}</span>
     <input class="cfg-resp-name" value="${esc(resp.name||'')}" placeholder="Name\u2026" onclick="event.stopPropagation()">
     ${selChs?'<div style="display:flex;gap:3px;flex-shrink:0">'+selChs+'</div>':''}
     <button class="cfg-nc-remove" onclick="event.stopPropagation();_askDel('aresp:${mid}:${path}:${ruleIdx}:${ri}',()=>renderAnomaliesCfg('${mid}'))">\u00d7</button>
@@ -3434,7 +3440,7 @@ function renderChannelsCfg(){
   const chs=_visibleComms(_ctx);
   const list=chs.map(ch=>{
     if(ch._edit) return`<div class="cfg-nc-item" style="flex-wrap:wrap">
-      <span class="cfg-nc-icon">${_ncTypeIcon(ch.type)}</span>
+      <span class="cfg-nc-icon">${esc(_ncTypeIcon(ch.type))}</span>
       <input class="sb-input" value="${esc(ch.label)}" id="nce-l-${ch.id}" style="flex:1;font-size:11px;padding:4px 8px">
       <input class="sb-input" value="${esc(ch.values.join(', '))}" id="nce-v-${ch.id}" style="width:100%;font-size:11px;padding:4px 8px;margin-top:4px">
       <select class="sb-select" id="nce-s-${ch.id}" style="width:100%;padding:4px 6px;font-size:11px;margin-top:4px">
@@ -3448,7 +3454,7 @@ function renderChannelsCfg(){
     const _own=(ch.scope||'company')===_ctx;
     return`${_delRow('nc:'+ch.id,ch.label,_usageCount(ch.id),`doRemoveCh('${ch.id}')`,`_cancelDel(()=>renderChannelsCfg())`)}
     <div class="cfg-nc-item ${_own?'':'inherited'}" data-chid="${ch.id}">
-      <span class="cfg-nc-icon">${_ncTypeIcon(ch.type)}</span>
+      <span class="cfg-nc-icon">${esc(_ncTypeIcon(ch.type))}</span>
       <div class="cfg-nc-info" onclick="editCh('${ch.id}')" style="cursor:pointer" title="Click to edit">
         <div class="cfg-nc-label">${esc(ch.label)} <span style="color:var(--gray-light);font-size:10px">(${ch.values.length})</span> ${_scopeChip(ch,_ctx)}</div>
         <div class="cfg-nc-value">${esc(ch.values.join(', '))}</div>
@@ -3456,7 +3462,7 @@ function renderChannelsCfg(){
       <button class="ab-verify" onclick="event.stopPropagation();verifyNC('${ch.id}')">${ch.verify?.state==='pending'?'\u2026':'Test'}</button>
       <button class="cfg-nc-remove" onclick="event.stopPropagation();_askDel('nc:${ch.id}',()=>renderChannelsCfg())">\u00d7</button>
     </div>
-    ${ch.verify&&ch.verify.state!=='pending'?`<div class="ab-vstate ok">\u2713 ${esc(ch.verify.msg)} \u00b7 ${_abAgo(ch.verify.ts)}</div>`:''}`;
+    ${ch.verify&&ch.verify.state!=='pending'?`<div class="ab-vstate ok">\u2713 ${esc(ch.verify.msg)} \u00b7 ${esc(_abAgo(ch.verify.ts))}</div>`:''}`;
   }).join('');
   c.innerHTML=`<div class="act-section-hd">AutoComm \u2014 automated communications</div>
   <div class="cfg-desc"><p>Who gets told. Used by Alerts and Alarms.</p>
@@ -3589,7 +3595,7 @@ function _notifChips(storeKey,extraKey){
     :metricCfg[storeKey];
   return NOTIF_DEFS.map(n=>{
     const on=(base.notifs||[]).includes(n.id);
-    return`<div class="notif-chip ${on?'on':''}" onclick="_toggleN('${storeKey}','${extraKey||''}','${n.id}',this)">${n.svg}<span>${n.label}</span></div>`;
+    return`<div class="notif-chip ${on?'on':''}" onclick="_toggleN('${storeKey}','${extraKey||''}','${n.id}',this)">${n.svg}<span>${esc(n.label)}</span></div>`;
   }).join('');
 }
 function _toggleN(mid,sub,ch,el){
@@ -3630,13 +3636,13 @@ function renderSessionsConfig(){
     <div class="cfg-group"><span class="cfg-lbl">Upper — alert when sessions exceed</span>
       <div class="cfg-thresh-row">
         <label class="cfg-toggle"><input type="checkbox" id="cfg-upper-chk-sessions" ${cfg.upper!==null?'checked':''} onchange="toggleThreshInput('sessions','upper',this.checked)"><span>Enabled</span></label>
-        <input type="number" class="cfg-num" id="cfg-upper-val-sessions" value="${cfg.upper??''}" placeholder="—" ${cfg.upper===null?'disabled':''} min="0">
+        <input type="number" class="cfg-num" id="cfg-upper-val-sessions" value="${esc(cfg.upper??'')}" placeholder="—" ${cfg.upper===null?'disabled':''} min="0">
         <span class="cfg-thresh-hint">sessions</span>
       </div></div>
     <div class="cfg-group"><span class="cfg-lbl">Lower — alert when sessions fall below</span>
       <div class="cfg-thresh-row">
         <label class="cfg-toggle"><input type="checkbox" id="cfg-lower-chk-sessions" ${cfg.lower!==null?'checked':''} onchange="toggleThreshInput('sessions','lower',this.checked)"><span>Enabled</span></label>
-        <input type="number" class="cfg-num" id="cfg-lower-val-sessions" value="${cfg.lower??''}" placeholder="—" ${cfg.lower===null?'disabled':''} min="0">
+        <input type="number" class="cfg-num" id="cfg-lower-val-sessions" value="${esc(cfg.lower??'')}" placeholder="—" ${cfg.lower===null?'disabled':''} min="0">
         <span class="cfg-thresh-hint">sessions</span>
       </div></div>
     <div class="cfg-group"><span class="cfg-lbl">Trend Alert</span>
@@ -3673,9 +3679,9 @@ function renderAvgTimeConfig(){
     const chCfg=cfg.channels[c.id]||{upper:null};
     return`<div class="cfg-ch-time-row">
       <div class="cfg-ch-icon">${def?.svg||''}</div>
-      <div class="cfg-ch-name">${def?.name||c.id}</div>
+      <div class="cfg-ch-name">${esc(def?.name||c.id)}</div>
       <label class="cfg-toggle"><input type="checkbox" id="cfg-cht-chk-${c.id}" ${chCfg.upper!==null?'checked':''} onchange="toggleChTimeThresh('${c.id}',this.checked)"><span>Limit</span></label>
-      <input type="number" class="cfg-num" id="cfg-cht-val-${c.id}" value="${chCfg.upper??''}" placeholder="—" ${chCfg.upper===null?'disabled':''} min="1" style="width:54px">
+      <input type="number" class="cfg-num" id="cfg-cht-val-${c.id}" value="${esc(chCfg.upper??'')}" placeholder="—" ${chCfg.upper===null?'disabled':''} min="1" style="width:54px">
       <span class="cfg-thresh-hint">min</span>
     </div>`;
   }).join('')||'<div style="font-size:11px;color:var(--gray-light);padding:8px 0">Enable channels via the sidebar to set per-channel limits.</div>';
@@ -3684,13 +3690,13 @@ function renderAvgTimeConfig(){
     <div class="cfg-group"><span class="cfg-lbl">Upper — alert when avg time exceeds</span>
       <div class="cfg-thresh-row">
         <label class="cfg-toggle"><input type="checkbox" id="cfg-upper-chk-avgtime" ${cfg.upper!==null?'checked':''} onchange="toggleThreshInput('avgtime','upper',this.checked)"><span>Enabled</span></label>
-        <input type="number" class="cfg-num" id="cfg-upper-val-avgtime" value="${cfg.upper??''}" placeholder="—" ${cfg.upper===null?'disabled':''} min="1">
+        <input type="number" class="cfg-num" id="cfg-upper-val-avgtime" value="${esc(cfg.upper??'')}" placeholder="—" ${cfg.upper===null?'disabled':''} min="1">
         <span class="cfg-thresh-hint">min</span>
       </div></div>
     <div class="cfg-group"><span class="cfg-lbl">Lower — alert if resolution is unusually fast</span>
       <div class="cfg-thresh-row">
         <label class="cfg-toggle"><input type="checkbox" id="cfg-lower-chk-avgtime" ${cfg.lower!==null?'checked':''} onchange="toggleThreshInput('avgtime','lower',this.checked)"><span>Enabled</span></label>
-        <input type="number" class="cfg-num" id="cfg-lower-val-avgtime" value="${cfg.lower??''}" placeholder="—" ${cfg.lower===null?'disabled':''} min="1">
+        <input type="number" class="cfg-num" id="cfg-lower-val-avgtime" value="${esc(cfg.lower??'')}" placeholder="—" ${cfg.lower===null?'disabled':''} min="1">
         <span class="cfg-thresh-hint">min</span>
       </div></div>
     <div class="cfg-divider"></div>
@@ -3742,10 +3748,10 @@ function renderSentimentConfig(){
     const enabled=sc.val!==null&&sc.val!=='';
     const chips=NOTIF_DEFS.map(n=>{
       const on=(sc.notifs||[]).includes(n.id);
-      return`<div class="notif-chip ${on?'on':''}" onclick="toggleSentNotif('${sid}','${n.id}',this)">${n.svg}<span>${n.label}</span></div>`;
+      return`<div class="notif-chip ${on?'on':''}" onclick="toggleSentNotif('${sid}','${n.id}',this)">${n.svg}<span>${esc(n.label)}</span></div>`;
     }).join('');
     return`<div class="cfg-sent-row">
-      <div class="cfg-sent-hd" style="color:${colors[i]}">${emojis[i]} ${labels[i]}<span class="cfg-sent-pct">Now: ${sentiment[i].pct}%</span></div>
+      <div class="cfg-sent-hd" style="color:${esc(colors[i])}">${esc(emojis[i])} ${esc(labels[i])}<span class="cfg-sent-pct">Now: ${esc(sentiment[i].pct)}%</span></div>
       <div class="cfg-sent-thresh">
         <select class="sb-select" style="padding:3px 6px;font-size:10px;width:112px;margin-right:6px"
           onchange="metricCfg.sentiment.thresholds['${sid}'].source=this.value">
@@ -3755,7 +3761,7 @@ function renderSentimentConfig(){
           <option value="mshare" ${sc.source==='mshare'?'selected':''}>MECA share %</option>
         </select>
         <label class="cfg-toggle"><input type="checkbox" id="cfg-sent-chk-${sid}" ${enabled?'checked':''} onchange="toggleSentThresh('${sid}',this.checked)"><span>${label}</span></label>
-        <input type="number" class="cfg-num" id="cfg-sent-val-${sid}" value="${sc.val??''}" placeholder="%" ${!enabled?'disabled':''} min="0" max="100" style="width:56px">
+        <input type="number" class="cfg-num" id="cfg-sent-val-${sid}" value="${esc(sc.val??'')}" placeholder="%" ${!enabled?'disabled':''} min="0" max="100" style="width:56px">
         <span class="cfg-thresh-hint">%</span>
       </div>
       <div class="notif-grid" style="grid-template-columns:repeat(4,1fr)">${chips}</div>
@@ -3767,7 +3773,7 @@ function renderSentimentConfig(){
     <div class="act-section-hd">Mechanical vs Organic</div>
     <div style="font-size:11px;color:var(--gray-mid);line-height:1.5;margin-bottom:8px">
       How much weight RUM frustration signals carry against conversational sentiment.
-      Applies only to channels that emit RUM — currently ${rumChs||'none active'}.
+      Applies only to channels that emit RUM — currently ${esc(rumChs||'none active')}.
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
       <input type="range" class="sb-slider" min="0" max="100" value="${mw}" style="flex:1"
@@ -3831,12 +3837,12 @@ function renderKeywordRules(mid,label){
   const ruleCards=cfg.rules.map((rule,i)=>{
     const chips=NOTIF_DEFS.map(n=>{
       const on=(rule.notifs||[]).includes(n.id);
-      return`<div class="notif-chip ${on?'on':''}" onclick="toggleKwNotif('${mid}',${i},'${n.id}',this)">${n.svg}<span>${n.label}</span></div>`;
+      return`<div class="notif-chip ${on?'on':''}" onclick="toggleKwNotif('${mid}',${i},'${n.id}',this)">${n.svg}<span>${esc(n.label)}</span></div>`;
     }).join('');
     return`<div class="cfg-item-card" id="kw-rule-${mid}-${i}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <div style="font-size:11px;font-weight:700;color:var(--gray-light);letter-spacing:1px;text-transform:uppercase">Rule ${i+1}</div>
-        ${cfg.rules.length>1?`<button onclick="removeKwRule('${mid}',${i},'${label}')" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--gray-light);padding:0 4px;line-height:1" title="Remove rule">&times;</button>`:''}
+        ${cfg.rules.length>1?`<button onclick="removeKwRule('${mid}',${i},'${esc(label)}')" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--gray-light);padding:0 4px;line-height:1" title="Remove rule">&times;</button>`:''}
       </div>
       <div class="cfg-group" style="margin-bottom:8px">
         <span class="cfg-lbl">Keyword, term or phrase to monitor</span>
@@ -3848,7 +3854,7 @@ function renderKeywordRules(mid,label){
         <span class="cfg-lbl">Alert if this keyword appears in the top</span>
         <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
           <input type="number" class="cfg-num" id="cfg-topn-${mid}-${i}"
-            value="${rule.topN||5}" min="1" max="${maxPos}" style="width:56px">
+            value="${esc(rule.topN||5)}" min="1" max="${maxPos}" style="width:56px">
           <span class="cfg-thresh-hint">of ${maxPos} positions</span>
           <span class="cfg-thresh-hint" style="color:var(--gray-light)">(1 = most frequent)</span>
         </div>
@@ -3858,10 +3864,10 @@ function renderKeywordRules(mid,label){
   }).join('');
 
   document.getElementById('actContent-config').innerHTML=`
-    <div class="act-section-hd">${label} — Keyword Monitoring</div>
+    <div class="act-section-hd">${esc(label)} — Keyword Monitoring</div>
     <div class="cfg-desc">
       <p>Alerts when a watched term enters the top N of this list.</p>
-      <button class="cfg-add-inline" onclick="addKwRule('${mid}','${label}')">+ Rule</button>
+      <button class="cfg-add-inline" onclick="addKwRule('${mid}','${esc(label)}')">+ Rule</button>
     </div>
     ${ruleCards}
 
@@ -3923,7 +3929,7 @@ function renderQualityConfig(){
   const qualityLevels=['Low','Medium','High'];
   const chips=NOTIF_DEFS.map(n=>{
     const on=cfg.notifs.includes(n.id);
-    return`<div class="notif-chip ${on?'on':''}" onclick="toggleNotif('quality','${n.id}',this)">${n.svg}<span>${n.label}</span></div>`;
+    return`<div class="notif-chip ${on?'on':''}" onclick="toggleNotif('quality','${n.id}',this)">${n.svg}<span>${esc(n.label)}</span></div>`;
   }).join('');
   document.getElementById('actContent-config').innerHTML=`
     <div class="act-section-hd">Response Quality Thresholds</div>
@@ -3984,30 +3990,30 @@ function renderMetricColConfig(metricId){
   const colRows=colKeys.map((k,i)=>{
     const cc=cfg.cols[k]||{upper:null,lower:null};
     return`<div class="cfg-col-row">
-      <div class="cfg-col-name" style="color:${actorColors[i]}">${actorLabels[i]}</div>
+      <div class="cfg-col-name" style="color:${esc(actorColors[i])}">${esc(actorLabels[i])}</div>
       <label class="cfg-toggle"><input type="checkbox" id="cfg-col-upper-chk-${metricId}-${k}" ${cc.upper!==null?'checked':''} onchange="toggleColThresh('${metricId}','${k}','upper',this.checked)"><span>Max</span></label>
-      <input type="number" class="cfg-num" id="cfg-col-upper-val-${metricId}-${k}" value="${cc.upper??''}" placeholder="—" ${cc.upper===null?'disabled':''} min="0" max="100" style="width:52px">
+      <input type="number" class="cfg-num" id="cfg-col-upper-val-${metricId}-${k}" value="${esc(cc.upper??'')}" placeholder="—" ${cc.upper===null?'disabled':''} min="0" max="100" style="width:52px">
       <span class="cfg-thresh-hint">%</span>
       <label class="cfg-toggle" style="margin-left:6px"><input type="checkbox" id="cfg-col-lower-chk-${metricId}-${k}" ${cc.lower!==null?'checked':''} onchange="toggleColThresh('${metricId}','${k}','lower',this.checked)"><span>Min</span></label>
-      <input type="number" class="cfg-num" id="cfg-col-lower-val-${metricId}-${k}" value="${cc.lower??''}" placeholder="—" ${cc.lower===null?'disabled':''} min="0" max="100" style="width:52px">
+      <input type="number" class="cfg-num" id="cfg-col-lower-val-${metricId}-${k}" value="${esc(cc.lower??'')}" placeholder="—" ${cc.lower===null?'disabled':''} min="0" max="100" style="width:52px">
       <span class="cfg-thresh-hint">%</span>
     </div>`;
   }).join('');
   const chips=NOTIF_DEFS.map(n=>{
     const on=cfg.notifs.includes(n.id);
-    return`<div class="notif-chip ${on?'on':''}" onclick="toggleNotif('${metricId}','${n.id}',this)">${n.svg}<span>${n.label}</span></div>`;
+    return`<div class="notif-chip ${on?'on':''}" onclick="toggleNotif('${metricId}','${n.id}',this)">${n.svg}<span>${esc(n.label)}</span></div>`;
   }).join('');
   document.getElementById('actContent-config').innerHTML=`
     <div class="act-section-hd">Total Threshold</div>
     <div class="cfg-group"><span class="cfg-lbl">Upper — alert when total exceeds</span>
       <div class="cfg-thresh-row">
         <label class="cfg-toggle"><input type="checkbox" id="cfg-upper-chk-${metricId}" ${cfg.upper!==null?'checked':''} onchange="toggleThreshInput('${metricId}','upper',this.checked)"><span>Enabled</span></label>
-        <input type="number" class="cfg-num" id="cfg-upper-val-${metricId}" value="${cfg.upper??''}" placeholder="—" ${cfg.upper===null?'disabled':''} min="0">
+        <input type="number" class="cfg-num" id="cfg-upper-val-${metricId}" value="${esc(cfg.upper??'')}" placeholder="—" ${cfg.upper===null?'disabled':''} min="0">
       </div></div>
     <div class="cfg-group"><span class="cfg-lbl">Lower — alert when total falls below</span>
       <div class="cfg-thresh-row">
         <label class="cfg-toggle"><input type="checkbox" id="cfg-lower-chk-${metricId}" ${cfg.lower!==null?'checked':''} onchange="toggleThreshInput('${metricId}','lower',this.checked)"><span>Enabled</span></label>
-        <input type="number" class="cfg-num" id="cfg-lower-val-${metricId}" value="${cfg.lower??''}" placeholder="—" ${cfg.lower===null?'disabled':''} min="0">
+        <input type="number" class="cfg-num" id="cfg-lower-val-${metricId}" value="${esc(cfg.lower??'')}" placeholder="—" ${cfg.lower===null?'disabled':''} min="0">
       </div></div>
     <div class="cfg-divider"></div>
     <div class="act-section-hd">By Actor Attribution (%)</div>
@@ -5017,14 +5023,14 @@ function verifyAB(id,run){
 function _abFieldInputs(type){
   return (AB_FIELDS[type]||[]).map(([k,lbl,kind,extra])=>{
     const id='abF-'+k;
-    if(kind==='select') return `<div class="ab-forow"><label>${lbl}</label>
+    if(kind==='select') return `<div class="ab-forow"><label>${esc(lbl)}</label>
       <select class="sb-select" id="${id}" style="width:100%;padding:4px 6px;font-size:11px">
-        ${extra.map(o=>`<option value="${o}">${o}</option>`).join('')}</select></div>`;
-    if(kind==='area') return `<div class="ab-forow"><label>${lbl}</label>
-      <textarea class="sb-input" id="${id}" rows="2" placeholder="${extra}"
+        ${extra.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}</select></div>`;
+    if(kind==='area') return `<div class="ab-forow"><label>${esc(lbl)}</label>
+      <textarea class="sb-input" id="${id}" rows="2" placeholder="${esc(extra)}"
         style="width:100%;font-size:11px;padding:4px 8px;font-family:var(--font);resize:vertical"></textarea></div>`;
-    return `<div class="ab-forow"><label>${lbl}</label>
-      <input class="sb-input" id="${id}" type="text" placeholder="${extra}"
+    return `<div class="ab-forow"><label>${esc(lbl)}</label>
+      <input class="sb-input" id="${id}" type="text" placeholder="${esc(extra)}"
         style="width:100%;font-size:11px;padding:4px 8px"></div>`;
   }).join('');
 }
@@ -5080,19 +5086,19 @@ function _abFormFields(ab,ctx){
   const scopeOpts=opts.concat(opts.some(o=>o.v===(ab.scope||'company'))?[]:[{v:ab.scope,l:_scopeLabel(ab.scope)+' (current)'}]);
   const fields=(AB_FIELDS[ab.type]||[]).map(([k,lbl,kind,extra])=>{
     const id='abe-f-'+k+'-'+ab.id, v=ab[k]||'';
-    if(kind==='select') return `<div class="ab-forow"><label>${lbl}</label>
+    if(kind==='select') return `<div class="ab-forow"><label>${esc(lbl)}</label>
       <select class="sb-select" id="${id}" style="width:100%;padding:4px 6px;font-size:11px">
-        ${extra.map(o=>`<option value="${o}" ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`;
-    if(kind==='area') return `<div class="ab-forow"><label>${lbl}</label>
+        ${extra.map(o=>`<option value="${esc(o)}" ${o===v?'selected':''}>${esc(o)}</option>`).join('')}</select></div>`;
+    if(kind==='area') return `<div class="ab-forow"><label>${esc(lbl)}</label>
       <textarea class="sb-input" id="${id}" rows="2" style="width:100%;font-size:11px;padding:4px 8px;font-family:var(--font);resize:vertical">${esc(v)}</textarea></div>`;
-    return `<div class="ab-forow"><label>${lbl}</label>
+    return `<div class="ab-forow"><label>${esc(lbl)}</label>
       <input class="sb-input" id="${id}" type="text" value="${esc(v)}" style="width:100%;font-size:11px;padding:4px 8px"></div>`;
   }).join('');
   return `<div class="ab-forow"><label>Name</label>
       <input class="sb-input" id="abe-l-${ab.id}" value="${esc(ab.label)}" style="width:100%;font-size:11px;padding:4px 8px"></div>
     <div class="ab-forow"><label>Provider</label>
       <select class="sb-select" id="abe-p-${ab.id}" style="width:100%;padding:4px 6px;font-size:11px">
-        ${AB_PROVIDERS.map(p=>`<option value="${p.id}" ${p.id===ab.provider?'selected':''}>${p.label}</option>`).join('')}</select></div>
+        ${AB_PROVIDERS.map(p=>`<option value="${p.id}" ${p.id===ab.provider?'selected':''}>${esc(p.label)}</option>`).join('')}</select></div>
     <div class="ab-forow"><label>Scope</label>
       <select class="sb-select" id="abe-s-${ab.id}" style="width:100%;padding:4px 6px;font-size:11px">
         ${scopeOpts.map(o=>`<option value="${esc(o.v)}" ${o.v===(ab.scope||'company')?'selected':''}>${esc(o.l)}</option>`).join('')}</select></div>
@@ -5132,8 +5138,8 @@ function _autoBotzPicker(onChangeAttr,selected,mid){
     <div style="display:flex;flex-direction:column;gap:3px;margin:3px 0 6px">${list.map(ab=>{
       const on=(selected||[]).includes(ab.id), st=abState(ab);
       return `<label class="cfg-nc-check"><input type="checkbox" ${on?'checked':''} onchange="${onChangeAttr.replace('__ID__',ab.id)}">
-        ${AB_TYPES[ab.type].icon} ${esc(ab.label)}
-        <span class="ab-chip ${st}">${st==='ok'?'verified':st}</span>
+        ${esc(AB_TYPES[ab.type].icon)} ${esc(ab.label)}
+        <span class="ab-chip ${esc(st)}">${st==='ok'?'verified':esc(st)}</span>
         ${_scopeChip(ab,mid||_cfgContext())}</label>`;
     }).join('')}</div>`;
 }
@@ -5145,18 +5151,18 @@ function _renderAutoBotz(){
   const cards=list.map(ab=>{
     const st=abState(ab), tdef=AB_TYPES[ab.type];
     const fields=(AB_FIELDS[ab.type]||[]).map(([k,lbl])=>
-      ab[k]?`<div class="ab-field"><span>${lbl}</span><b>${esc(ab[k])}</b></div>`:'').join('');
+      ab[k]?`<div class="ab-field"><span>${esc(lbl)}</span><b>${esc(ab[k])}</b></div>`:'').join('');
     const own=(ab.scope||'company')===_ctx;
     const dkey=`ab:${ab.id}`, uses=_usageCount(ab.id);
     const delRow=_delRow(dkey,ab.label,uses,`removeAB('${ab.id}')`,`_cancelDel(()=>renderChannelsCfgOrBotz())`);
     const head=`<div class="ab-head rule-head" onclick="${ab._open?`closeAB('${ab.id}')`:`openAB('${ab.id}')`}">
         <span class="acc-caret" style="${ab._open?'transform:rotate(90deg)':''}">\u25b6</span>
-        <span class="ab-icon">${tdef.icon}</span>
+        <span class="ab-icon">${esc(tdef.icon)}</span>
         <div class="ab-info">
           <div class="ab-label">${esc(ab.label)}
-            <span class="ab-chip ${st}">${st==='ok'?'verified':st}</span>
+            <span class="ab-chip ${esc(st)}">${st==='ok'?'verified':esc(st)}</span>
             ${_scopeChip(ab,_ctx)}</div>
-          <div class="ab-sub">${tdef.label} \u00b7 ${esc((AB_PROVIDERS.find(p=>p.id===ab.provider)||{}).label||ab.provider)}</div>
+          <div class="ab-sub">${esc(tdef.label)} \u00b7 ${esc((AB_PROVIDERS.find(p=>p.id===ab.provider)||{}).label||ab.provider)}</div>
         </div>
         <button class="cfg-nc-remove" onclick="event.stopPropagation();_askDel('${dkey}',()=>renderChannelsCfgOrBotz())">\u00d7</button>
       </div>${delRow}`;
@@ -5164,7 +5170,7 @@ function _renderAutoBotz(){
     return `<div class="ab-item ${own?'':'inherited'}">${head}
       <div class="ab-body">
         ${_abFormFields(ab,_ctx)}
-        <div class="ab-vstate ${st}">${abStateLabel(st,ab)}${ab.verify?.msg?' \u00b7 '+esc(ab.verify.msg):''}</div>
+        <div class="ab-vstate ${esc(st)}">${esc(abStateLabel(st,ab))}${ab.verify?.msg?' \u00b7 '+esc(ab.verify.msg):''}</div>
         <div class="ab-actions">
           <button class="ab-verify" onclick="verifyAB('${ab.id}',false)">Verify</button>
           <button class="ab-run" onclick="verifyAB('${ab.id}',true)">Run test</button>
@@ -5173,7 +5179,7 @@ function _renderAutoBotz(){
       </div>
     </div>`;
   }).join('');
-  const typeOpts=Object.keys(AB_TYPES).map(k=>`<option value="${k}">${AB_TYPES[k].icon} ${AB_TYPES[k].label}</option>`).join('');
+  const typeOpts=Object.keys(AB_TYPES).map(k=>`<option value="${k}">${esc(AB_TYPES[k].icon)} ${esc(AB_TYPES[k].label)}</option>`).join('');
   return `<div class="act-section-hd">AutoBotz \u2014 automated actions</div>
     <div class="cfg-desc"><p>What gets done. Used by Actions.</p>
       <button class="cfg-add-inline" onclick="document.getElementById('abAF').style.display='block'">+ Botz</button></div>
@@ -5183,7 +5189,7 @@ function _renderAutoBotz(){
         <input class="sb-input" id="abNI" type="text" placeholder="Name" style="flex:1;font-size:11px;padding:4px 8px">
       </div>
       <select class="sb-select" id="abPS" style="width:100%;padding:4px 6px;font-size:11px;margin-bottom:6px">
-        ${AB_PROVIDERS.map(p=>`<option value="${p.id}">${p.label}</option>`).join('')}</select>
+        ${AB_PROVIDERS.map(p=>`<option value="${p.id}">${esc(p.label)}</option>`).join('')}</select>
       ${_scopeSelect('abSC',_ctx)}
       <div id="abFields">${_abFieldInputs('webhook')}</div>
       <div style="font-size:10px;color:var(--gray-light);margin:2px 0 7px">
@@ -5620,7 +5626,7 @@ function _whoUsers(metricId){
 // ── Other tabs, scoped to the entity ────────────────
 function whoScopedTab(tabName,entityId){
   const {actor}=_whoCtx(entityId);
-  return `<div class="who-scope">${tabName} scoped to <b>${ACTOR_LABEL[actor]}</b>.
+  return `<div class="who-scope">${esc(tabName)} scoped to <b>${esc(ACTOR_LABEL[actor])}</b>.
     Same tab, narrower subject \u2014 thresholds and responses can target an individual actor
     rather than only the aggregate.</div>`;
 }
@@ -5636,10 +5642,10 @@ function whoAlertsTab(entityId){
       <div class="alert-item-top">
         <div class="alert-dot critical"></div>
         <div class="alert-title">Response quality below threshold</div>
-        <div class="alert-time">${tStr?tStr():''}</div>
+        <div class="alert-time">${tStr?esc(tStr()):''}</div>
       </div>
-      <div class="alert-body"><span class="who-pill">WHO</span>${a.name} \u00b7 ${a.id} \u2014
-        quality <b>Low</b> against a <b>Med</b> floor on ${chName(a.chans[0])}.</div>
+      <div class="alert-body"><span class="who-pill">WHO</span>${esc(a.name)} \u00b7 ${esc(a.id)} \u2014
+        quality <b>Low</b> against a <b>Med</b> floor on ${esc(chName(a.chans[0]))}.</div>
     </div>`).join('');
 }
 
@@ -5649,7 +5655,7 @@ function whoAlertsTab(entityId){
 // The scope selector itself always lives on the base key.
 function _thKey(mid){
   const c=metricCfg[mid];
-  return (c&&c.scope==='actor'&&c.actorId)?mid+'#'+c.actorId:mid;
+  return (c&&c.scope==='actor'&&safeId(c.actorId))?mid+'#'+c.actorId:mid;
 }
 function _overrideIds(mid){
   return Object.keys(metricCfg).filter(k=>k.startsWith(mid+'#')).map(k=>k.split('#')[1]);
@@ -5671,7 +5677,7 @@ function _whoScopeRow(mid){
   const pinned=metricCfg[mid].actorId||'';
   const stale=pinned&&!roster.some(r=>r.id===pinned);
   return `<div style="font-size:11px;color:var(--gray-mid);line-height:1.5;margin-bottom:8px">
-      Applies to <b>${ACTOR_LABEL[actor]||actor}</b>. Evaluate against each individual actor,
+      Applies to <b>${esc(ACTOR_LABEL[actor]||actor)}</b>. Evaluate against each individual actor,
       the group as a whole${canPin?', or one specific actor as an override':''}.
     </div>
     <select class="sb-select" style="width:100%;padding:7px 10px;margin-bottom:${scope==='actor'?'8px':'12px'}"
@@ -5682,12 +5688,12 @@ function _whoScopeRow(mid){
     </select>
     ${_overrideIds(mid).length?`<div style="font-size:10.5px;color:var(--gray-mid);margin-bottom:8px">
       <b>${_overrideIds(mid).length}</b> actor override${_overrideIds(mid).length===1?'':'s'} configured:
-      ${_overrideIds(mid).join(', ')}</div>`:''}
+      ${esc(_overrideIds(mid).join(', '))}</div>`:''}
     ${scope==='actor'&&canPin?`
       <select class="sb-select" style="width:100%;padding:7px 10px;margin-bottom:6px"
         onchange="metricCfg['${mid}'].actorId=this.value;renderThresholdsCfg('${mid}')">
         <option value="">Select an actor\u2026</option>
-        ${roster.map(r=>`<option value="${r.id}" ${r.id===pinned?'selected':''}>${r.label}</option>`).join('')}
+        ${roster.map(r=>`<option value="${esc(r.id)}" ${r.id===pinned?'selected':''}>${esc(r.label)}</option>`).join('')}
       </select>
       ${stale?`<div style="font-size:10.5px;color:var(--red);margin-bottom:8px">
         \u26a0 <b>${esc(pinned)}</b> is no longer in the active pool \u2014 this threshold will not evaluate.</div>`
@@ -5778,7 +5784,7 @@ function renderAnomaliesTab(metricId){
         </div>
         <div class="anomaly-desc">${esc(a.desc)}</div>
         <div class="anomaly-footer">
-          <span class="anomaly-status" style="color:${statusColors[a.status]||'var(--gray-mid)'}">${statusLabel[a.status]||a.status}</span>
+          <span class="anomaly-status" style="color:${esc(statusColors[a.status]||'var(--gray-mid)')}">${esc(statusLabel[a.status]||a.status)}</span>
           <span class="anomaly-metric">${esc(a.metric.toUpperCase())}</span>
         </div>
       </div>`).join(''):'<div style="font-size:11px;color:var(--gray-light);padding:6px 0 4px">No anomalies detected.</div>';
@@ -6221,8 +6227,8 @@ function buildChPerfSection(){
       const color=cls==='ch-breach'?'var(--red)':'#C4A265';
       const label=cls==='ch-breach'?'DEGRADED':'WARNING';
       return `<div style="padding:8px;border:1px solid var(--gray-border);border-radius:6px;text-align:center">
-        <div style="font-size:14px;font-weight:800;color:${color}">${p.pct}%</div>
-        <div style="font-size:8px;color:var(--gray-mid)">${def?.name||c.id}</div>
+        <div style="font-size:14px;font-weight:800;color:${color}">${esc(p.pct)}%</div>
+        <div style="font-size:8px;color:var(--gray-mid)">${esc(def?.name||c.id)}</div>
         <div style="font-size:7px;font-weight:700;color:${color};margin-top:2px">${label}</div>
       </div>`;
     }).join('')}
@@ -6245,7 +6251,7 @@ function renderAnomaliesModal(){
   const summary=`<div class="glob-summary">
     <div class="glob-pill" style="border-color:var(--accent)" onclick="filterAnomalyModal('anomaly')"><span class="glob-pill-count" style="color:var(--black)">${active.length}</span><span class="glob-pill-label">Active</span></div>
     <div class="glob-pill" onclick="filterAnomalyModal('resolved')"><span class="glob-pill-count" style="color:var(--green)">${resolved.length}</span><span class="glob-pill-label">Resolved</span></div>
-    <div class="glob-pill" style="border-color:var(--accent)" onclick="filterAnomalyModal('responses')"><span class="glob-pill-count" style="color:var(--accent)">${anomRespCount}</span><span class="glob-pill-label">Responses</span></div>
+    <div class="glob-pill" style="border-color:var(--accent)" onclick="filterAnomalyModal('responses')"><span class="glob-pill-count" style="color:var(--accent)">${esc(anomRespCount)}</span><span class="glob-pill-label">Responses</span></div>
   </div>
   <div id="anomalyPillDetail" style="margin-top:8px"></div>`;
 
@@ -6275,11 +6281,11 @@ function renderAnomaliesModal(){
     patterns.push({icon:'✓',title:'No significant patterns',detail:'Current anomalies appear isolated. Continue monitoring for emerging correlations.',tag:'Status'});
 
   const patternsHtml=patterns.map(p=>`<div class="pattern-item">
-    <div class="pattern-icon">${p.icon}</div>
+    <div class="pattern-icon">${esc(p.icon)}</div>
     <div class="pattern-content">
-      <div class="pattern-title">${p.title}</div>
-      <div class="pattern-detail">${p.detail}</div>
-      <span class="pattern-tag">${p.tag}</span>
+      <div class="pattern-title">${esc(p.title)}</div>
+      <div class="pattern-detail">${esc(p.detail)}</div>
+      <span class="pattern-tag">${esc(p.tag)}</span>
     </div>
   </div>`).join('');
 
@@ -6300,7 +6306,7 @@ function renderAnomaliesModal(){
   }
   const rootHtml=`<div class="root-cause-box">
     <div class="root-cause-label">Most Probable Root Cause</div>
-    <div class="root-cause-text">${rootText}</div>
+    <div class="root-cause-text">${esc(rootText)}</div>
     <div class="root-cause-chain">${rootChain}</div>
   </div>`;
 
@@ -6366,7 +6372,7 @@ function renderAlertsModal(){
     <div class="glob-pill" style="border-color:#C4A265" onclick="filterAlertModal('warning')"><span class="glob-pill-count" style="color:#A68B52">${warning.length}</span><span class="glob-pill-label">Warning</span></div>
     ${keywordAlerts.length?`<div class="glob-pill" style="border-color:var(--accent)" onclick="filterAlertModal('keyword')"><span class="glob-pill-count" style="color:var(--black)">${keywordAlerts.length}</span><span class="glob-pill-label">Keyword</span></div>`:''}
     <div class="glob-pill" style="border-color:var(--green)" onclick="filterAlertModal('recovered')"><span class="glob-pill-count" style="color:var(--green)">${recoveries.length}</span><span class="glob-pill-label">Recovered</span></div>
-    <div class="glob-pill" style="border-color:var(--accent)" onclick="filterAlertModal('responses')"><span class="glob-pill-count" style="color:var(--accent)">${respCount}</span><span class="glob-pill-label">Responses</span></div>
+    <div class="glob-pill" style="border-color:var(--accent)" onclick="filterAlertModal('responses')"><span class="glob-pill-count" style="color:var(--accent)">${esc(respCount)}</span><span class="glob-pill-label">Responses</span></div>
   </div>
   <div id="alertPillDetail" style="margin-top:8px"></div>`;
 
@@ -6394,7 +6400,7 @@ function renderAlertsModal(){
 
   // Data-aware pattern analysis
   const patterns=[];
-  if(topEntry[1]>0) patterns.push({icon:'🔁',title:`${esc(topEntry[0])} — highest frequency`,detail:`${esc(topEntry[0])} has triggered ${topEntry[1]} alert${topEntry[1]!==1?'s':''} — the most frequent metric in the current session.`,tag:'Frequency pattern'});
+  if(topEntry[1]>0) patterns.push({icon:'🔁',title:`${topEntry[0]} — highest frequency`,detail:`${topEntry[0]} has triggered ${topEntry[1]} alert${topEntry[1]!==1?'s':''} — the most frequent metric in the current session.`,tag:'Frequency pattern'});
   if(critical.length>1) patterns.push({icon:'⏰',title:'Multiple critical alerts',detail:`${critical.length} critical alerts have fired. Check if peak-time suppression should be enabled for affected metrics to reduce noise during expected high-volume windows (09:00–11:00, 14:00–16:00).`,tag:'Severity pattern'});
   // Check for cross-metric correlation
   const abaAlerts=breachAlerts.filter(a=>a.mid==='aba').length;
@@ -6402,11 +6408,11 @@ function renderAlertsModal(){
   if(abaAlerts>0&&derAlerts>0) patterns.push({icon:'🔗',title:'Abandonment → Escalation correlation',detail:`${abaAlerts} abandonment and ${derAlerts} escalation alerts detected — abandoned interactions may be returning as escalations.`,tag:'Causal chain'});
   if(!patterns.length) patterns.push({icon:'📊',title:'Monitoring',detail:'Insufficient alert history for pattern detection. Patterns will emerge as more threshold events are recorded.',tag:'Baseline'});
   const patternsHtml=patterns.map(p=>`<div class="pattern-item">
-    <div class="pattern-icon">${p.icon}</div>
+    <div class="pattern-icon">${esc(p.icon)}</div>
     <div class="pattern-content">
-      <div class="pattern-title">${p.title}</div>
-      <div class="pattern-detail">${p.detail}</div>
-      <span class="pattern-tag">${p.tag}</span>
+      <div class="pattern-title">${esc(p.title)}</div>
+      <div class="pattern-detail">${esc(p.detail)}</div>
+      <span class="pattern-tag">${esc(p.tag)}</span>
     </div>
   </div>`).join('');
 
@@ -6440,10 +6446,10 @@ function _renderResponsesSection(type){
       responses.push({metric:mid,name:r.name||r.type,channels:chNames,subject:r.subject||'',status:'Active'});
     });
   });
-  if(!responses.length) return`<div style="font-size:12px;color:var(--gray-light);padding:8px 0">No ${type} responses configured. Configure in Actionables \u2192 Configuration.</div>`;
+  if(!responses.length) return`<div style="font-size:12px;color:var(--gray-light);padding:8px 0">No ${esc(type)} responses configured. Configure in Actionables \u2192 Configuration.</div>`;
   return responses.map(r=>`<div class="urgent-item" style="padding:10px 12px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-      <span class="urgent-badge" style="background:#E8F0FE;color:#4A6FA5">${r.status}</span>
+      <span class="urgent-badge" style="background:#E8F0FE;color:#4A6FA5">${esc(r.status)}</span>
       <span class="urgent-title">${esc(r.name)}</span>
       <span style="font-size:10px;color:var(--gray-light)">on ${esc(r.metric)}</span>
     </div>
@@ -7001,9 +7007,10 @@ init();
       const d=data(await api('/channels'));
       const rows=d&&d.channels;
       if(Array.isArray(rows)&&rows.length){
+        // A row whose id cannot go into a handler is left out, not repaired.
         window._notifChannels=rows.map(row=>({
-          id:row.id,_bkid:row.id,type:row.type,label:row.label,values:row.values||[],
-        }));
+          id:safeId(row.id),_bkid:row.id,type:row.type,label:row.label,values:row.values||[],
+        })).filter(ch=>ch.id);
       }
     },
     async createChannel(ch){
@@ -7201,7 +7208,7 @@ init();
       if(!Array.isArray(rows)||!rows.length) return;
       window._autoBotz=rows.map(function(row){
         const ab=Object.assign({
-          id:row.client_id||('ab'+row.id.slice(0,6)), _bkid:row.id,
+          _bkid:row.id,
           type:row.type, label:row.label, provider:row.provider,
           scope:row.scope||'company', ref:row.ref||'',
           // The server stores the four states abState() understands; `stale` stays
@@ -7209,7 +7216,10 @@ init();
           verify:{state:row.verify_state||'unverified',
                   ts:row.verify_ts?new Date(row.verify_ts).getTime():null,
                   msg:row.verify_msg||''},
-        },row.config||{});
+        },row.config||{},{
+          // Last, so nothing in config can replace it. Goes into inline handlers.
+          id:safeId(row.client_id)||('ab'+String(row.id).replace(/[^\w-]/g,'').slice(0,6)),
+        });
         return ab;
       });
       if(typeof renderChannelsCfgOrBotz==='function'){ try{ renderChannelsCfgOrBotz(); }catch(e){} }
