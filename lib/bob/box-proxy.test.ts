@@ -129,3 +129,19 @@ test('the box\'s own writes, and clients that are not browsers, pass', async () 
 test('a read is never refused for where it comes from', async () => {
   assert.ok(passes(await boxProxy(new NextRequest('http://box.test/login', { headers: { 'sec-fetch-site': 'cross-site' } }), deps())))
 })
+
+test('a refused write is recorded, without its origin header verbatim or the query string', async () => {
+  const info = console.info
+  const lines: string[] = []
+  console.info = (l: string) => { lines.push(l) }
+  try {
+    await boxProxy(write('/api/config/thresholds/res?token=abc', { ...JSON_TYPE, origin: 'https://evil.test' }, 'PUT'), deps())
+    await boxProxy(write('/auth/login', { 'content-type': 'text/plain' }), deps())
+  } finally { console.info = info }
+  const events = lines.map((l) => JSON.parse(l))
+  assert.deepEqual(events.map((e) => [e.event, e.status, e.method, e.path]), [
+    ['access.write_refused', 403, 'PUT', '/api/config/thresholds/res'],
+    ['access.write_refused', 415, 'POST', '/auth/login'],
+  ])
+  for (const l of lines) assert.doesNotMatch(l, /token=abc/)
+})

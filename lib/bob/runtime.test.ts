@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  BobConfigError, assertBoxEnv, boxEnvProblems, dbTarget, gotrueUrl, parseEnvFile, readSecrets,
+  BobConfigError, assertBoxEnv, boxEnvProblems, proxyHops, dbTarget, gotrueUrl, parseEnvFile, readSecrets,
 } from './runtime.ts'
 
 const ORG = 'aaaaaaaa-0000-4000-8000-000000000001'
@@ -69,4 +69,11 @@ test('the box refuses to start with missing configuration, and names every gap',
 
 test('outside the box nothing is asserted', () => {
   assertBoxEnv({ SUPABASE_SERVICE_ROLE_KEY: 'x' })
+})
+
+test('the number of trusted proxies is configuration, checked at start-up', () => {
+  assert.equal(proxyHops({}), 1)
+  assert.equal(proxyHops({ BOB_PROXY_HOPS: '2' }), 2)
+  for (const bad of ['0', '-1', 'x', '1.5', '9']) assert.throws(() => proxyHops({ BOB_PROXY_HOPS: bad }), /BOB_PROXY_HOPS/)
+  assert.match(boxEnvProblems(box({ BOB_PROXY_HOPS: 'x' }), mounted).join(), /BOB_PROXY_HOPS/)
 })

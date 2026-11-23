@@ -16,6 +16,7 @@ import { boxAccess } from './surface.ts'
 import { refuseWrite } from './request-guard.ts'
 import { boxOrgId, gotrueUrl } from './runtime.ts'
 import { resolveSession, type CookieJar, type CookieOptions, type SessionState } from './session.ts'
+import { logSecurity } from './security-log.ts'
 import { boxRole, type Role } from './roles.ts'
 import { withSecurityHeaders } from './security-headers.ts'
 
@@ -51,6 +52,7 @@ async function roleResponse(request: NextRequest, deps: BoxProxyDeps, userId: st
       : plain(503, 'BOb no puede leer su base. Vuelve a intentarlo en un momento.')
   }
   if (role) return NextResponse.next({ request })
+  logSecurity('access.no_role', { user: userId, method: request.method, path: request.nextUrl.pathname })
   return isApi
     ? NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
     : plain(403, 'Esta cuenta no tiene acceso a BOb en esta caja.')
@@ -66,7 +68,10 @@ async function decide(request: NextRequest, deps: BoxProxyDeps): Promise<NextRes
   const access = boxAccess(path)
   if (access === 'off') return plain(404, 'Not found')
   const refused = refuseWrite(request.method, request.headers, request.headers.get('host') ?? request.nextUrl.host)
-  if (refused) return NextResponse.json({ ok: false, error: refused.error }, { status: refused.status })
+  if (refused) {
+    logSecurity('access.write_refused', { status: refused.status, method: request.method, path })
+    return NextResponse.json({ ok: false, error: refused.error }, { status: refused.status })
+  }
   if (access === 'public') return NextResponse.next({ request })
 
   let base: string

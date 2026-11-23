@@ -99,6 +99,15 @@ export function gotrueUrl(env: Env = process.env): string {
 }
 
 // Every problem at once, by name, never by value. Empty means it may start.
+// How many proxies in front of bob-web append to X-Forwarded-For. In a box it
+// is Traefik alone: 1. The client address is the entry the outermost trusted
+// proxy wrote; anything before it is whatever the client sent.
+export function proxyHops(env: Env = process.env): number {
+  const raw = env.BOB_PROXY_HOPS ?? '1'
+  if (!/^[1-5]$/.test(raw)) throw new BobConfigError('BOB_PROXY_HOPS debe ser un entero de 1 a 5')
+  return Number(raw)
+}
+
 export function boxEnvProblems(env: Env = process.env, read: Reader = defaultRead): string[] {
   const problems: string[] = []
   for (const k of FORBIDDEN_IN_BOX) if (env[k]) problems.push(`${k} no debe estar en la caja`)
@@ -106,6 +115,7 @@ export function boxEnvProblems(env: Env = process.env, read: Reader = defaultRea
     ['BOB_ORG_ID', () => boxOrgId(env)],
     ['BOB_GOTRUE_URL', () => gotrueUrl(env)],
     ['BOB_DB_HOST', () => dbTarget(env, read)],
+    ['BOB_PROXY_HOPS', () => proxyHops(env)],
   ]
   for (const [, check] of checks) {
     try { check() } catch (e) { problems.push((e as Error).message) }
