@@ -66,6 +66,19 @@ export function liveMode(status, json) {
   return json && status !== 404
 }
 
+// What the page is, after the first read. 'box' when bob answers; the demo
+// only when /api/health says, in JSON, that this server is not a box (the
+// box's health names its identity service); anything else is 'closed': a
+// gateway page, a redirect from a gate in front of the box, no answer. A
+// closed page shows nothing and loads no stored configuration.
+export function pageMode(first, health) {
+  if (liveMode(first.status, first.json)) return 'box'
+  const b = health?.json ? health.body : null
+  return b && typeof b === 'object' && !('identity' in b) ? 'demo' : 'closed'
+}
+
+export const CLOSED_TEXT = 'BOb no pudo confirmar sus datos. Recarga la página en un momento.'
+
 export function failureText(status, error) {
   if (status === 403) return 'Sin acceso: tu cuenta no tiene un rol activo en bob.'
   if (status === 503) return 'bob no disponible en este momento. Se reintenta cada minuto.'
@@ -198,6 +211,13 @@ export const SIM_OFF = [
   'renderKeywordConfig', 'renderKeywordRules', 'renderQualityConfig', 'renderMetricColConfig',
   'renderActBobeeTab', 'renderABFields', 'renderChannelsCfgOrBotz', 'renderAnomaliesTab',
   'renderAnomaliesModal', 'renderAlertsModal', 'renderAlarmsModal', 'renderActionsModal',
+  // Every other function that writes interpolated HTML (lib/bob/simulator-sinks.test.ts finds them).
+  'onIndustryChange', 'renderIconGrid', 'handleLogo', 'populateChAddSelect', 'renderSbChannels',
+  'applyAIData', 'applyLang', 'onChannelsChanged', 'renderFaqActivity', 'renderWordsActivity',
+  'renderSessionsActivity', 'renderAvgTimeActivity', 'renderSentimentActivity', 'renderActionsActivity',
+  'renderTemasActivity', 'renderGenericActivity', 'updateNcPlaceholder', 'confirmRemoveCh', 'appendBobeeMsg',
+  'renderWordCloud', 'renderNpsActivity', 'sendActBobeeChat', 'renderChannelActivity',
+  'renderAvailableActivity', 'filterAnomalyModal', 'filterAlertModal', 'applyConfigSnapshot',
 ]
 
 function stopSimulation() {
@@ -462,10 +482,39 @@ function enableThresholds() {
   })
 }
 
+async function readHealth() {
+  try {
+    const res = await fetch('/api/health', { redirect: 'manual', cache: 'no-store' })
+    const json = (res.headers.get('content-type') ?? '').includes('application/json')
+    return { json, body: json ? await res.json() : null }
+  } catch {
+    return null
+  }
+}
+
+// The simulator stays hidden and stopped; only a message shows.
+function closePage() {
+  stopSimulation()
+  if ($('bobClosed')) return
+  const el = document.createElement('div')
+  el.id = 'bobClosed'
+  el.setAttribute('role', 'alert')
+  el.style.cssText = 'position:fixed;top:40%;left:0;right:0;text-align:center;font:14px sans-serif;color:#666'
+  el.textContent = CLOSED_TEXT
+  document.body.appendChild(el)
+}
+
 export async function start() {
   const first = await read(ENDPOINTS[0], currentQuery())
-  if (!liveMode(first.status, first.json)) {
+  const mode = liveMode(first.status, first.json) ? 'box' : pageMode(first, await readHealth())
+  if (mode === 'closed') {
+    closePage()
+    return false
+  }
+  if (mode === 'demo') {
     document.documentElement.classList.remove('bob-pending')
+    // dashboard.html loads its stored configuration only on this signal.
+    window.dispatchEvent(new Event('bob:demo'))
     return false
   }
   const style = document.createElement('style')
@@ -497,6 +546,6 @@ export async function start() {
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   start().catch((e) => {
     console.error('[bob-live]', e)
-    document.documentElement.classList.remove('bob-pending')
+    closePage()
   })
 }

@@ -7388,9 +7388,11 @@ init();
     const el=document.getElementById('actContent-config');
     if(el&&typeof renderConfigTab==='function'&&actMetricId){ try{ renderConfigTab(actMetricId); }catch(e){} }
   }
-  setTimeout(function(){ hydrate().catch(function(){}); },600);
+  // Only once bob-live has said this is the demo, never in a box (or when it
+  // did not start at all): stored configuration is not loaded otherwise.
+  window.addEventListener('bob:demo', function(){ hydrate().catch(function(){}); }, {once:true});
 })();
 </script>
-<script type="module" src="/bob-live.mjs" onerror="document.documentElement.classList.remove('bob-pending')"></script>
+<script type="module" src="/bob-live.mjs" onerror="var d=document.createElement('div');d.setAttribute('role','alert');d.style.cssText='position:fixed;top:40%;left:0;right:0;text-align:center;font:14px sans-serif;color:#666';d.textContent='No se pudo cargar BOb. Recarga la página en un momento.';document.body.appendChild(d)"></script>
 </body>
 </html>
