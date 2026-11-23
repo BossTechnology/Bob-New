@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server'
 import { getRouteClient } from '@/lib/supabase'
 import { enforceRateLimit, LIMITS } from '@/lib/ratelimit'
 import { ok, badReq, unauth, handle } from '@/lib/api-response'
-import { isBox, gotrueUrl } from '@/lib/bob/runtime.ts'
+import { isBox, gotrueUrl, proxyHops } from '@/lib/bob/runtime.ts'
 import { passwordGrant } from '@/lib/bob/gotrue.ts'
 import { setSessionCookies } from '@/lib/bob/session.ts'
 import { requestJar } from '@/lib/bob/box-auth.ts'
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     // In the box: the box's GoTrue, at run time, throttled per account and
     // per address. The tokens go to httpOnly cookies and never into the body.
     if (isBox()) {
-      return await boxLogin(await request.json().catch(() => null), clientIp(request.headers.get('x-forwarded-for')), {
+      return await boxLogin(await request.json().catch(() => null), clientIp(request.headers.get('x-forwarded-for'), proxyHops()), {
         ...LOGIN_ATTEMPTS,
         grant: (email, password) => passwordGrant(gotrueUrl(), email, password),
         setSession: async (session) => setSessionCookies(await requestJar(), session),

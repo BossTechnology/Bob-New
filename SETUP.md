@@ -159,6 +159,7 @@ Configuración (no secreta, sin `NEXT_PUBLIC_`, leída al arrancar, nunca al con
 | `BOB_ORG_ID` | La organización de la caja |
 | `BOB_GOTRUE_URL` | El GoTrue de la caja por dentro, en su raíz (`http://bzzz-supabase-auth:9999`, sin `/auth/v1`) |
 | `BOB_DB_HOST`, `BOB_DB_PORT` (5432), `BOB_DB_NAME` (`postgres`) | `supabase-db` por `bzzz-app` |
+| `BOB_PROXY_HOPS` (1) | Cuántos proxies delante de bob-web añaden a `X-Forwarded-For`. En la caja es Traefik solo: 1. Si se pone un balanceador delante, 2. El límite de intentos de inicio de sesión por dirección depende de que sea exacto |
 | `BOB_SECRETS_FILE` | Solo para pruebas; por omisión `/run/secrets/bob/app.env` |
 
 El único secreto es el login de `bob_app`, en un fichero montado (nunca en el entorno):

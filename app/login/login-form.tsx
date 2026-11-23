@@ -2,6 +2,7 @@
 // §5.1 Minimal login form — posts to /auth/login, then opens where it says
 // (the dashboard in the demo, the bob screens in the box).
 import { useState } from 'react'
+import { loginErrorText } from '@/lib/bob/login-text.ts'
 
 export default function LoginForm({ box }: { box: boolean }) {
   const [email, setEmail] = useState('')
@@ -21,8 +22,7 @@ export default function LoginForm({ box }: { box: boolean }) {
     setLoading(false)
     const body = await res.json().catch(() => null)
     if (res.ok) window.location.href = body?.data?.next ?? '/dashboard.html'
-    else if (res.status === 503) setError('La identidad de la caja no responde')
-    else setError('Credenciales inválidas')
+    else setError(loginErrorText(res.status))
   }
 
   return (
