@@ -8,9 +8,12 @@
 //   (not /login: that would loop against the same dead GoTrue);
 // - GoTrue's 401: /login for pages, 401 for the API;
 // - no row in bob.users, or inactive: 403 on /bob/*, /api/bob/* and
-//   /api/config/* (Henry, 2026-11-21).
+//   /api/config/* (Henry, 2026-11-21);
+// - a write from another origin: 403; with a body that is not JSON: 415
+//   (request-guard.ts).
 import { NextResponse, type NextRequest } from 'next/server.js'
 import { boxAccess } from './surface.ts'
+import { refuseWrite } from './request-guard.ts'
 import { boxOrgId, gotrueUrl } from './runtime.ts'
 import { resolveSession, type CookieJar, type CookieOptions, type SessionState } from './session.ts'
 import { boxRole, type Role } from './roles.ts'
@@ -62,6 +65,8 @@ async function decide(request: NextRequest, deps: BoxProxyDeps): Promise<NextRes
   const path = request.nextUrl.pathname
   const access = boxAccess(path)
   if (access === 'off') return plain(404, 'Not found')
+  const refused = refuseWrite(request.method, request.headers, request.headers.get('host') ?? request.nextUrl.host)
+  if (refused) return NextResponse.json({ ok: false, error: refused.error }, { status: refused.status })
   if (access === 'public') return NextResponse.next({ request })
 
   let base: string
