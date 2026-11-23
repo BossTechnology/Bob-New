@@ -171,7 +171,7 @@ En modo caja:
 - Sirve solo una lista de rutas (`lib/bob/surface.ts`). Todo lo demás, 404: `/api/ai`, notify,
   Twilio, Slack, los crons, `/auth/signup`, `/demo` y el simulador `dashboard.html`.
 - Cada petición se valida contra GoTrue. GoTrue caído: 503, nunca `/login`. Token rechazado:
-  `/login`. Las cookies de sesión son de BOb (`bob-at`, `bob-rt`, `httpOnly`).
+  `/login`. Las cookies de sesión son de BOb (`__Host-bob-at`, `__Host-bob-rt`, `httpOnly`).
 - Una cuenta sin fila en `bob.users`, o con `active` distinto de verdadero, recibe 403 en
   `/bob/*`, `/api/bob/*` y `/api/config/*` (Henry, 2026-11-21). `bob_app` lee los usuarios de su
   organización desde BOb-engine #34; el papel sale de esa fila.
