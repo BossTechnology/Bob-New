@@ -1,5 +1,5 @@
 // What a write must look like in the box (ASVS 4.0.3 V4.2.2, V13.1.5,
-// V13.2.3, V13.2.5; docs/asvs-l2-box.md). Origin and Sec-Fetch-Site are only
+// V13.2.3, V13.2.5). Origin and Sec-Fetch-Site are only
 // used to refuse, never to grant: who is asking is still the session's.
 //
 // The host is compared, not the scheme: TLS ends at the box's Traefik, which
