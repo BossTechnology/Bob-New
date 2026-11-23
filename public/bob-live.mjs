@@ -218,6 +218,7 @@ export const SIM_OFF = [
   'renderTemasActivity', 'renderGenericActivity', 'updateNcPlaceholder', 'confirmRemoveCh', 'appendBobeeMsg',
   'renderWordCloud', 'renderNpsActivity', 'sendActBobeeChat', 'renderChannelActivity',
   'renderAvailableActivity', 'filterAnomalyModal', 'filterAlertModal', 'applyConfigSnapshot',
+  'renderEntityActivity', 'filterGenericModal',
 ]
 
 function stopSimulation() {
@@ -482,13 +483,18 @@ function enableThresholds() {
   })
 }
 
-async function readHealth() {
+// No answer in time is no answer: pageMode then keeps the page closed.
+export async function readHealth(get = fetch, ms = TIMEOUT_MS) {
+  const ctl = new AbortController()
+  const timer = setTimeout(() => ctl.abort(), ms)
   try {
-    const res = await fetch('/api/health', { redirect: 'manual', cache: 'no-store' })
+    const res = await get('/api/health', { redirect: 'manual', signal: ctl.signal, cache: 'no-store' })
     const json = (res.headers.get('content-type') ?? '').includes('application/json')
     return { json, body: json ? await res.json() : null }
   } catch {
     return null
+  } finally {
+    clearTimeout(timer)
   }
 }
 
@@ -543,9 +549,13 @@ export async function start() {
   return true
 }
 
-if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  start().catch((e) => {
+// Anything start() did not expect closes the page rather than leaving it
+// half painted.
+export function boot(run = start, onFail = closePage) {
+  return run().catch((e) => {
     console.error('[bob-live]', e)
-    closePage()
+    onFail()
   })
 }
+
+if (typeof window !== 'undefined' && typeof document !== 'undefined') boot()
