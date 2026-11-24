@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { getUser, passwordGrant } from './gotrue.ts'
-import { ACCESS_COOKIE, REFRESH_COOKIE, resolveSession, type CookieJar } from './session.ts'
+import { ACCESS_COOKIE, REFRESH_COOKIE, resolveSession, setSessionCookies, type CookieJar } from './session.ts'
 
 const BASE = 'http://bzzz-supabase-auth:9999'
 const USER = { id: 'aaaaaaaa-1111-4000-8000-000000000001', email: 'user@example.com' }
@@ -84,4 +84,17 @@ test('a wrong password is unauthorized; GoTrue down is unavailable', async () =>
   assert.equal((await passwordGrant(BASE, 'u', 'p', fakeFetch(() => json(400, {})).f)).kind, 'unauthorized')
   assert.equal((await passwordGrant(BASE, 'u', 'p', fakeFetch(() => 'down').f)).kind, 'unavailable')
   assert.equal((await passwordGrant(BASE, 'u', 'p', fakeFetch(() => json(503, {})).f)).kind, 'unavailable')
+})
+
+// ASVS 4.0.3 V3.4.1-V3.4.5: __Host- needs Secure, Path=/ and no Domain, and
+// the browser then refuses a cookie of that name set by another host.
+test('both session cookies carry the __Host- prefix and what it requires', () => {
+  const set: [string, Record<string, unknown>][] = []
+  setSessionCookies({ get: () => undefined, set: (n, _v, o) => { set.push([n, o]) } },
+    { access_token: 'a', refresh_token: 'r', expires_in: 3600 })
+  assert.equal(set.length, 2)
+  for (const [name, o] of set) {
+    assert.match(name, /^__Host-/)
+    assert.deepEqual([o.secure, o.httpOnly, o.path, o.sameSite, 'domain' in o], [true, true, '/', 'lax', false])
+  }
 })

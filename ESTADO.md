@@ -18,6 +18,7 @@
 - Revisión del PR #30 atendida: 403 sin fila en `bob.users`, errores genéricos en la caja, pool con topes, ventana de 31 días, proxy sobre todas las rutas, errores de tabla como `Error` con código, login privilegiado rechazado, CI con job en vivo (`.github/workflows/ci.yml`). 80 tests en verde en vivo con `BOB_REQUIRE_LIVE=1`.
 - P-4 (PR #35): en la caja el simulador pinta `/api/bob/*` y no inventa nada; «sin fila» y «sin proyección» a la vista; Ánimo como barras por estado; los botones de ventana mandan `range` y el desfase del navegador. Paneles sin equivalente en `bob`, ocultos. El arreglo de las listas que se rellenaban con datos simulados (`4bd24a4`) entró con #36.
 - Umbrales en la caja (PR #36): editor de límites para Tiempo Prom. y las cinco filas de conteo, bajo las claves del simulador. Viewer: lee y recibe 403 al guardar (visto en caja local). Nada evalúa los umbrales todavía (Slice 5).
+- Codificación de salida del simulador (PR #48, fusionado como `ca756ec`): `dashboard.html` tiene `esc` y `safeId`; los paneles de configuración, pestañas y modales codifican lo que viene de la base o del usuario, y los ids guardados (canales, AutoBotz, actor de umbral) se validan al cargar. `lib/bob/simulator-encoding.test.ts` descubre las funciones que pintan HTML en vez de listarlas y falla si un valor nuevo entra sin codificar. Probado en modo demo: `<b>x</b>"` se ve literal y los paneles se siguen editando y guardando.
 - CI en GitHub (`5625cfe`): los dos jobs nuevos («Lint, typecheck and unit tests» y «Schema bob as bob_app (live tests)») y los dos de Vercel en verde. El PR #30 se fusionó a `main` (`b4a7c72`).
 
 ## Pendiente
@@ -46,6 +47,7 @@
 
 ## Notas de sesión
 <!-- AAAA-MM-DD: una o dos líneas -->
+- 2026-11-23: PR #48 (codificación de salida del simulador) fusionado con CI en verde. El comentario de cabecera de `lib/bob/simulator-sinks.test.ts` en el PR #43 ya no depende del orden en que entren #43 y #48.
 - 2026-11-21 (cierre): #34, #35, #36 y #31 fusionados. #35 entró sin `4bd24a4`; viajó en #36, retargeteado a `main`. Caso viewer de los umbrales probado en caja local (papel cambiado a viewer y devuelto a admin; login temporal borrado).
 - 2026-11-21 (P-4): simulador probado en modo caja local (GoTrue falso, login temporal `bob_web_e2e` ya borrado): las tres pantallas leen `bob`, Este Mes pide `range=month&tz=300`, y una lectura fallida deja «—» con aviso en rojo. Fuera de la caja la API da 404 y la simulación sigue.
 - 2026-11-21: revisión del PR #27 de BOb-engine (spec del Slice 3) publicada como comentario; sus siete puntos quedaron resueltos en main con los PRs #28 y #30. Arrancó la construcción del Slice 3 en su propia sesión. Las tres notas de estado de la rama del PR #29 (`ab04e33`, `079e6f5`, `081641b`) no entraron en el merge; su contenido vigente está aquí.

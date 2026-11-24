@@ -99,3 +99,24 @@ test('observed with no row is a plain 0, never a zero-length time', () => {
   assert.equal(cellText({ kind: 'no_row', state }, asTime).text, '0')
   assert.equal(cellText({ kind: 'no_row', state: { ...state, value: null } }, asTime).text, '0')
 })
+
+// The page fails closed: the simulator (and its stored configuration) runs
+// only when the server says, in JSON, that it is not a box.
+test('only a server that says it is not a box gets the demo', async () => {
+  const { pageMode } = await import('../../public/bob-live.mjs')
+  const bob = { status: 200, json: true }
+  const notBob = { status: 404, json: true }
+  const html = { status: 502, json: false }
+  const redirect = { status: 0, json: false }
+  const demoHealth = { json: true, body: { status: 'ok', db: 'ok', version: '1.0.0' } }
+  const boxHealth = { json: true, body: { status: 'down', db: 'ok', identity: 'error', version: '1.0.0' } }
+  assert.equal(pageMode(bob, null), 'box')
+  assert.equal(pageMode(notBob, demoHealth), 'demo')
+  assert.equal(pageMode(redirect, demoHealth), 'demo')
+  // A gateway page or a redirect from the gate in front of a box: not the demo.
+  assert.equal(pageMode(html, boxHealth), 'closed')
+  assert.equal(pageMode(redirect, boxHealth), 'closed')
+  assert.equal(pageMode(html, { json: false, body: null }), 'closed')
+  assert.equal(pageMode(html, null), 'closed')
+  assert.equal(pageMode(notBob, { json: true, body: null }), 'closed')
+})
