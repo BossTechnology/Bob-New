@@ -27,6 +27,9 @@ const SESSION: string[] = [
   '/api/config/responses/',
 ]
 
+// The rules themselves, for checks that must cover every one of them.
+export const SURFACE = { public: PUBLIC, session: SESSION } as const
+
 // Next's own assets. Other files under public/ reach the proxy and are off,
 // but for the simulator and its painter, named in SESSION.
 const ASSETS = ['/_next/', '/favicon.ico']

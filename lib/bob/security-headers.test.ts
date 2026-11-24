@@ -44,3 +44,14 @@ test('every answer in the box carries the security headers', async () => {
 test('next.config turns off the X-Powered-By banner', () => {
   assert.match(readFileSync('next.config.ts', 'utf8'), /poweredByHeader:\s*false/)
 })
+
+// ASVS 4.0.3 V14.4.2: an API answer opened directly in the browser is a
+// download, never a page rendered from its content.
+test('API answers are attachments; pages are not', async () => {
+  for (const p of ['/api/bob/interactions', '/api/config/thresholds', '/api/health', '/auth/me', '/api/nope.json']) {
+    assert.equal((await boxProxy(req(p), deps())).headers.get('content-disposition'), 'attachment', p)
+  }
+  for (const p of ['/login', '/bob/performance', '/dashboard.html']) {
+    assert.equal((await boxProxy(req(p), deps())).headers.get('content-disposition'), null, p)
+  }
+})
