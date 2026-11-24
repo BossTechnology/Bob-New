@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { getUser, passwordGrant } from './gotrue.ts'
-import { ACCESS_COOKIE, REFRESH_COOKIE, resolveSession, setSessionCookies, type CookieJar } from './session.ts'
+import { ACCESS_COOKIE, REFRESH_COOKIE, clearSessionCookies, resolveSession, setSessionCookies, type CookieJar } from './session.ts'
 
 const BASE = 'http://bzzz-supabase-auth:9999'
 const USER = { id: 'aaaaaaaa-1111-4000-8000-000000000001', email: 'user@example.com' }
@@ -97,4 +97,10 @@ test('both session cookies carry the __Host- prefix and what it requires', () =>
     assert.match(name, /^__Host-/)
     assert.deepEqual([o.secure, o.httpOnly, o.path, o.sameSite, 'domain' in o], [true, true, '/', 'lax', false])
   }
+})
+
+test('signing out also clears the cookies from before the __Host- prefix', () => {
+  const j = jar({ [ACCESS_COOKIE]: 'at', [REFRESH_COOKIE]: 'rt', 'bob-at': 'old-at', 'bob-rt': 'old-rt' })
+  clearSessionCookies(j)
+  for (const n of [ACCESS_COOKIE, REFRESH_COOKIE, 'bob-at', 'bob-rt']) assert.equal(j.store.get(n), '', n)
 })
