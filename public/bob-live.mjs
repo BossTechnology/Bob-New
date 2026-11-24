@@ -469,6 +469,23 @@ async function openThresholdEditor(metricId) {
   }
 }
 
+// The simulator has no way out of the session; in the box the page gets
+// one. It ends the session, then replaces the page (lib/bob/sign-out.ts).
+export function enableSignOut() {
+  if ($('bobSignOut')) return
+  const b = document.createElement('button')
+  b.id = 'bobSignOut'
+  b.type = 'button'
+  b.textContent = 'Cerrar sesión'
+  b.style.cssText = 'position:fixed;top:10px;right:12px;z-index:9999;padding:4px 10px;border:1px solid #ccc;border-radius:6px;background:#fff;cursor:pointer;font:12px sans-serif'
+  b.onclick = async () => {
+    b.disabled = true
+    try { await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }) } catch { /* the page still goes */ }
+    window.location.replace('/login')
+  }
+  document.body.appendChild(b)
+}
+
 function enableThresholds() {
   window.openActionables = (metricId) => { openThresholdEditor(metricId) }
   // The simulator opens Tiempo Prom. from the Response Time label too; in bob
@@ -530,6 +547,7 @@ export async function start() {
   stopSimulation()
   for (const name of ENDPOINTS) BLANK[name]()
   enableThresholds()
+  enableSignOut()
   // The window controls now read bob instead of rescaling invented numbers.
   window.onTimeChange = (v) => {
     $('drWrap')?.classList.toggle('show', v === 'custom')
