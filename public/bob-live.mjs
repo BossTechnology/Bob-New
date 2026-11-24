@@ -468,20 +468,6 @@ async function openThresholdEditor(metricId) {
   }
 }
 
-function enableThresholds() {
-  window.openActionables = (metricId) => { openThresholdEditor(metricId) }
-  // The simulator opens Tiempo Prom. from the Response Time label too; in bob
-  // they are two measures (interaction_duration and response_time), so only
-  // the Tiempo Prom. card edits it.
-  const tr = $('lbl-tr')
-  if (tr) tr.onclick = null
-  $('avgTimeNum')?.closest('.card-panel')?.classList.add('bob-editable')
-  $('metricsBox')?.addEventListener('click', (e) => {
-    const row = e.target.closest?.('[data-threshold]')
-    if (row) openThresholdEditor(row.dataset.threshold)
-  })
-}
-
 // The simulator has no way out of the session; in the box the page gets
 // one. It ends the session, then replaces the page (lib/bob/sign-out.ts).
 function enableSignOut() {
@@ -497,6 +483,20 @@ function enableSignOut() {
     window.location.replace('/login')
   }
   document.body.appendChild(b)
+}
+
+function enableThresholds() {
+  window.openActionables = (metricId) => { openThresholdEditor(metricId) }
+  // The simulator opens Tiempo Prom. from the Response Time label too; in bob
+  // they are two measures (interaction_duration and response_time), so only
+  // the Tiempo Prom. card edits it.
+  const tr = $('lbl-tr')
+  if (tr) tr.onclick = null
+  $('avgTimeNum')?.closest('.card-panel')?.classList.add('bob-editable')
+  $('metricsBox')?.addEventListener('click', (e) => {
+    const row = e.target.closest?.('[data-threshold]')
+    if (row) openThresholdEditor(row.dataset.threshold)
+  })
 }
 
 async function readHealth() {
