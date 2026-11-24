@@ -3,6 +3,9 @@
 Una línea por cambio entregado, en lenguaje de usuario.
 
 ## Sin publicar
+- Modo caja: hay un botón «Cerrar sesión» en las pantallas `/bob` y en el simulador; cierra solo la sesión de este equipo, borra las cookies (también las de antes del prefijo `__Host-`) y la caché de la página. El formulario de inicio de sesión deja ver la contraseña escrita.
+- Modo caja: borrar un canal y desconectar sus reglas es una sola transacción; una ventana pico vacía ya no impide guardar el umbral, y una a medio llenar se rechaza. Cada cuenta tiene un límite de peticiones por minuto en la API (120) y en las pantallas `/bob` (60).
+- Modo caja: el simulador no lee ni escribe la configuración guardada mientras no confirme que es la demo, y la comprobación de salud tiene tiempo máximo.
 - Modo caja: el simulador queda cerrado si no puede confirmar que habla con `bob` (no se carga la configuración guardada ni se muestran cifras), y ninguno de sus pintores de HTML corre en la caja.
 - Modo caja: el inicio de sesión tiene límite por dirección y por cuenta; quien solo conoce el email no bloquea a su dueño desde una dirección que ya usó. Cada decisión queda en el log como una línea JSON, sin email ni contraseña. El formulario dice cuándo hay demasiados intentos.
 - Modo caja: las cookies de sesión llevan el prefijo `__Host-` (`__Host-bob-at`, `__Host-bob-rt`).
