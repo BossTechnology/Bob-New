@@ -76,3 +76,12 @@ test('every column the adapter can reach has a rule', () => {
     for (const c of columns) assert.ok(RULES[table]?.[c], `${table}.${c}`)
   }
 })
+
+test('a peak window left entirely empty is dropped, so it cannot block saving the bounds', async () => {
+  const windows = [{ start: '', end: '' }, { from: '', to: '' }, { start: '09:00', end: '11:00', days: 'weekdays' }]
+  assert.equal(await write('threshold_configs', { ...THRESHOLD, peak_windows: windows }), 'REACHED')
+  // Half filled in is a mistake to show, not to drop in silence.
+  assert.equal(await write('threshold_configs', { ...THRESHOLD, peak_windows: [{ start: '09:00', end: '' }] }), 'BOB_QUERY')
+  // A window that is filled in but wrong is still refused.
+  assert.equal(await write('threshold_configs', { ...THRESHOLD, peak_windows: [{ start: '25:00', end: '11:00' }] }), 'BOB_QUERY')
+})
