@@ -3,6 +3,15 @@
 Una línea por cambio entregado, en lenguaje de usuario.
 
 ## Sin publicar
+- Modo caja: hay un botón «Cerrar sesión» en las pantallas `/bob` y en el simulador; cierra solo la sesión de este equipo, borra las cookies (también las de antes del prefijo `__Host-`) y la caché de la página. El formulario de inicio de sesión deja ver la contraseña escrita.
+- Modo caja: borrar un canal y desconectar sus reglas es una sola transacción; una ventana pico vacía ya no impide guardar el umbral, y una a medio llenar se rechaza. Cada cuenta tiene un límite de peticiones por minuto en la API (120) y en las pantallas `/bob` (60).
+- Modo caja: el simulador no lee ni escribe la configuración guardada mientras no confirme que es la demo, y la comprobación de salud tiene tiempo máximo.
+- Modo caja: el simulador queda cerrado si no puede confirmar que habla con `bob` (no se carga la configuración guardada ni se muestran cifras), y ninguno de sus pintores de HTML corre en la caja.
+- Modo caja: el inicio de sesión tiene límite por dirección y por cuenta; quien solo conoce el email no bloquea a su dueño desde una dirección que ya usó. Cada decisión queda en el log como una línea JSON, sin email ni contraseña. El formulario dice cuándo hay demasiados intentos.
+- Modo caja: las cookies de sesión llevan el prefijo `__Host-` (`__Host-bob-at`, `__Host-bob-rt`).
+- Modo caja: cada escritura en `/api/config` se valida por tipo y por rango antes de llegar a la base.
+- Modo caja: se rechazan las escrituras desde otro origen y los cuerpos que no son JSON.
+- Modo caja: cada respuesta lleva cabeceras de seguridad (CSP, `nosniff`, `X-Frame-Options`, `Referrer-Policy`) y ya no anuncia `X-Powered-By`.
 - El simulador codifica los valores guardados (nombres de canal, reglas y respuestas, asuntos, mensajes, ventanas pico, alertas) antes de pintarlos en los paneles de configuración: se ven como texto literal, también en la demo de Vercel.
 - Se quita la dependencia `@anthropic-ai/sdk`, que no se usaba: la app llama a la API por HTTP desde `lib/claude.ts` y `/api/ai`. Nada cambia para el usuario.
 - En la caja, el simulador deja editar el umbral (superior e inferior) de Tiempo Prom., Resueltos, Abandonados, Desambiguación, Derivaciones y Alucinaciones; se guarda en `bob` con un papel admin o analyst. Nada lo evalúa todavía.
