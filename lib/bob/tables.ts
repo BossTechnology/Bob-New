@@ -12,6 +12,7 @@
 import type { Pool } from 'pg'
 import { asBobApp } from './db.ts'
 import { BobDbError } from './db-error.ts'
+import { rowProblem } from './config-input.ts'
 
 const COMMON = ['id', 'org_id', 'created_at']
 // `numeric` columns come back from pg as strings; PostgREST gives them to the
@@ -93,6 +94,8 @@ export class TableQuery implements PromiseLike<TableResult> {
   private async run(): Promise<TableResult> {
     let sql: { text: string; values: unknown[] }
     try {
+      const problem = this.row ? rowProblem(this.table, this.row) : null
+      if (problem) throw new Error(problem)
       sql = this.compile()
     } catch (e) {
       return { data: null, error: new BobDbError((e as Error).message, 'BOB_QUERY') }

@@ -91,3 +91,49 @@ test('a refused save says why', () => {
   assert.match(saveFailureText(400, 'Invalid peak_mode'), /Invalid peak_mode/)
   assert.match(saveFailureText(503), /no disponible/)
 })
+
+// The page fails closed: the simulator (and its stored configuration) runs
+// only when the server says, in JSON, that it is not a box.
+test('only a server that says it is not a box gets the demo', async () => {
+  const { pageMode } = await import('../../public/bob-live.mjs')
+  const bob = { status: 200, json: true }
+  const notBob = { status: 404, json: true }
+  const html = { status: 502, json: false }
+  const redirect = { status: 0, json: false }
+  const demoHealth = { json: true, body: { status: 'ok', db: 'ok', version: '1.0.0' } }
+  const boxHealth = { json: true, body: { status: 'down', db: 'ok', identity: 'error', version: '1.0.0' } }
+  assert.equal(pageMode(bob, null), 'box')
+  assert.equal(pageMode(notBob, demoHealth), 'demo')
+  assert.equal(pageMode(redirect, demoHealth), 'demo')
+  // A gateway page or a redirect from the gate in front of a box: not the demo.
+  assert.equal(pageMode(html, boxHealth), 'closed')
+  assert.equal(pageMode(redirect, boxHealth), 'closed')
+  assert.equal(pageMode(html, { json: false, body: null }), 'closed')
+  assert.equal(pageMode(html, null), 'closed')
+  assert.equal(pageMode(notBob, { json: true, body: null }), 'closed')
+})
+
+test('a health check that never answers counts as no answer, and the page stays closed', async () => {
+  const { readHealth, pageMode } = await import('../../public/bob-live.mjs')
+  const hung = (_url: unknown, init?: RequestInit) => new Promise<Response>((_, reject) => {
+    init?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
+  })
+  const t0 = Date.now()
+  const health = await readHealth(hung, 50)
+  assert.equal(health, null)
+  assert.ok(Date.now() - t0 < 1000)
+  assert.equal(pageMode({ status: 503, json: false }, health), 'closed')
+})
+
+test('when start() throws, the page closes', async () => {
+  const { boot } = await import('../../public/bob-live.mjs')
+  let closed = 0
+  const error = console.error
+  console.error = () => {}
+  try {
+    await boot(async () => { throw new Error('boom') }, () => { closed++ })
+  } finally { console.error = error }
+  assert.equal(closed, 1)
+  await boot(async () => true, () => { closed++ })
+  assert.equal(closed, 1, 'a start that works leaves the page alone')
+})

@@ -4,6 +4,7 @@
 import { cookies } from 'next/headers'
 import { ApiError } from '../api-response.ts'
 import { boxRole } from './roles.ts'
+import { logSecurity } from './security-log.ts'
 import { boxOrgId, gotrueUrl } from './runtime.ts'
 import { resolveSession, type CookieJar, type SessionState } from './session.ts'
 
@@ -28,7 +29,13 @@ export async function requireBoxAuth(allowedRoles: string[]) {
   const org_id = boxOrgId()
   // No row in bob.users, or inactive: 403 (Henry, 2026-11-21; P-1).
   const role = await boxRole(org_id, s.user.id)
-  if (!role) throw new ApiError(403, 'This account has no access to BOb in this box')
-  if (!allowedRoles.includes(role)) throw new ApiError(403, `Role ${role} is not permitted for this endpoint`)
+  if (!role) {
+    logSecurity('access.no_role', { user: s.user.id })
+    throw new ApiError(403, 'This account has no access to BOb in this box')
+  }
+  if (!allowedRoles.includes(role)) {
+    logSecurity('access.role_refused', { user: s.user.id, role, allowed: allowedRoles.join(',') })
+    throw new ApiError(403, `Role ${role} is not permitted for this endpoint`)
+  }
   return { user_id: s.user.id, org_id, role }
 }

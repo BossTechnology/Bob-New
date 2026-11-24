@@ -3,6 +3,7 @@
 Una línea por cambio entregado, en lenguaje de usuario.
 
 ## Sin publicar
+- El simulador codifica los valores guardados (nombres de canal, reglas y respuestas, asuntos, mensajes, ventanas pico, alertas) antes de pintarlos en los paneles de configuración: se ven como texto literal, también en la demo de Vercel.
 - Se quita la dependencia `@anthropic-ai/sdk`, que no se usaba: la app llama a la API por HTTP desde `lib/claude.ts` y `/api/ai`. Nada cambia para el usuario.
 - En la caja, el simulador deja editar el umbral (superior e inferior) de Tiempo Prom., Resueltos, Abandonados, Desambiguación, Derivaciones y Alucinaciones; se guarda en `bob` con un papel admin o analyst. Nada lo evalúa todavía.
 - El simulador (`dashboard.html`) pinta los datos de `bob` cuando `/api/bob/*` responde (en la caja): deja de inventar cifras, muestra «sin fila» y «sin proyección», oculta BObee, alertas, alarmas, acciones y los paneles de detalle, y los botones Ahora, Hoy, Esta semana y Este mes leen esa ventana. En la caja, `/` abre el simulador. Fuera de la caja sigue siendo el simulador de siempre.

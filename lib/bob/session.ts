@@ -7,8 +7,8 @@
 // no identity header (§4.2, point 9).
 import { getUser, refreshGrant, type GoTrueSession, type GoTrueUser } from './gotrue.ts'
 
-export const ACCESS_COOKIE = 'bob-at'
-export const REFRESH_COOKIE = 'bob-rt'
+export const ACCESS_COOKIE = '__Host-bob-at'
+export const REFRESH_COOKIE = '__Host-bob-rt'
 const REFRESH_MAX_AGE = 60 * 60 * 24 * 30
 
 export type CookieOptions = { httpOnly: boolean; secure: boolean; sameSite: 'lax'; path: string; maxAge: number }
