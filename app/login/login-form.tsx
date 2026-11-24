@@ -14,6 +14,8 @@ export default function LoginForm({ box }: { box: boolean }) {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
+    // A password left on screen does not stay visible after sending it.
+    setShown(false)
     setLoading(true)
     setError('')
     const res = await fetch('/auth/login', {
@@ -35,7 +37,7 @@ export default function LoginForm({ box }: { box: boolean }) {
         <input type="email" placeholder="Email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required
           style={{ padding: 10, borderRadius: 8, border: '1px solid #2a3140', background: '#0b0d12', color: '#fff' }} />
         <input type={shown ? 'text' : 'password'} placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} required
-          autoComplete="current-password"
+          autoComplete="current-password" spellCheck={false} autoCapitalize="off"
           style={{ padding: 10, borderRadius: 8, border: '1px solid #2a3140', background: '#0b0d12', color: '#fff' }} />
         <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13, opacity: 0.8 }}>
           <input type="checkbox" checked={shown} onChange={(e) => setShown(e.target.checked)} />
