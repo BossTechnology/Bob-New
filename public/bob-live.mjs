@@ -470,7 +470,7 @@ async function openThresholdEditor(metricId) {
 
 // The simulator has no way out of the session; in the box the page gets
 // one. It ends the session, then replaces the page (lib/bob/sign-out.ts).
-function enableSignOut() {
+export function enableSignOut() {
   if ($('bobSignOut')) return
   const b = document.createElement('button')
   b.id = 'bobSignOut'

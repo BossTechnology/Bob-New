@@ -66,8 +66,16 @@ export const passwordGrant = (base: string, email: string, password: string, f: 
 export const refreshGrant = (base: string, refreshToken: string, f: Fetch = fetch) =>
   grant(f, base, 'refresh_token', { refresh_token: refreshToken })
 
-export async function logout(base: string, accessToken: string, f: Fetch = fetch): Promise<void> {
-  await call(f, `${base}/logout`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } })
+export type LogoutResult = 'revoked' | 'unauthorized' | 'unavailable'
+
+// scope=local: this session only. GoTrue's default (global) would also end
+// the account's sessions on every other device, a wall screen included.
+// 'unauthorized' means the token was no longer valid: nothing left to revoke.
+export async function logout(base: string, accessToken: string, f: Fetch = fetch): Promise<LogoutResult> {
+  const r = await call(f, `${base}/logout?scope=local`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } })
+  if (!r) return 'unavailable'
+  if (r.ok) return 'revoked'
+  return refused(r) ? 'unauthorized' : 'unavailable'
 }
 
 export async function health(base: string, f: Fetch = fetch): Promise<boolean> {

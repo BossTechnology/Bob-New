@@ -1,8 +1,10 @@
 // Signing out of the box: end the session at GoTrue (POST /auth/logout,
 // which also clears the cookies), then replace the page with /login so the
 // figures it showed leave the screen and the history (ASVS 4.0.3 V8.2.3).
-// The page goes even if the request fails: the session then ends when its
-// token expires, and nothing stays on screen meanwhile.
+// The page goes even if the request fails or GoTrue could not revoke the
+// session (the answer says revoked: false, and the server logs it): the
+// cookies are cleared either way, the access token stays valid until it
+// expires, and nothing stays on screen meanwhile.
 export async function signOut(
   post: (url: string, init?: RequestInit) => Promise<Response> = fetch,
   replace: (url: string) => void = (url) => window.location.replace(url),

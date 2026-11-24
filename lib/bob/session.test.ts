@@ -1,7 +1,7 @@
 // The box session against a fake GoTrue. No network.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { getUser, passwordGrant } from './gotrue.ts'
+import { getUser, logout, passwordGrant } from './gotrue.ts'
 import { ACCESS_COOKIE, REFRESH_COOKIE, clearSessionCookies, resolveSession, setSessionCookies, type CookieJar } from './session.ts'
 
 const BASE = 'http://bzzz-supabase-auth:9999'
@@ -90,7 +90,8 @@ test('a wrong password is unauthorized; GoTrue down is unavailable', async () =>
 // the browser then refuses a cookie of that name set by another host.
 test('both session cookies carry the __Host- prefix and what it requires', () => {
   const set: [string, Record<string, unknown>][] = []
-  setSessionCookies({ get: () => undefined, set: (n, _v, o) => { set.push([n, o]) } },
+  // The cookies that carry the session; the old names are only expired.
+  setSessionCookies({ get: () => undefined, set: (n, v, o) => { if (v) set.push([n, o]) } },
     { access_token: 'a', refresh_token: 'r', expires_in: 3600 })
   assert.equal(set.length, 2)
   for (const [name, o] of set) {
@@ -103,4 +104,21 @@ test('signing out also clears the cookies from before the __Host- prefix', () =>
   const j = jar({ [ACCESS_COOKIE]: 'at', [REFRESH_COOKIE]: 'rt', 'bob-at': 'old-at', 'bob-rt': 'old-rt' })
   clearSessionCookies(j)
   for (const n of [ACCESS_COOKIE, REFRESH_COOKIE, 'bob-at', 'bob-rt']) assert.equal(j.store.get(n), '', n)
+})
+
+test('signing in also clears the cookies from before the __Host- prefix', () => {
+  const j = jar({ 'bob-at': 'old-at', 'bob-rt': 'old-rt' })
+  setSessionCookies(j, { access_token: 'at', refresh_token: 'rt', expires_in: 3600 })
+  assert.equal(j.store.get('bob-at'), '')
+  assert.equal(j.store.get('bob-rt'), '')
+  assert.equal(j.store.get(ACCESS_COOKIE), 'at')
+})
+
+test('logout ends this session only, and says whether GoTrue revoked it', async () => {
+  const ok = fakeFetch(() => new Response(null, { status: 204 }))
+  assert.equal(await logout(BASE, 'at', ok.f), 'revoked')
+  assert.deepEqual(ok.calls, ['POST /logout?scope=local'])
+  assert.equal(await logout(BASE, 'at', fakeFetch(() => json(401, {})).f), 'unauthorized')
+  assert.equal(await logout(BASE, 'at', fakeFetch(() => json(500, {})).f), 'unavailable')
+  assert.equal(await logout(BASE, 'at', fakeFetch(() => 'down').f), 'unavailable')
 })
