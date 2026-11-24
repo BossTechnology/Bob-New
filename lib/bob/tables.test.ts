@@ -109,3 +109,23 @@ test('an action response without an AutoBotz binding is refused by bob (Slice 6)
   const r = await t.from('response_rules').insert({ org_id: TENANT_A, type: 'action', name: 'x' }).select('id')
   assert.equal(r.error?.code, '23514')
 })
+
+test('a transaction commits every write or none', { skip }, async () => {
+  const t = bobTables(TENANT_A, pool!)
+  const row = { org_id: TENANT_A, metric_id: METRIC, upper_bound: 5, peak_mode: 'off', peak_windows: [] }
+  await t.from('threshold_configs').upsert(row, { onConflict: 'org_id,metric_id' })
+  await assert.rejects(t.transaction(async (tx) => {
+    const a = await tx.from('threshold_configs').update({ upper_bound: 42 }).eq('metric_id', METRIC)
+    assert.equal(a.error, null)
+    throw new Error('a later step failed')
+  }), /a later step failed/)
+  const kept = await t.from('threshold_configs').select('upper_bound').eq('metric_id', METRIC).single()
+  assert.strictEqual(kept.data.upper_bound, 5, 'the first write was rolled back')
+
+  await t.transaction(async (tx) => {
+    await tx.from('threshold_configs').update({ upper_bound: 6 }).eq('metric_id', METRIC)
+    await tx.from('threshold_configs').update({ lower_bound: 1 }).eq('metric_id', METRIC)
+  })
+  const both = await t.from('threshold_configs').select('upper_bound, lower_bound').eq('metric_id', METRIC).single()
+  assert.deepEqual([both.data.upper_bound, both.data.lower_bound], [6, 1])
+})

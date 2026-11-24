@@ -78,6 +78,20 @@ export const RULES: Record<string, Record<string, Check>> = {
 
 // Names the column, never the value. Columns that are not reachable at all
 // are compile()'s to refuse.
+// A peak window with an empty start or end never applied: the simulator
+// leaves one behind when a row is added and not filled in. Dropped before the
+// check, so an old one does not block saving the bounds.
+export function cleanRow(table: string, row: Record<string, unknown>): Record<string, unknown> {
+  if (table !== 'threshold_configs' || !Array.isArray(row.peak_windows)) return row
+  const filled = (w: unknown) => {
+    if (typeof w !== 'object' || w === null) return true
+    const x = w as Record<string, unknown>
+    const [a, b] = 'start' in x ? ['start', 'end'] : ['from', 'to']
+    return x[a] !== '' && x[b] !== ''
+  }
+  return { ...row, peak_windows: row.peak_windows.filter(filled) }
+}
+
 export function rowProblem(table: string, row: Record<string, unknown>): string | null {
   const rules = Object.hasOwn(RULES, table) ? RULES[table] : undefined
   if (!rules) return `${table} takes no writes`

@@ -3,6 +3,7 @@
 //          it from any response_rules that reference it (confirmRemoveCh parity).
 import { NextRequest } from 'next/server'
 import { configDb } from '@/lib/bob/config-db.ts'
+import { inOneTransaction } from '@/lib/bob/tables.ts'
 import { requireAuth } from '@/lib/auth'
 import { ok, badReq, handle } from '@/lib/api-response'
 
@@ -38,28 +39,32 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: str
     const { id } = await ctx.params
     const sb = await configDb(org_id)
 
-    // Disconnect this channel from every response rule that references it.
-    const { data: refs, error: refErr } = await sb
-      .from('response_rules')
-      .select('id, channel_ids')
-      .eq('org_id', org_id)
-      .contains('channel_ids', [id])
-    if (refErr) throw refErr
-
-    let disconnected = 0
-    for (const rule of refs ?? []) {
-      const next = ((rule as { channel_ids: string[] }).channel_ids || []).filter((c) => c !== id)
-      const { error: updErr } = await sb
+    // Disconnect this channel from every response rule that references it,
+    // then delete it: all of it or none (in the box; see inOneTransaction).
+    const disconnected = await inOneTransaction(sb, async (db) => {
+      const { data: refs, error: refErr } = await db
         .from('response_rules')
-        .update({ channel_ids: next })
-        .eq('id', (rule as { id: string }).id)
+        .select('id, channel_ids')
         .eq('org_id', org_id)
-      if (updErr) throw updErr
-      disconnected++
-    }
+        .contains('channel_ids', [id])
+      if (refErr) throw refErr
 
-    const { error } = await sb.from('notification_channels').delete().eq('id', id).eq('org_id', org_id)
-    if (error) throw error
+      let n = 0
+      for (const rule of refs ?? []) {
+        const next = ((rule as { channel_ids: string[] }).channel_ids || []).filter((c) => c !== id)
+        const { error: updErr } = await db
+          .from('response_rules')
+          .update({ channel_ids: next })
+          .eq('id', (rule as { id: string }).id)
+          .eq('org_id', org_id)
+        if (updErr) throw updErr
+        n++
+      }
+
+      const { error } = await db.from('notification_channels').delete().eq('id', id).eq('org_id', org_id)
+      if (error) throw error
+      return n
+    })
     return ok({ deleted: true, dependencies_disconnected: disconnected })
   } catch (e) {
     return handle(e)
