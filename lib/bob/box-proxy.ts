@@ -26,18 +26,26 @@ export type BoxProxyDeps = {
   resolveSession: (jar: CookieJar, base: string) => Promise<SessionState>
   role: (userId: string) => Promise<Role | null>
   apiBudget?: Attempts
+  pageBudget?: Attempts
+  throttleLogged?: Attempts
 }
 
-// Per account, on the API routes that reach the database (ASVS 4.0.3
-// V11.1.4). The live dashboard asks for four figures a minute; an editor
-// saving rules adds a few writes. 120 a minute leaves room for both.
+// Per account, on the routes that reach the database (ASVS 4.0.3 V11.1.4).
+// The live dashboard asks for three figures a minute; an editor saving rules
+// adds a few writes. 120 a minute leaves room for both. The /bob screens read
+// the same projections, one page at a time: 60 a minute. A refusal is logged
+// once per account and minute, not on every request.
 export const API_BUDGET = new Attempts(120, 60_000)
+export const PAGE_BUDGET = new Attempts(60, 60_000)
+const THROTTLE_LOGGED = new Attempts(1, 60_000)
 
 const DEFAULT_DEPS: BoxProxyDeps = {
   gotrueUrl,
   resolveSession,
   role: (userId) => boxRole(boxOrgId(), userId),
   apiBudget: API_BUDGET,
+  pageBudget: PAGE_BUDGET,
+  throttleLogged: THROTTLE_LOGGED,
 }
 
 // The routes that read or write bob for the account need a role; signing in
@@ -64,6 +72,11 @@ async function roleResponse(request: NextRequest, deps: BoxProxyDeps, userId: st
   return isApi
     ? NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
     : plain(403, 'Esta cuenta no tiene acceso a BOb en esta caja.')
+}
+
+function overBudget(deps: BoxProxyDeps, userId: string, isApi: boolean): boolean {
+  const budget = isApi ? deps.apiBudget : deps.pageBudget
+  return budget ? !budget.take(userId) : false
 }
 
 // Every answer, whatever its status, leaves with the security headers.
@@ -105,9 +118,14 @@ async function decide(request: NextRequest, deps: BoxProxyDeps): Promise<NextRes
     response = isApi
       ? NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
       : NextResponse.redirect(new URL('/login', request.url))
-  } else if (isApi && needsRole(path) && deps.apiBudget && !deps.apiBudget.take(s.user.id)) {
-    logSecurity('access.throttled', { user: s.user.id, method: request.method, path })
-    response = NextResponse.json({ ok: false, error: 'Rate limit exceeded' }, { status: 429 })
+  } else if (needsRole(path) && overBudget(deps, s.user.id, isApi)) {
+    const kind = isApi ? 'api' : 'page'
+    if (deps.throttleLogged?.take(`${s.user.id}|${kind}`) ?? true) {
+      logSecurity('access.throttled', { user: s.user.id, kind, method: request.method, path })
+    }
+    response = isApi
+      ? NextResponse.json({ ok: false, error: 'Rate limit exceeded' }, { status: 429 })
+      : plain(429, 'Demasiadas solicitudes. Espera un momento y vuelve a cargar.')
   } else if (needsRole(path)) {
     response = await roleResponse(request, deps, s.user.id, isApi)
   } else {

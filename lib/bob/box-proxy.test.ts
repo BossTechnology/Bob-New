@@ -147,18 +147,28 @@ test('a refused write is recorded, without its origin header verbatim or the que
   for (const l of lines) assert.doesNotMatch(l, /token=abc/)
 })
 
-test('one account cannot flood the API; another account and the pages are not affected', async () => {
+test('one account cannot flood the API or the screens; another account is not affected', async () => {
   let now = 0
-  const d = deps({ apiBudget: new Attempts(3, 60_000, () => now) })
-  const other = deps({ apiBudget: d.apiBudget, resolveSession: async () => ({ kind: 'user', user: { id: 'other', email: 'other@example.com' } }) as SessionState })
+  const clock = () => now
+  const d = deps({ apiBudget: new Attempts(3, 60_000, clock), pageBudget: new Attempts(2, 60_000, clock),
+    throttleLogged: new Attempts(1, 60_000, clock) })
+  const other = deps({ ...d, resolveSession: async () => ({ kind: 'user', user: { id: 'other', email: 'other@example.com' } }) as SessionState })
   const info = console.info
-  console.info = () => {}
+  const lines: string[] = []
+  console.info = (l: string) => { lines.push(l) }
   try {
     for (let i = 0; i < 3; i++) assert.ok(passes(await boxProxy(req('/api/bob/interactions'), d)))
-    assert.equal((await boxProxy(req('/api/config/thresholds'), d)).status, 429)
+    for (let i = 0; i < 5; i++) assert.equal((await boxProxy(req('/api/config/thresholds'), d)).status, 429)
     assert.ok(passes(await boxProxy(req('/api/bob/interactions'), other)))
-    assert.ok(passes(await boxProxy(req('/bob/performance'), d)))
+    // The screens read the same projections: their own budget.
+    for (let i = 0; i < 2; i++) assert.ok(passes(await boxProxy(req('/bob/performance'), d)))
+    assert.equal((await boxProxy(req('/bob/quality'), d)).status, 429)
+    assert.ok(passes(await boxProxy(req('/bob/quality'), other)))
     now += 60_000
     assert.ok(passes(await boxProxy(req('/api/bob/interactions'), d)))
+    assert.ok(passes(await boxProxy(req('/bob/performance'), d)))
   } finally { console.info = info }
+  const throttled = lines.map((l) => JSON.parse(l)).filter((e) => e.event === 'access.throttled')
+  // Five API refusals and one page refusal: said once for each, per account and window.
+  assert.deepEqual(throttled.map((e) => e.kind), ['api', 'page'])
 })
