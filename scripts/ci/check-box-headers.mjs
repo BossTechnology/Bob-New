@@ -6,12 +6,16 @@
 //   node --experimental-strip-types scripts/ci/check-box-headers.mjs
 //
 // Nothing behind the box is up: GoTrue and the database point at closed
-// ports, so protected routes answer 503. Headers must be there anyway.
+// ports. Every path the app can answer is requested (box-routes.mjs finds
+// them): off routes answer 404, session routes 401 or a redirect without a
+// session, and 503 with one, because the identity is down. Headers must be
+// there on every answer.
 import { spawn } from 'node:child_process'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { securityHeaders } from '../../lib/bob/security-headers.ts'
+import { boxRoutes } from './box-routes.mjs'
 
 const PORT = Number(process.env.PORT ?? 3399)
 const BASE = `http://127.0.0.1:${PORT}`
@@ -49,31 +53,43 @@ async function up() {
   throw new Error(`next start did not answer\n${output}`)
 }
 
-// Pages, then data (API and auth answers, on or off), which download.
-const PAGES = ['/login', '/bob/performance', '/dashboard.html', '/no-such-page']
-const DATA = ['/api/health', '/api/bob/interactions', '/api/config/thresholds', '/auth/me', '/api/ai']
-
 const problems = []
+const check = (label, res, data) => {
+  const got = (h) => res.headers.get(h)
+  for (const [h, v] of Object.entries(expected)) {
+    if (got(h) !== v) problems.push(`${label} (${res.status}): ${h} is ${JSON.stringify(got(h))}`)
+  }
+  if (got('x-powered-by')) problems.push(`${label}: X-Powered-By is sent`)
+  const disposition = data ? 'attachment' : null
+  if (got('content-disposition') !== disposition) {
+    problems.push(`${label}: Content-Disposition is ${JSON.stringify(got('content-disposition'))}`)
+  }
+}
+const expected = securityHeaders(false)
+const SESSION_COOKIE = { cookie: '__Host-bob-at=example-only' }
+const statuses = {}
+
 try {
   await up()
-  const expected = securityHeaders(false)
-  for (const path of [...PAGES, ...DATA]) {
+  for (const { path, access, data } of boxRoutes('.')) {
     const res = await fetch(`${BASE}${path}`, { redirect: 'manual' })
-    const got = (h) => res.headers.get(h)
-    for (const [h, v] of Object.entries(expected)) {
-      if (got(h) !== v) problems.push(`${path} (${res.status}): ${h} is ${JSON.stringify(got(h))}`)
+    check(path, res, data)
+    if (access === 'off' && res.status !== 404) problems.push(`${path}: off, but answered ${res.status}`)
+    statuses[res.status] = (statuses[res.status] ?? 0) + 1
+    if (access === 'session') {
+      // With a session to check and GoTrue down: 503, never a pass.
+      const down = await fetch(`${BASE}${path}`, { redirect: 'manual', headers: SESSION_COOKIE })
+      check(`${path} (identity down)`, down, data)
+      if (down.status !== 503) problems.push(`${path}: identity down, but answered ${down.status}`)
+      statuses['503 identity down'] = (statuses['503 identity down'] ?? 0) + 1
     }
-    if (got('x-powered-by')) problems.push(`${path}: X-Powered-By is sent`)
-    const disposition = DATA.includes(path) ? 'attachment' : null
-    if (got('content-disposition') !== disposition) {
-      problems.push(`${path}: Content-Disposition is ${JSON.stringify(got('content-disposition'))}`)
-    }
-    console.log(`${res.status} ${path}`)
   }
+  console.log('answers by status:', JSON.stringify(statuses))
 } catch (e) {
   problems.push(e instanceof Error ? e.message : String(e))
 } finally {
   try { process.kill(-server.pid, 'SIGTERM') } catch { /* already gone */ }
+  rmSync(dir, { recursive: true, force: true })
 }
 
 if (problems.length) {
