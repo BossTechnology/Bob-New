@@ -3,6 +3,7 @@ import Link from 'next/link'
 import type { Cell, Channel } from '@/lib/bob/matrix.ts'
 import type { NotProjection } from '@/lib/bob/screens.ts'
 import styles from './performance/matrix.module.css'
+import { SignOut } from './sign-out'
 
 const SCREENS = [
   ['performance', 'Rendimiento'], ['interactions', 'Interacciones'], ['quality', 'Calidad'],
@@ -14,6 +15,7 @@ export function ScreenNav({ current }: { current: (typeof SCREENS)[number][0] })
       {SCREENS.map(([id, label]) => (
         <Link key={id} href={`/bob/${id}`} className={id === current ? styles.on : undefined}>{label}</Link>
       ))}
+      <SignOut />
     </nav>
   )
 }

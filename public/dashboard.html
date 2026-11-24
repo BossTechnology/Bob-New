@@ -6973,7 +6973,12 @@ init();
 (function(){
   const BASE='/api/config';
   const OFFLINE_COOLDOWN_MS=60000;
+  // Nothing is read from or written to /api/config until bob-live has said
+  // this is the demo (bob:demo). Before that the page may be closed, or in
+  // the box, whose stored configuration the simulator must never touch.
+  let _bobDemo=false;
   async function api(path,opts){
+    if(!_bobDemo) return null;
     try{
       if(window._bridgeOfflineUntil&&Date.now()<window._bridgeOfflineUntil) return null;
       const r=await fetch(BASE+path,Object.assign({
@@ -7311,10 +7316,13 @@ init();
   // rather than the per-edit render functions — those redraw on every
   // keystroke, and hydrating there would race with in-progress edits and
   // clobber unsaved local state with a stale backend read.
+  // Rules load only once bob-live has said this is the demo (_bobDemo): the
+  // panel sits outside <main>, so it can open while the page is closed.
   const _hydratedAnom={};
   const _hydratedText={};
   const _renderConfigTab=renderConfigTab;
   renderConfigTab=function(metricId){
+    if(!_bobDemo) return _renderConfigTab.apply(this,arguments);
     const needAnom=!_hydratedAnom[metricId];
     const needText=!_hydratedText[metricId]&&TEXT_RULE_METRICS.includes(metricId);
     if(needAnom||needText){
@@ -7386,6 +7394,7 @@ init();
       .catch(function(){});
   }
   function _schedulePersist(e){
+    if(!_bobDemo) return;
     const t=e&&e.target;
     if(!t||!t.closest||!t.closest('#actContent-config')) return;
     clearTimeout(_persistT);
@@ -7407,7 +7416,7 @@ init();
   }
   // Only once bob-live has said this is the demo, never in a box (or when it
   // did not start at all): stored configuration is not loaded otherwise.
-  window.addEventListener('bob:demo', function(){ hydrate().catch(function(){}); }, {once:true});
+  window.addEventListener('bob:demo', function(){ _bobDemo=true; hydrate().catch(function(){}); }, {once:true});
 })();
 </script>
 <script type="module" src="/bob-live.mjs" onerror="var d=document.createElement('div');d.setAttribute('role','alert');d.style.cssText='position:fixed;top:40%;left:0;right:0;text-align:center;font:14px sans-serif;color:#666';d.textContent='No se pudo cargar BOb. Recarga la página en un momento.';document.body.appendChild(d)"></script>
