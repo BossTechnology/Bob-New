@@ -21,7 +21,10 @@ const secrets = join(dir, 'app.env')
 // Example values only: nothing listens on the database port.
 writeFileSync(secrets, 'BOB_APP_USUARIO=bob_app_example\nBOB_APP_CLAVE=example-only\n')
 
-const server = spawn('npx', ['next', 'start', '-p', String(PORT)], {
+// next itself, not npx: npx would leave next running after a kill. Its own
+// process group, so one signal stops whatever it starts.
+const server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', String(PORT)], {
+  detached: true,
   env: {
     ...process.env,
     BOB_CAJA: '1',
@@ -70,7 +73,7 @@ try {
 } catch (e) {
   problems.push(e instanceof Error ? e.message : String(e))
 } finally {
-  server.kill('SIGTERM')
+  try { process.kill(-server.pid, 'SIGTERM') } catch { /* already gone */ }
 }
 
 if (problems.length) {
@@ -78,3 +81,5 @@ if (problems.length) {
   process.exit(1)
 }
 console.log('box headers: every answer carries them')
+// The pipes to the stopped server must not keep this process alive.
+process.exit(0)

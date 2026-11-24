@@ -40,6 +40,7 @@ jobs:
   box-headers:
     name: Box headers on the built app
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
