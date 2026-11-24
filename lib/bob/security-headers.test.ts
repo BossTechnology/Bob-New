@@ -15,7 +15,7 @@ const deps = (o: Partial<BoxProxyDeps> = {}): BoxProxyDeps => ({
 })
 const req = (path: string) => new NextRequest(`http://box.test${path}`)
 
-// ASVS 4.0.3 V14.4.3-V14.4.7 (docs/asvs-l2-box.md): every answer of the box
+// ASVS 4.0.3 V14.4.3-V14.4.7: every answer of the box
 // carries the browser-side headers, whatever its status. HSTS is the box's
 // (Traefik terminates TLS), not the app's.
 test('every answer in the box carries the security headers', async () => {

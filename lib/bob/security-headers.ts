@@ -1,5 +1,5 @@
-// The browser-side headers of every answer in the box (ASVS 4.0.3 V14.4,
-// docs/asvs-l2-box.md). Set by boxProxy, so they apply only with BOB_CAJA=1;
+// The browser-side headers of every answer in the box (ASVS 4.0.3 V14.4).
+// Set by boxProxy, so they apply only with BOB_CAJA=1;
 // the Vercel demo is unchanged.
 //
 // script-src keeps 'unsafe-inline': the simulator (public/dashboard.html) has

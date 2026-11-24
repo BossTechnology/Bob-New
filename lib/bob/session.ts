@@ -23,11 +23,18 @@ const opts = (maxAge: number): CookieOptions => ({ httpOnly: true, secure: true,
 export function setSessionCookies(jar: CookieJar, s: GoTrueSession) {
   jar.set(ACCESS_COOKIE, s.access_token, opts(s.expires_in))
   jar.set(REFRESH_COOKIE, s.refresh_token, opts(REFRESH_MAX_AGE))
+  clearLegacyCookies(jar)
 }
+
+// The names before the __Host- prefix. Nothing reads them any more, but a
+// browser that signed in before the change may still hold tokens under them.
+const LEGACY_COOKIES = ['bob-at', 'bob-rt']
+const clearLegacyCookies = (jar: CookieJar) => { for (const name of LEGACY_COOKIES) jar.set(name, '', opts(0)) }
 
 export function clearSessionCookies(jar: CookieJar) {
   jar.set(ACCESS_COOKIE, '', opts(0))
   jar.set(REFRESH_COOKIE, '', opts(0))
+  clearLegacyCookies(jar)
 }
 
 export type SessionState =

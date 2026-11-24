@@ -218,6 +218,7 @@ export const SIM_OFF = [
   'renderTemasActivity', 'renderGenericActivity', 'updateNcPlaceholder', 'confirmRemoveCh', 'appendBobeeMsg',
   'renderWordCloud', 'renderNpsActivity', 'sendActBobeeChat', 'renderChannelActivity',
   'renderAvailableActivity', 'filterAnomalyModal', 'filterAlertModal', 'applyConfigSnapshot',
+  'renderEntityActivity', 'filterGenericModal',
 ]
 
 function stopSimulation() {
@@ -468,6 +469,23 @@ async function openThresholdEditor(metricId) {
   }
 }
 
+// The simulator has no way out of the session; in the box the page gets
+// one. It ends the session, then replaces the page (lib/bob/sign-out.ts).
+export function enableSignOut() {
+  if ($('bobSignOut')) return
+  const b = document.createElement('button')
+  b.id = 'bobSignOut'
+  b.type = 'button'
+  b.textContent = 'Cerrar sesión'
+  b.style.cssText = 'position:fixed;top:10px;right:12px;z-index:9999;padding:4px 10px;border:1px solid #ccc;border-radius:6px;background:#fff;cursor:pointer;font:12px sans-serif'
+  b.onclick = async () => {
+    b.disabled = true
+    try { await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }) } catch { /* the page still goes */ }
+    window.location.replace('/login')
+  }
+  document.body.appendChild(b)
+}
+
 function enableThresholds() {
   window.openActionables = (metricId) => { openThresholdEditor(metricId) }
   // The simulator opens Tiempo Prom. from the Response Time label too; in bob
@@ -482,13 +500,18 @@ function enableThresholds() {
   })
 }
 
-async function readHealth() {
+// No answer in time is no answer: pageMode then keeps the page closed.
+export async function readHealth(get = fetch, ms = TIMEOUT_MS) {
+  const ctl = new AbortController()
+  const timer = setTimeout(() => ctl.abort(), ms)
   try {
-    const res = await fetch('/api/health', { redirect: 'manual', cache: 'no-store' })
+    const res = await get('/api/health', { redirect: 'manual', signal: ctl.signal, cache: 'no-store' })
     const json = (res.headers.get('content-type') ?? '').includes('application/json')
     return { json, body: json ? await res.json() : null }
   } catch {
     return null
+  } finally {
+    clearTimeout(timer)
   }
 }
 
@@ -524,6 +547,7 @@ export async function start() {
   stopSimulation()
   for (const name of ENDPOINTS) BLANK[name]()
   enableThresholds()
+  enableSignOut()
   // The window controls now read bob instead of rescaling invented numbers.
   window.onTimeChange = (v) => {
     $('drWrap')?.classList.toggle('show', v === 'custom')
@@ -543,9 +567,13 @@ export async function start() {
   return true
 }
 
-if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  start().catch((e) => {
+// Anything start() did not expect closes the page rather than leaving it
+// half painted.
+export function boot(run = start, onFail = closePage) {
+  return run().catch((e) => {
     console.error('[bob-live]', e)
-    closePage()
+    onFail()
   })
 }
+
+if (typeof window !== 'undefined' && typeof document !== 'undefined') boot()
