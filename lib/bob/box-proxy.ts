@@ -60,7 +60,7 @@ async function roleResponse(request: NextRequest, deps: BoxProxyDeps, userId: st
 
 // Every answer, whatever its status, leaves with the security headers.
 export async function boxProxy(request: NextRequest, deps: BoxProxyDeps = DEFAULT_DEPS): Promise<NextResponse> {
-  return withSecurityHeaders(await decide(request, deps))
+  return withSecurityHeaders(await decide(request, deps), request.nextUrl.pathname)
 }
 
 async function decide(request: NextRequest, deps: BoxProxyDeps): Promise<NextResponse> {
