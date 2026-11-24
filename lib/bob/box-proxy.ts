@@ -17,6 +17,7 @@ import { refuseWrite } from './request-guard.ts'
 import { boxOrgId, gotrueUrl } from './runtime.ts'
 import { resolveSession, type CookieJar, type CookieOptions, type SessionState } from './session.ts'
 import { logSecurity } from './security-log.ts'
+import { Attempts } from './login.ts'
 import { boxRole, type Role } from './roles.ts'
 import { withSecurityHeaders } from './security-headers.ts'
 
@@ -24,12 +25,19 @@ export type BoxProxyDeps = {
   gotrueUrl: () => string
   resolveSession: (jar: CookieJar, base: string) => Promise<SessionState>
   role: (userId: string) => Promise<Role | null>
+  apiBudget?: Attempts
 }
+
+// Per account, on the API routes that reach the database (ASVS 4.0.3
+// V11.1.4). The live dashboard asks for four figures a minute; an editor
+// saving rules adds a few writes. 120 a minute leaves room for both.
+export const API_BUDGET = new Attempts(120, 60_000)
 
 const DEFAULT_DEPS: BoxProxyDeps = {
   gotrueUrl,
   resolveSession,
   role: (userId) => boxRole(boxOrgId(), userId),
+  apiBudget: API_BUDGET,
 }
 
 // The routes that read or write bob for the account need a role; signing in
@@ -97,6 +105,9 @@ async function decide(request: NextRequest, deps: BoxProxyDeps): Promise<NextRes
     response = isApi
       ? NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
       : NextResponse.redirect(new URL('/login', request.url))
+  } else if (isApi && needsRole(path) && deps.apiBudget && !deps.apiBudget.take(s.user.id)) {
+    logSecurity('access.throttled', { user: s.user.id, method: request.method, path })
+    response = NextResponse.json({ ok: false, error: 'Rate limit exceeded' }, { status: 429 })
   } else if (needsRole(path)) {
     response = await roleResponse(request, deps, s.user.id, isApi)
   } else {

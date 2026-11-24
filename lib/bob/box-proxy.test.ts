@@ -4,6 +4,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { NextRequest } from 'next/server.js'
+import { Attempts } from './login.ts'
 import { boxProxy, type BoxProxyDeps } from './box-proxy.ts'
 import type { SessionState } from './session.ts'
 
@@ -144,4 +145,20 @@ test('a refused write is recorded, without its origin header verbatim or the que
     ['access.write_refused', 415, 'POST', '/auth/login'],
   ])
   for (const l of lines) assert.doesNotMatch(l, /token=abc/)
+})
+
+test('one account cannot flood the API; another account and the pages are not affected', async () => {
+  let now = 0
+  const d = deps({ apiBudget: new Attempts(3, 60_000, () => now) })
+  const other = deps({ apiBudget: d.apiBudget, resolveSession: async () => ({ kind: 'user', user: { id: 'other', email: 'other@example.com' } }) as SessionState })
+  const info = console.info
+  console.info = () => {}
+  try {
+    for (let i = 0; i < 3; i++) assert.ok(passes(await boxProxy(req('/api/bob/interactions'), d)))
+    assert.equal((await boxProxy(req('/api/config/thresholds'), d)).status, 429)
+    assert.ok(passes(await boxProxy(req('/api/bob/interactions'), other)))
+    assert.ok(passes(await boxProxy(req('/bob/performance'), d)))
+    now += 60_000
+    assert.ok(passes(await boxProxy(req('/api/bob/interactions'), d)))
+  } finally { console.info = info }
 })
