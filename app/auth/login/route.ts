@@ -7,14 +7,17 @@ import { isBox, gotrueUrl, proxyHops } from '@/lib/bob/runtime.ts'
 import { passwordGrant } from '@/lib/bob/gotrue.ts'
 import { setSessionCookies } from '@/lib/bob/session.ts'
 import { requestJar } from '@/lib/bob/box-auth.ts'
-import { LOGIN_ATTEMPTS, boxLogin, clientIp } from '@/lib/bob/login.ts'
+import { LOGIN_ATTEMPTS, boxLogin, clientIp, onceForwardedShort } from '@/lib/bob/login.ts'
+
+let warnShort: (() => void) | null = null
+const forwardedShort = () => (warnShort ??= onceForwardedShort(proxyHops()))
 
 export async function POST(request: NextRequest) {
   try {
     // In the box: the box's GoTrue, at run time, throttled per account and
     // per address. The tokens go to httpOnly cookies and never into the body.
     if (isBox()) {
-      return await boxLogin(await request.json().catch(() => null), clientIp(request.headers.get('x-forwarded-for'), proxyHops()), {
+      return await boxLogin(await request.json().catch(() => null), clientIp(request.headers.get('x-forwarded-for'), proxyHops(), forwardedShort()), {
         ...LOGIN_ATTEMPTS,
         grant: (email, password) => passwordGrant(gotrueUrl(), email, password),
         setSession: async (session) => setSessionCookies(await requestJar(), session),

@@ -162,6 +162,17 @@ Configuración (no secreta, sin `NEXT_PUBLIC_`, leída al arrancar, nunca al con
 | `BOB_PROXY_HOPS` (1) | Cuántos proxies delante de bob-web añaden a `X-Forwarded-For`. En la caja es Traefik solo: 1. Si se pone un balanceador delante, 2. El límite de intentos de inicio de sesión por dirección depende de que sea exacto |
 | `BOB_SECRETS_FILE` | Solo para pruebas; por omisión `/run/secrets/bob/app.env` |
 
+**bob-web no publica puertos.** Solo Traefik le habla, por la red interna de la caja. Si el
+contenedor publicara un puerto, cualquiera que llegue a él escribiría su propio
+`X-Forwarded-For`: elegiría la dirección con la que cuenta el límite de intentos y podría hacerse
+pasar por una dirección que ya entró a una cuenta, que tiene su propio cupo (`lib/bob/login.ts`).
+
+`BOB_PROXY_HOPS` tiene que ser el número real de proxies. Si es mayor (un 2 sin balanceador
+delante), ninguna petición trae entradas suficientes y todas comparten el cubo `direct`: diez
+intentos por minuto para toda la caja. bob-web lo avisa una vez por proceso con el evento
+`proxy.forwarded_short`; si aparece en el log, revisa este valor. Si es menor, la dirección que
+cuenta es la de un proxy y no la del cliente.
+
 El único secreto es el login de `bob_app`, en un fichero montado (nunca en el entorno):
 ```
 BOB_APP_USUARIO=...

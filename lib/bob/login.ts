@@ -1,5 +1,5 @@
 // Signing in to the box: throttled per account and per address, and every
-// decision recorded (ASVS 4.0.3 V2.2.1, V7.2.1; docs/asvs-l2-box.md).
+// decision recorded (ASVS 4.0.3 V2.2.1, V7.2.1).
 //
 // The counts live in this process: one bob-web container per box. A restart
 // clears them.
@@ -78,9 +78,24 @@ export class KnownAddresses {
 // outermost one wrote (`hops` from the end); anything before it is whatever
 // the client sent. Fewer entries than proxies means the request did not come
 // through them, and all such requests share one bucket.
-export function clientIp(forwardedFor: string | null, hops: number): string {
+export function clientIp(forwardedFor: string | null, hops: number, onShort?: () => void): string {
   const entries = (forwardedFor ?? '').split(',').map((e) => e.trim()).filter(Boolean)
-  return entries.length >= hops ? entries[entries.length - hops].slice(0, 64) : 'direct'
+  if (entries.length >= hops) return entries[entries.length - hops].slice(0, 64)
+  onShort?.()
+  return 'direct'
+}
+
+// A short chain means BOB_PROXY_HOPS counts a proxy that is not there (a 2
+// with no balancer in front of Traefik), or a request that skipped Traefik.
+// Either way every such sign-in shares the 'direct' bucket. Said once per
+// process, so the log shows it without filling up.
+export function onceForwardedShort(hops: number, log: (line: string) => void = console.warn) {
+  let said = false
+  return () => {
+    if (said) return
+    said = true
+    log(securityLine('proxy.forwarded_short', { hops }))
+  }
 }
 
 // The log names the account by a keyed hash: enough to follow one account's
