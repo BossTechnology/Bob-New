@@ -93,13 +93,24 @@ export class TableQuery implements PromiseLike<TableResult> {
     return this.run().then(ok, ko)
   }
 
+  // Inside a transaction a refused query throws, so the transaction rolls
+  // back instead of committing what came before it.
   private async run(): Promise<TableResult> {
+    const r = await this.exec()
+    if (this.tx && r.error) throw r.error
+    return r
+  }
+
+  private async exec(): Promise<TableResult> {
     let sql: { text: string; values: unknown[] }
     try {
       if (this.row) this.row = cleanRow(this.table, this.row)
       const problem = this.row ? rowProblem(this.table, this.row) : null
       if (problem) throw new Error(problem)
       sql = this.compile()
+      // A read inside a transaction locks what it read until the end, so a
+      // concurrent write to those rows waits instead of interleaving.
+      if (this.tx && this.op === 'select') sql = { ...sql, text: sql.text + ' FOR UPDATE' }
     } catch (e) {
       return { data: null, error: new BobDbError((e as Error).message, 'BOB_QUERY') }
     }
@@ -188,7 +199,8 @@ function parseCols(s: string): string[] {
 export type BobTables = {
   from: (table: string) => TableQuery
   // Every query inside runs in one bob_app transaction: if fn throws, none
-  // of its writes stay. A query's { error } does not throw by itself.
+  // of its writes stay. Inside, a query's error throws, and a read locks the
+  // rows it read (FOR UPDATE).
   transaction: <T>(fn: (tx: { from: (table: string) => TableQuery }) => Promise<T>) => Promise<T>
 }
 

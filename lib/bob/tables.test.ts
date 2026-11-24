@@ -129,3 +129,24 @@ test('a transaction commits every write or none', { skip }, async () => {
   const both = await t.from('threshold_configs').select('upper_bound, lower_bound').eq('metric_id', METRIC).single()
   assert.deepEqual([both.data.upper_bound, both.data.lower_bound], [6, 1])
 })
+
+test('inside a transaction a refused query throws, and what came before is undone', { skip }, async () => {
+  const t = bobTables(TENANT_A, pool!)
+  const row = { org_id: TENANT_A, metric_id: METRIC, upper_bound: 5, peak_mode: 'off', peak_windows: [] }
+  await t.from('threshold_configs').upsert(row, { onConflict: 'org_id,metric_id' })
+  await assert.rejects(t.transaction(async (tx) => {
+    await tx.from('threshold_configs').update({ upper_bound: 42 }).eq('metric_id', METRIC)
+    // Refused by validation; outside a transaction this is only { error }.
+    await tx.from('threshold_configs').update({ upper_bound: -1 }).eq('metric_id', METRIC)
+  }), /invalid threshold_configs.upper_bound/)
+  const kept = await t.from('threshold_configs').select('upper_bound').eq('metric_id', METRIC).single()
+  assert.strictEqual(kept.data.upper_bound, 5)
+})
+
+test('a read inside a transaction locks the rows it read until the end', async () => {
+  let text = ''
+  const fakeTx = { query: async (sql: string) => { text = sql; return { rows: [] } } }
+  await new TableQuery('response_rules', TENANT_A, undefined, fakeTx as never).select('id, channel_ids').contains('channel_ids', ['x'])
+  assert.match(text, / FOR UPDATE$/)
+  assert.doesNotMatch(q('response_rules').select('id').compile().text, /FOR UPDATE/)
+})
