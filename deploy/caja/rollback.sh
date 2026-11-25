@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Vuelve BOb a la imagen anterior (Bzzz D77 §8: «su vuelta a la imagen anterior por id»). Lo corre Henry, a mano.
+# Runbook: docs/caja/instalar-y-volver-atras.md.
+#
+# USO
+#   rollback.sh [--feeder]
+#
+# Toma de /opt/bob/.env la imagen anterior y su atestación, que dejó deploy.sh; comprueba otra vez esa
+# atestación contra la imagen (que siga en el disco y que siga casando); la pone, levanta y comprueba la
+# salud y el aislamiento igual que deploy.sh. La que corría pasa a ser la anterior: correrlo dos veces
+# vuelve adonde estaba.
+#
+# NO toca la base: las migraciones no se deshacen aquí. Si la imagen anterior no casa con el esquema que
+# dejó una migración, la vuelta atrás es del esquema `bob` (D77 §3.2), y eso es otro procedimiento.
+#
+# SALIDA (una línea por stdout; el detalle, por stderr):
+#   0  «vuelta-atras: corre <id>»
+#   1  «fallo: …»        la anterior no quedó sana; se dice cuál quedó puesta
+#   2  «no-empieza: …»   no se tocó nada
+set -uo pipefail
+. "$(cd "$(dirname "$0")" && pwd)/lib.sh"
+
+COMP=web
+case "${1:-}" in
+  "") ;;
+  --feeder) COMP=feeder ;;
+  *) no_empieza "argumento desconocido «$1»" ;;
+esac
+componente "$COMP"
+command -v docker >/dev/null || no_empieza "falta docker"
+[ -f "$BOB_ENV" ] || no_empieza "no está $BOB_ENV"
+
+ANT=$(leer "${CLAVE}_IMAGEN_ANTERIOR"); ANT_AT=$(leer "${CLAVE}_ATESTACION_ANTERIOR")
+es_id "$ANT" || no_empieza "no hay ${CLAVE}_IMAGEN_ANTERIOR en $BOB_ENV: no hubo un deploy antes de este"
+docker image inspect "$ANT" >/dev/null 2>&1 || no_empieza "la imagen anterior $ANT ya no está en el disco"
+LINEA=$(atestar "$ANT_AT" "$ANT"); RC=$?
+say "   atestación de la anterior: $LINEA"
+[ "$RC" = 0 ] || no_empieza "la imagen anterior no está atestada: $LINEA"
+
+ACT=$(docker inspect -f '{{.Image}}' "$SERVICIO" 2>/dev/null || leer "${CLAVE}_IMAGEN")
+ACT_AT=$(leer "${CLAVE}_ATESTACION")
+[ "$ACT" != "$ANT" ] || no_empieza "ya corre la imagen anterior ($ANT)"
+
+say "== de ${ACT:-nada} a $ANT"
+escribir "${CLAVE}_IMAGEN_ANTERIOR" "$ACT" "${CLAVE}_ATESTACION_ANTERIOR" "$ACT_AT"
+if poner "$ANT" "$ANT_AT"; then
+  echo "vuelta-atras: corre $ANT ($SERVICIO)"
+  exit 0
+fi
+echo "fallo: $ANT puesta en $BOB_ENV pero no quedó sana; la de antes ($ACT) es ahora la anterior: rollback.sh otra vez la devuelve"
+exit 1

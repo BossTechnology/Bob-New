@@ -6,6 +6,12 @@
 - Capa de datos de bob-web sobre el esquema `bob` de BOb-engine, como `bob_app`, con el `org_id` de la caja y sin la service role (requisito §4.2, puntos 1 a 5, de los insumos de Bzzz «lo mínimo de la etapa 4»). Todo fusionado en `main`: PR #30, #32, #34 (P-1), #35 (P-4), #36 (umbrales) y #31 (imagen). Lo que queda es probarlo en una caja real.
 
 ## Hecho
+- **BOb al lado de la caja (Bzzz D77)**, en `deploy/caja/`, sin fusionar: compose para `/opt/bob` (`bob-web` y `bob-feeder`, este en el perfil `feeder`), `deploy.sh`, `rollback.sh` y `comprobar-aislamiento.sh`. Runbook en `docs/caja/instalar-y-volver-atras.md`. Lo probó el banco local `deploy/caja/banco/banco.sh`, con `supabase/postgres:17.6.1.136`, GoTrue y Traefik v3.7.18, y todo lo esperado pasó:
+  - instalar A, actualizar a B, `rollback.sh` a A y otra vez a B;
+  - una imagen que no queda sana vuelve sola;
+  - una imagen con la atestación de otra no empieza;
+  - `--migrar` aplica como `bob_migrador`, y una migración que crea en `public` falla sin cambiar la imagen;
+  - el chequeo de aislamiento se vio fallar cuatro veces: un intruso con la service role, una red de más, el modo estricto y la service role en el fichero montado.
 - Inventario de todo lo que tocaba la service role, PostgREST o las tablas de la demo, en tres categorías y con dueño: `docs/bob-schema-data-layer/inventario.md`.
 - Modo caja (`BOB_CAJA=1`): configuración en tiempo de ejecución, login de `bob_app` desde `/run/secrets/bob/app.env`, arranque rechazado con service role, `JWT_SECRET`, credenciales en el entorno o configuración incompleta (visto fallar con `next dev`).
 - Sesión contra el GoTrue de la caja en su raíz, en cada petición: GoTrue caído = 503 (visto con un GoTrue falso parado), token rechazado = `/login`. Lista de rutas servidas (`lib/bob/surface.ts`); lo demás, 404.
@@ -39,10 +45,16 @@
   No bloquea la construcción; solo cambia qué consumidores prueba el DONE.
 
 ## Siguiente paso
+- **D77, la red de entrada.** `bzzz-edge` tiene salida y `bob-web` está en ella (D77 §5). El chequeo la acepta solo para `bob-web` (`BOB_SALIDA_ACEPTADA`); con la variable vacía es estricto y falla. Si Henry quiere BOb sin salida, hace falta una red interna de entrada a la que se una Traefik (un PR en Bzzz) o D59.
+- **Antes de instalarlo en una caja:**
+  - el alta de la vecina y `generar-secretos-vecina.sh` (sesión de Bzzz);
+  - sacar `compose/l7-bob.yml` (77.4);
+  - confirmar los nombres de `migrador.env` (`BOB_MIGRADOR_USUARIO` y `BOB_MIGRADOR_CLAVE`) y los ficheros del feeder.
 - Probar en una caja real con la imagen de `main`. La lista de verificación está en las notas compartidas de la sesión (`bob-web-real-box-checklist.md`). Lo primero que vigilar: la primera conexión a la base, que en local tardó ~15 s y dio un 503 hasta reintentar.
 
 ## Notas de sesión
 <!-- AAAA-MM-DD: una o dos líneas -->
+- 2026-11-25: paquete de BOb al lado de la caja (D77). Probado en el banco local, sin tocar ninguna caja. La salida por `bzzz-edge` queda como excepción declarada, a decidir con D59.
 - 2026-11-23: PR #48 (codificación de salida del simulador) fusionado con CI en verde. El comentario de cabecera de `lib/bob/simulator-sinks.test.ts` en el PR #43 ya no depende del orden en que entren #43 y #48.
 - 2026-11-21 (cierre): #34, #35, #36 y #31 fusionados. #35 entró sin `4bd24a4`; viajó en #36, retargeteado a `main`. Caso viewer de los umbrales probado en caja local (papel cambiado a viewer y devuelto a admin; login temporal borrado).
 - 2026-11-21 (P-4): simulador probado en modo caja local (GoTrue falso, login temporal `bob_web_e2e` ya borrado): las tres pantallas leen `bob`, Este Mes pide `range=month&tz=300`, y una lectura fallida deja «—» con aviso en rojo. Fuera de la caja la API da 404 y la simulación sigue.
