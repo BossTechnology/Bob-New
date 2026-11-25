@@ -36,11 +36,11 @@
 - `npm run build` se corta una vez con `SecurityFatalError` (Next 16.4.2). Ya estaba en `main`.
 
 ## Bloqueado
-- BOB-7 (Relevo), turno de Federico: ¿son cuatro o siete los consumidores del Slice 3? El Word dice cuatro en el §2 y siete en el §3. El 21-11 se le dejó la lista para que la confirme:
-  - los cuatro del §2;
-  - tres inferidos: los drill-downs del Slice 7, el conteo de fallas del clasificador del Slice 4 y la fila de afirmaciones sin fundamento del Slice 5.
-  
-  No bloquea la construcción; solo cambia qué consumidores prueba el DONE.
+- BOb-engine#40 (y detrás el #43 y el PR #37 de bob-web) espera que Federico acepte la 0.6 (F-28 a F-34, F-38, F-39) en BOB-6. Al 24-11 no la ha aceptado. En BOB-6 el turno está en Henry, no en Federico.
+
+Resuelto el 23-11 (respuestas oficiales de Federico en Relevo):
+- BOB-7: los consumidores del Slice 3 son siete, y los tres inferidos eran correctos: los cuatro del §2, los drill-downs del Slice 7, el conteo de fallas del clasificador del Slice 4 y la fila de afirmaciones sin fundamento del Slice 5. Las reglas siguen siendo cuatro (FR-32, UI-03, PR-10, SR-2). El «siete» y el «nueve reglas» del Word no tenían fuente; el documento llevará la lista, no la cuenta. En la spec, los siete son por dónde se ejercita la implementación, no siete reglas más.
+- F-41 (BOB-6): `member_refs_seen` informa `first_seen` y `last_seen` dentro del frame pedido; el CHECK se queda. F-41 aceptada; el barrido es diario, fuera del pico de cada organización, y ningún horario es una constante en el código.
 
 ## Siguiente paso
 - Probar en una caja real con la imagen de `main`. La lista de verificación está en las notas compartidas de la sesión (`bob-web-real-box-checklist.md`). Lo primero que vigilar: la primera conexión a la base, que en local tardó ~15 s y dio un 503 hasta reintentar.
