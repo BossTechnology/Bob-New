@@ -15,7 +15,7 @@ const deps = (o: Partial<BoxProxyDeps> = {}): BoxProxyDeps => ({
 })
 const req = (path: string) => new NextRequest(`http://box.test${path}`)
 
-// ASVS 4.0.3 V14.4.3-V14.4.7 (docs/asvs-l2-box.md): every answer of the box
+// ASVS 4.0.3 V14.4.3-V14.4.7: every answer of the box
 // carries the browser-side headers, whatever its status. HSTS is the box's
 // (Traefik terminates TLS), not the app's.
 test('every answer in the box carries the security headers', async () => {
@@ -43,4 +43,15 @@ test('every answer in the box carries the security headers', async () => {
 // V14.3.3: no framework banner (X-Powered-By: Next.js) on any answer.
 test('next.config turns off the X-Powered-By banner', () => {
   assert.match(readFileSync('next.config.ts', 'utf8'), /poweredByHeader:\s*false/)
+})
+
+// ASVS 4.0.3 V14.4.2: an API answer opened directly in the browser is a
+// download, never a page rendered from its content.
+test('API answers are attachments; pages are not', async () => {
+  for (const p of ['/api/bob/interactions', '/api/config/thresholds', '/api/health', '/auth/me', '/api/nope.json']) {
+    assert.equal((await boxProxy(req(p), deps())).headers.get('content-disposition'), 'attachment', p)
+  }
+  for (const p of ['/login', '/bob/performance', '/dashboard.html']) {
+    assert.equal((await boxProxy(req(p), deps())).headers.get('content-disposition'), null, p)
+  }
 })

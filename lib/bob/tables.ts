@@ -10,9 +10,9 @@
 // (alerts, interactions, autobotz, ...) cannot be reached through here. An
 // unknown table or column is an error, not a silent drop.
 import type { Pool } from 'pg'
-import { asBobApp } from './db.ts'
+import { asBobApp, type Tx } from './db.ts'
 import { BobDbError } from './db-error.ts'
-import { rowProblem } from './config-input.ts'
+import { cleanRow, rowProblem } from './config-input.ts'
 
 const COMMON = ['id', 'org_id', 'created_at']
 // `numeric` columns come back from pg as strings; PostgREST gives them to the
@@ -59,10 +59,12 @@ export class TableQuery implements PromiseLike<TableResult> {
   private table: string
   private orgId: string
   private source?: Pool
-  constructor(table: string, orgId: string, source?: Pool) {
+  private tx?: Tx
+  constructor(table: string, orgId: string, source?: Pool, tx?: Tx) {
     this.table = table
     this.orgId = orgId
     this.source = source
+    this.tx = tx
   }
 
   select(cols = '*') {
@@ -91,19 +93,32 @@ export class TableQuery implements PromiseLike<TableResult> {
     return this.run().then(ok, ko)
   }
 
+  // Inside a transaction a refused query throws, so the transaction rolls
+  // back instead of committing what came before it.
   private async run(): Promise<TableResult> {
+    const r = await this.exec()
+    if (this.tx && r.error) throw r.error
+    return r
+  }
+
+  private async exec(): Promise<TableResult> {
     let sql: { text: string; values: unknown[] }
     try {
+      if (this.row) this.row = cleanRow(this.table, this.row)
       const problem = this.row ? rowProblem(this.table, this.row) : null
       if (problem) throw new Error(problem)
       sql = this.compile()
+      // A read inside a transaction locks what it read until the end, so a
+      // concurrent write to those rows waits instead of interleaving.
+      if (this.tx && this.op === 'select') sql = { ...sql, text: sql.text + ' FOR UPDATE' }
     } catch (e) {
       return { data: null, error: new BobDbError((e as Error).message, 'BOB_QUERY') }
     }
     try {
       const numeric = TABLES[this.table].numeric ?? []
-      const rows = (await asBobApp(this.orgId, async (db) => (await db.query(sql.text, sql.values)).rows,
-        this.source, { write: this.op !== 'select' })).map((r) => {
+      const query = async (db: Tx) => (await db.query(sql.text, sql.values)).rows
+      const rows = (this.tx ? await query(this.tx)
+        : await asBobApp(this.orgId, query, this.source, { write: this.op !== 'select' })).map((r) => {
         for (const c of numeric) if (typeof r[c] === 'string') r[c] = Number(r[c])
         return r
       })
@@ -181,6 +196,26 @@ function parseCols(s: string): string[] {
   return cs.length ? cs : ['*']
 }
 
-export function bobTables(orgId: string, source?: Pool) {
-  return { from: (table: string) => new TableQuery(table, orgId, source) }
+export type BobTables = {
+  from: (table: string) => TableQuery
+  // Every query inside runs in one bob_app transaction: if fn throws, none
+  // of its writes stay. Inside, a query's error throws, and a read locks the
+  // rows it read (FOR UPDATE).
+  transaction: <T>(fn: (tx: { from: (table: string) => TableQuery }) => Promise<T>) => Promise<T>
+}
+
+export function bobTables(orgId: string, source?: Pool): BobTables {
+  return {
+    from: (table) => new TableQuery(table, orgId, source),
+    transaction: (fn) => asBobApp(orgId, (db) => fn({ from: (table) => new TableQuery(table, orgId, source, db) }),
+      source, { write: true }),
+  }
+}
+
+// Steps that must stand or fall together, on whichever client the route has.
+// In the box: one bob_app transaction, rolled back if fn throws. Outside the
+// box PostgREST offers none, and the steps run in turn as before.
+export async function inOneTransaction<C, T>(sb: C, fn: (db: C) => Promise<T>): Promise<T> {
+  const box = sb as unknown as Partial<BobTables>
+  return box.transaction ? box.transaction((tx) => fn(tx as unknown as C)) : fn(sb)
 }

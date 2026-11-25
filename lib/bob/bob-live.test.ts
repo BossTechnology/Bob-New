@@ -120,3 +120,28 @@ test('only a server that says it is not a box gets the demo', async () => {
   assert.equal(pageMode(html, null), 'closed')
   assert.equal(pageMode(notBob, { json: true, body: null }), 'closed')
 })
+
+test('a health check that never answers counts as no answer, and the page stays closed', async () => {
+  const { readHealth, pageMode } = await import('../../public/bob-live.mjs')
+  const hung = (_url: unknown, init?: RequestInit) => new Promise<Response>((_, reject) => {
+    init?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
+  })
+  const t0 = Date.now()
+  const health = await readHealth(hung, 50)
+  assert.equal(health, null)
+  assert.ok(Date.now() - t0 < 1000)
+  assert.equal(pageMode({ status: 503, json: false }, health), 'closed')
+})
+
+test('when start() throws, the page closes', async () => {
+  const { boot } = await import('../../public/bob-live.mjs')
+  let closed = 0
+  const error = console.error
+  console.error = () => {}
+  try {
+    await boot(async () => { throw new Error('boom') }, () => { closed++ })
+  } finally { console.error = error }
+  assert.equal(closed, 1)
+  await boot(async () => true, () => { closed++ })
+  assert.equal(closed, 1, 'a start that works leaves the page alone')
+})

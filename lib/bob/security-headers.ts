@@ -1,5 +1,5 @@
-// The browser-side headers of every answer in the box (ASVS 4.0.3 V14.4,
-// docs/asvs-l2-box.md). Set by boxProxy, so they apply only with BOB_CAJA=1;
+// The browser-side headers of every answer in the box (ASVS 4.0.3 V14.4).
+// Set by boxProxy, so they apply only with BOB_CAJA=1;
 // the Vercel demo is unchanged.
 //
 // script-src keeps 'unsafe-inline': the simulator (public/dashboard.html) has
@@ -34,7 +34,12 @@ export function securityHeaders(dev = process.env.NODE_ENV === 'development'): R
   }
 }
 
-export function withSecurityHeaders<R extends Response>(r: R): R {
+// API and auth answers are data: opened directly they download instead of
+// rendering (V14.4.2). fetch() ignores the header.
+const isData = (path: string) => path.startsWith('/api/') || path.startsWith('/auth/')
+
+export function withSecurityHeaders<R extends Response>(r: R, path = ''): R {
   for (const [k, v] of Object.entries(securityHeaders())) r.headers.set(k, v)
+  if (isData(path)) r.headers.set('Content-Disposition', 'attachment')
   return r
 }
