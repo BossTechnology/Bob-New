@@ -141,6 +141,6 @@ poner "$ANT_ID" "$ANT_AT"; RC=$?
 case "$RC" in
   0) echo "vuelta-atras: $ID no quedó sana; corre otra vez $ANT_ID" ;;
   3) echo "fallo: $ID no quedó sana y la anterior $ANT_ID no es segura; todo lo de BOb queda parado" ;;
-  *) echo "fallo: $ID no quedó sana y la vuelta a $ANT_ID tampoco; mirar $SERVICIO a mano" ;;
+  *) parar_todo; echo "fallo: $ID no quedó sana y la vuelta a $ANT_ID tampoco; todo lo de BOb queda parado" ;;
 esac
 exit 1

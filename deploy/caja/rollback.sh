@@ -49,5 +49,6 @@ case "$RC" in
   0) echo "vuelta-atras: corre $ANT ($SERVICIO)"; exit 0 ;;
   3) echo "fallo: $ANT no es segura (aislamiento roto o sin la puerta delante); todo lo de BOb queda parado"; exit 1 ;;
 esac
-echo "fallo: $ANT puesta en $BOB_ENV pero no quedó sana; la de antes ($ACT) es ahora la anterior: rollback.sh otra vez la devuelve"
+parar_todo
+echo "fallo: $ANT puesta en $BOB_ENV pero no quedó sana; todo lo de BOb queda parado; la de antes ($ACT) es ahora la anterior: rollback.sh otra vez la devuelve"
 exit 1

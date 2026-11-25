@@ -120,7 +120,9 @@ for c in conts:
             no_medible.append(f"{n}: no encuentro la red {r}"); continue
         if not info.get("Internal") and (n, r) not in SALIDA:
             f("salida", f"{r} no es internal: sale a internet")
-    # Traefik: lo que lee el Traefik de la caja de las etiquetas, venga de donde venga el contenedor.
+    # Traefik: lo que lee el Traefik de la caja de las etiquetas, venga de donde venga el contenedor. Traefik no
+    # distingue mayúsculas en las claves: se comparan en minúsculas.
+    l = {k.lower(): v for k, v in l.items()}
     for k in l:
         if k.startswith(("traefik.tcp.", "traefik.udp.")):
             f("traefik", f"etiqueta {k}: BOb solo entra por HTTP con la puerta")
@@ -131,7 +133,7 @@ for c in conts:
             f("traefik", f"traefik.docker.network es «{l.get('traefik.docker.network')}», no {entrada}")
     for r in sorted({m.group(1) for k in l for m in [ROUTER.match(k)] if m}):
         mw = [x.strip() for x in l.get(f"traefik.http.routers.{r}.middlewares", "").split(",") if x.strip()]
-        if not mw or mw[0] != "puerta-apps@file":
+        if not mw or mw[0].lower() != "puerta-apps@file":
             f("traefik", f"el router {r} no lleva puerta-apps@file primero ({','.join(mw) or 'sin middlewares'})")
     for e in c["Config"].get("Env") or []:
         k, _, v = e.partition("=")

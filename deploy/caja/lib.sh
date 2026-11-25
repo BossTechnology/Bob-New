@@ -157,9 +157,16 @@ salud_por_traefik() {
 }
 
 # Para todo lo de BOb. Lo que se usa cuando el aislamiento falla: un fallo de seguridad no se queda sirviendo.
+# Para por id todo lo que descubre comprobar-aislamiento.sh (nombre bob-*, proyecto de compose bob o etiqueta
+# bob.vecina), no solo los servicios del compose: un bob-intruso también se para.
 parar_todo() {
-  say "  aislamiento roto: se para todo lo de BOb"
+  say "  se para todo lo de BOb"
   docker compose -p "$BOB_PROYECTO" -f "$BOB_COMPOSE" --env-file "$BOB_ENV" --profile feeder stop >&2 || true
+  local ids
+  ids=$( { docker ps -q --no-trunc --filter 'name=^/bob-'
+           docker ps -q --no-trunc --filter "label=com.docker.compose.project=$BOB_PROYECTO"
+           docker ps -q --no-trunc --filter label=bob.vecina; } 2>/dev/null | sort -u)
+  [ -z "$ids" ] || docker stop $ids >&2 || true
 }
 
 # Pone una imagen (ya atestada) en .env, levanta y comprueba.

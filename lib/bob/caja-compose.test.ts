@@ -78,15 +78,17 @@ test('networks: the neighbour network for both, the edge only for the app', { sk
 
 // Every router the labels name, not only the ones that already have a
 // middlewares label: a router without one would skip the gate.
-export function gateProblems(labels: Record<string, string>): string[] {
+export function gateProblems(raw: Record<string, string>): string[] {
   const out: string[] = []
+  // Traefik reads label keys case-insensitively, so compare them lower-cased.
+  const labels = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k.toLowerCase(), v]))
   for (const k of Object.keys(labels)) {
     if (/^traefik\.(tcp|udp)\./.test(k)) out.push(`${k}: BOb only enters over HTTP behind the gate`)
   }
   const routers = new Set(Object.keys(labels).flatMap((k) => k.match(/^traefik\.http\.routers\.([^.]+)\./)?.[1] ?? []))
   for (const r of routers) {
     const mw = (labels[`traefik.http.routers.${r}.middlewares`] ?? '').split(',').map((x) => x.trim()).filter(Boolean)
-    if (mw[0] !== 'puerta-apps@file') out.push(`router ${r} does not start with puerta-apps@file (${mw.join(',') || 'no middlewares'})`)
+    if (mw[0]?.toLowerCase() !== 'puerta-apps@file') out.push(`router ${r} does not start with puerta-apps@file (${mw.join(',') || 'no middlewares'})`)
   }
   return out
 }
@@ -98,6 +100,10 @@ test('gateProblems catches a router without middlewares and tcp/udp routes', () 
   assert.equal(gateProblems({ ...ok, 'traefik.http.routers.a.middlewares': 'cabeceras@file,puerta-apps@file' }).length, 1)
   assert.equal(gateProblems({ ...ok, 'traefik.tcp.routers.t.rule': 'HostSNI(`*`)' }).length, 1)
   assert.equal(gateProblems({ ...ok, 'traefik.udp.routers.u.entrypoints': 'x' }).length, 1)
+  // Traefik reads label keys case-insensitively: an upper-case router is still a router.
+  assert.equal(gateProblems({ ...ok, 'Traefik.HTTP.Routers.B.Rule': 'Host(`x`)' }).length, 1)
+  assert.equal(gateProblems({ ...ok, 'TRAEFIK.TCP.routers.t.rule': 'HostSNI(`*`)' }).length, 1)
+  assert.deepEqual(gateProblems({ 'traefik.http.routers.C.rule': 'Host(`x`)', 'Traefik.Http.Routers.c.Middlewares': 'puerta-apps@file' }), [])
 })
 
 test('every router puts the box gate first; the feeder has no route', { skip }, () => {
