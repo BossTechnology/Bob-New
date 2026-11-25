@@ -12,7 +12,7 @@
 
 bob_banco() {
   local m=${BOB_BANCO_MARCA:-}
-  [ "${BOB_BANCO:-}" = 1 ] && [ ! -e /opt/bzzz ] || return 1
+  [ "${BOB_BANCO:-}" = 1 ] && [ ! -e /opt/bzzz ] && [ ! -L /opt/bzzz ] || return 1
   [ -n "$m" ] && [ -f "$m" ] && [ ! -L "$m" ] && [ -O "$m" ] || return 1
   case "$m" in /opt/*) return 1 ;; esac
   [ "$(cat "$m")" = "banco-bobcaja $(dirname "$m")" ]

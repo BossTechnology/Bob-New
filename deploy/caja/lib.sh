@@ -8,11 +8,15 @@ AQUI=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 FIJOS_NO=no-empieza
 # shellcheck source=deploy/caja/fijos.sh
 . "$AQUI/fijos.sh"
-BOB_ESPERA_SALUD=${BOB_ESPERA_SALUD:-180}
 BOB_AISLAMIENTO=$AQUI/comprobar-aislamiento.sh
 
 say() { printf '%s\n' "$*" >&2; }
 no_empieza() { echo "no-empieza: $1"; exit 2; }
+
+BOB_ESPERA_SALUD=${BOB_ESPERA_SALUD:-180}
+[[ "$BOB_ESPERA_SALUD" =~ ^[0-9]+$ ]] || no_empieza "BOB_ESPERA_SALUD tiene que ser un número de segundos («$BOB_ESPERA_SALUD»)"
+# En una caja corre como root: la carpeta de entrega, los secretos y .env son de root. Solo el banco corre sin serlo.
+[ "$(id -u)" = 0 ] || bob_banco || no_empieza "hay que correrlo como root"
 
 # Componente: web o feeder. Fija el contenedor, el servicio, las claves de .env y la etiqueta que puede traer su tar.
 componente() {
@@ -50,12 +54,11 @@ es_id() { [[ "$1" =~ ^sha256:[0-9a-f]{64}$ ]]; }
 #             overlay2, .Id es la config). Si el tar no trae index.json, la config.
 # Se niega si trae más de una imagen o si nombra algo que no sea <servicio>:<12 hex>, la etiqueta que pone
 # construir-imagen-bob.sh: un tar así podría mover, al cargarlo, una etiqueta que la caja usa sin digest
-# (bzzz-conector:local…), aunque su atestación no case después. Con un tercer argumento «sin-etiquetas» no mira
-# las etiquetas: es para un tar que esta caja acaba de sacar de su propio docker (config_de).
+# (bzzz-conector:local…), aunque su atestación no case después.
 id_del_tar() {
-  python3 -I - "$1" "$SERVICIO" "${2:-}" <<'PY'
+  python3 -I - "$1" "$SERVICIO" <<'PY'
 import hashlib, json, re, sys, tarfile
-ruta, servicio, modo = sys.argv[1:4]
+ruta, servicio = sys.argv[1:3]
 def no(m): print(m); sys.exit(1)
 nombre = re.compile(rf"^(docker\.io/library/)?{re.escape(servicio)}:[0-9a-f]{{12}}$")
 try:
@@ -87,31 +90,46 @@ try:
     idx = json.loads(leer("index.json"))
 except KeyError:
     idx = {"manifests": []}
-if modo == "sin-etiquetas":
-    malas = []
 if len(idx.get("manifests", [])) > 1:
     no(f"index.json trae {len(idx['manifests'])} imágenes; tiene que traer una")
 for d in idx.get("manifests", []):
     n = (d.get("annotations") or {}).get("io.containerd.image.name")
-    if n and not nombre.match(n) and modo != "sin-etiquetas":
+    if n and not nombre.match(n):
         malas.append(n)
     # index.json apunta a un manifiesto o a un índice (multiplataforma, o con atestaciones de buildx). De un índice
     # se sigue el único manifiesto linux/amd64. Cada blob tiene que casar con su digest.
-    def blob(dg):
+    # Se despacha por mediaType: el del descriptor y el del blob tienen que coincidir, y un blob que es a la vez
+    # índice y manifiesto (híbrido) se rechaza.
+    INDICES = {"application/vnd.oci.image.index.v1+json", "application/vnd.docker.distribution.manifest.list.v2+json"}
+    MANIFIESTOS = {"application/vnd.oci.image.manifest.v1+json", "application/vnd.docker.distribution.manifest.v2+json"}
+    def blob(desc):
+        dg = desc.get("digest", "")
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", dg):
+            no(f"un descriptor apunta a «{dg}», que no es un sha256")
         try:
             b = leer("blobs/sha256/" + dg.split(":", 1)[1])
         except KeyError:
             no(f"index.json apunta a {dg}, que no está en el tar")
         if "sha256:" + hashlib.sha256(b).hexdigest() != dg:
             no(f"el blob {dg} no casa con su digest")
-        return json.loads(b)
-    mf = blob(d["digest"])
-    if "manifests" in mf:
+        j = json.loads(b)
+        mt = j.get("mediaType") or desc.get("mediaType")
+        if desc.get("mediaType") and j.get("mediaType") and desc["mediaType"] != j["mediaType"]:
+            no(f"el blob {dg} dice ser {j['mediaType']} y su descriptor {desc['mediaType']}")
+        if mt in INDICES and "manifests" in j and "config" not in j and "layers" not in j:
+            return "indice", j
+        if mt in MANIFIESTOS and "config" in j and "manifests" not in j:
+            return "manifiesto", j
+        no(f"el blob {dg} no es ni un índice ni un manifiesto limpio ({mt})")
+    tipo, mf = blob(d)
+    if tipo == "indice":
         amd = [x for x in mf["manifests"] if (x.get("platform") or {}).get("os") == "linux"
                and (x.get("platform") or {}).get("architecture") == "amd64"]
         if len(amd) != 1:
             no(f"el índice trae {len(amd)} manifiestos linux/amd64; tiene que traer uno")
-        mf = blob(amd[0]["digest"])
+        tipo, mf = blob(amd[0])
+        if tipo != "manifiesto":
+            no("el linux/amd64 del índice no es un manifiesto")
     if mf.get("config", {}).get("digest") != "sha256:" + real:
         no("index.json apunta a otra configuración que manifest.json")
 if malas:
@@ -127,8 +145,10 @@ PY
 # se carga, aunque alguien cambie el fichero de origen entre medias.
 carpeta_privada() {
   local d=$BOB_RAIZ/entrega
-  mkdir -p "$d" && chmod 700 "$d" || return 1
+  [ ! -L "$d" ] || { say "  $d es un enlace"; return 1; }
+  mkdir -p "$d" || return 1
   [ -O "$d" ] && [ ! -L "$d" ] || { say "  $d no es de $(id -un) o es un enlace"; return 1; }
+  chmod 700 "$d" || return 1
   mktemp -d "$d/XXXXXX"
 }
 
@@ -142,16 +162,16 @@ ref_cargada() {
   return 1
 }
 
-# La config (la identidad atestada) de una imagen en el disco, por su referencia local. Con overlay2 la referencia
-# YA es la config. Con containerd no hay forma de preguntarla: se saca la imagen con docker save y se lee del tar.
+# La config (la identidad atestada) de una imagen en el disco, por su referencia local. La saca
+# scripts/id-de-imagen.sh de Bzzz (#454), el mismo que usa el comprobador: con overlay2 es .Id; con containerd lee
+# la configuración de `docker save` (con --platform si docker lo admite). rc 1: docker no conoce la imagen; rc 2: no
+# se pudo medir. Imprime solo un id válido.
 config_de() {
-  local ref=$1 d out
-  if ! docker info -f '{{json .DriverStatus}}' 2>/dev/null | grep -q 'io.containerd.snapshotter'; then
-    [ "$(docker image inspect -f '{{.Id}}' "$ref" 2>/dev/null)" = "$ref" ] && echo "$ref"; return
-  fi
-  d=$(carpeta_privada) || return 1
-  docker save -o "$d/i.tar" "$ref" 2>/dev/null && out=$(id_del_tar "$d/i.tar" sin-etiquetas) && echo "${out%% *}"
-  rm -rf "$d"
+  local out rc
+  out=$(bash "$(dirname "$BOB_COMPROBAR_ATESTACION")/id-de-imagen.sh" "$1" 2>/dev/null); rc=$?
+  [ "$rc" = 0 ] && es_id "$out" && { echo "$out"; return 0; }
+  say "  id-de-imagen.sh $1: rc $rc ${out:0:120}"
+  [ "$rc" = 0 ] && return 2 || return "$rc"
 }
 
 sha256_de() { if command -v sha256sum >/dev/null; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi; }

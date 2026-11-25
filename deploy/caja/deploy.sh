@@ -85,7 +85,8 @@ REF=$(ref_cargada "$ID" "$OBJ") || no_empieza "después de cargar no está ni $I
 say "   referencia local: $REF"
 rm -f "$TAR"
 mkdir -p "$BOB_RAIZ/atestaciones"
-GUARDADA=$BOB_RAIZ/atestaciones/$NOMBRE_AT
+# Nombre único: una atestación nueva no pisa la de la imagen anterior, que la vuelta atrás vuelve a comprobar.
+GUARDADA=$BOB_RAIZ/atestaciones/$SERVICIO-${ID:7:12}-$(date -u +%Y%m%dT%H%M%SZ)-$$.atestacion
 cp "$AT" "$GUARDADA" && cp "$AT.sig" "$GUARDADA.sig" || no_empieza "no pude guardar la atestación en $BOB_RAIZ/atestaciones"
 
 if [ "${#MIGR[@]}" -gt 0 ]; then

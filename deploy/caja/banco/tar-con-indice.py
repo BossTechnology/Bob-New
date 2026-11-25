@@ -1,9 +1,11 @@
 """Rehace un tar de `docker save` para que su index.json apunte a un ÍNDICE (como buildx con atestaciones o
 multiplataforma) en lugar de al manifiesto. Lo usa banco.sh para probar que id_del_tar sigue al manifiesto
-linux/amd64. Uso: tar-con-indice.py <entrada.tar> <salida.tar> <n.º de entradas linux/amd64>"""
+linux/amd64. Uso: tar-con-indice.py <entrada.tar> <salida.tar> <n.º de entradas linux/amd64> [hibrido]
+Con «hibrido», el blob del índice lleva además un «config», como un manifiesto: id_del_tar tiene que rechazarlo."""
 import hashlib, io, json, sys, tarfile
 
 src, dst, n_amd = sys.argv[1], sys.argv[2], int(sys.argv[3])
+hibrido = len(sys.argv) > 4 and sys.argv[4] == "hibrido"
 t = tarfile.open(src)
 idx = json.loads(t.extractfile("index.json").read())
 m = idx["manifests"][0]
@@ -12,8 +14,11 @@ ents = [{"mediaType": m["mediaType"], "digest": m["digest"], "size": m["size"],
 ents.append({"mediaType": m["mediaType"], "digest": m["digest"], "size": m["size"],
              "platform": {"os": "unknown", "architecture": "unknown"},
              "annotations": {"vnd.docker.reference.type": "attestation-manifest"}})
-blob = json.dumps({"schemaVersion": 2, "mediaType": "application/vnd.oci.image.index.v1+json",
-                   "manifests": ents}).encode()
+cuerpo = {"schemaVersion": 2, "mediaType": "application/vnd.oci.image.index.v1+json", "manifests": ents}
+if hibrido:
+    mf = json.loads(t.extractfile("blobs/sha256/" + m["digest"].split(":")[1]).read())
+    cuerpo["config"] = mf["config"]
+blob = json.dumps(cuerpo).encode()
 dg = "sha256:" + hashlib.sha256(blob).hexdigest()
 idx["manifests"] = [{"mediaType": "application/vnd.oci.image.index.v1+json", "digest": dg, "size": len(blob),
                      "annotations": m.get("annotations", {})}]

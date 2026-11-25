@@ -192,6 +192,7 @@ entregar dos "$A" bob-web:$HA bob-web:$HB                  # dos imágenes en un
 docker save -o "$R/entrega/otro-servicio.tar" bob-web:$HA && firmar otro-servicio "$A" bob-feeder   # A, firmada como feeder
 python3 -I "$CAJA/banco/tar-con-indice.py" "$R/entrega/a.tar" "$R/entrega/indice.tar" 1    # index.json → índice amd64 + atestación
 python3 -I "$CAJA/banco/tar-con-indice.py" "$R/entrega/a.tar" "$R/entrega/indice-doble.tar" 2
+python3 -I "$CAJA/banco/tar-con-indice.py" "$R/entrega/a.tar" "$R/entrega/indice-hibrido.tar" 1 hibrido
 docker rmi bob-web:$HS >/dev/null                          # para ver que un tar rechazado no se carga
 
 D="$CAJA/deploy.sh"; RB="$CAJA/rollback.sh"; AIS="$CAJA/comprobar-aislamiento.sh"
@@ -245,6 +246,7 @@ espera 2 "no-empieza: la imagen no está atestada: no-atestada: la atestación e
 del_tar() { ( . "$CAJA/lib.sh"; componente web; id_del_tar "$1" ); }
 cierto "id_del_tar sigue un índice hasta su manifiesto linux/amd64 (config = A)" '[ "$(del_tar "$R/entrega/indice.tar" | cut -d" " -f1)" = "$A" ]'
 cierto "id_del_tar rechaza un índice con dos linux/amd64" '! del_tar "$R/entrega/indice-doble.tar" >/dev/null'
+cierto "id_del_tar rechaza un blob que es índice y manifiesto a la vez" 'del_tar "$R/entrega/indice-hibrido.tar" | grep -q "ni un índice ni un manifiesto limpio"'
 cierto "id_del_tar sigue leyendo bien un tar sin índice anidado (config = A)" '[ "$(del_tar "$R/entrega/a.tar" | cut -d" " -f1)" = "$A" ]'
 cierto "  no se cargó: la imagen sigue sin estar en el disco" '[ -z "$(id_de "$SIN")" ]'
 espera 2 "no-empieza: el tar no se acepta: nombra etiquetas" "un tar de una imagen que solo lleva la etiqueta $AJENA" -- dep ajena
