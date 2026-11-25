@@ -11,7 +11,7 @@
 #
 # Y corre, en este orden: el chequeo sin contenedores (no medible), deploy de A, deploy de B, rollback.sh (vuelve
 # a A), deploy de una imagen que no queda sana (vuelve sola a A), deploy de una imagen sin atestación (no
-# empieza), --migrar con una migración buena y una mala, y el chequeo de aislamiento visto fallar cuatro veces.
+# empieza), --migrar con una migración buena y una mala, y el chequeo de aislamiento visto fallar cinco veces.
 #
 # USO
 #   deploy/caja/banco/banco.sh <imagen de bob-web ya construida> <comprobar-atestacion-bob.sh de Bzzz>
@@ -209,6 +209,11 @@ docker run -d --name bob-intruso -e SUPABASE_SERVICE_ROLE_KEY="$JWT" "$IMG_A" no
 espera 1 "no-aislada:" "un bob-intruso con la service role, sin declarar y en bridge" -- "$AIS"
 grep -q 'bob-intruso: secreto' "$R/ultimo.err" && grep -q 'bob-intruso: declarado' "$R/ultimo.err" && grep -q 'bob-intruso: salida' "$R/ultimo.err" \
   && ok "  nombra secreto, declarado y salida" || mal "  no nombra los tres motivos"
+docker rm -f bob-intruso >/dev/null
+# Otro bob-* en la red de entrada: la excepción es de bob-web, no de la red.
+docker run -d --name bob-intruso --network $RE --label bob.vecina=bob "$IMG_A" node -e 'setInterval(()=>{},1e6)' >/dev/null
+espera 1 "no-aislada:" "otro bob-* en la red de entrada (la excepción es solo de bob-web)" -- "$AIS"
+grep -q "bob-intruso: salida: $RE no es internal" "$R/ultimo.err" && ok "  nombra la salida por la red de entrada" || mal "  no nombra la salida por $RE"
 docker rm -f bob-intruso >/dev/null
 docker network connect $RX bob-web
 espera 1 "no-aislada:" "bob-web unido a una red no declarada y con salida" -- "$AIS"

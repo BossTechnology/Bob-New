@@ -30,9 +30,14 @@ Los contenedores son `bob-web` y `bob-feeder`, del proyecto de compose `bob`:
 - **Los contenedores son de solo lectura**, corren como `65534` y sin capacidades.
 - **Cada contenedor tiene techo de memoria, CPU y procesos.**
 
-**La salida a internet de `bob-web`.** `bzzz-edge` no es `internal`, así que `bob-web` puede salir (D77 §5: «le
-toca a D59»). `comprobar-aislamiento.sh` acepta esa red para `bob-web` y para nadie más. Con
-`BOB_SALIDA_ACEPTADA=` (vacía), la comprobación es estricta y falla mientras siga así.
+**La salida a internet de `bob-web`.** Henry eligió el 2026-11-25, en el chat de Relevo, «(A) bzzz-edge como
+excepción»:
+- `bob-web` va en `bzzz-edge`, como dice D77 §5. Esa red no es `internal`, así que `bob-web` puede salir.
+- `comprobar-aislamiento.sh` acepta esa red **solo para `bob-web`** (`BOB_SALIDA_ACEPTADA=bob-web=bzzz-edge`). Falla
+  con cualquier otra red con salida y con cualquier otro `bob-*` en `bzzz-edge`. El feeder no tiene salida.
+- **Cerrar la salida de `bzzz-edge` queda para D59.** Hasta entonces, que BOb no salga depende de la imagen: en modo
+  caja no arranca con claves de salida. Con `BOB_SALIDA_ACEPTADA=` (vacía), el chequeo es estricto y falla mientras
+  siga así.
 
 ## Antes de la primera instalación (lo hace la caja, no este paquete)
 
@@ -152,8 +157,8 @@ Recorre, en orden:
 2. una imagen que no queda sana, que vuelve sola;
 3. una imagen sin atestación que case, que no empieza;
 4. `--migrar` con una migración buena y una que bob_migrador no puede aplicar;
-5. el chequeo de aislamiento visto fallar cuatro veces: un `bob-intruso` con la service role, una red de más, el modo
-   estricto y la service role en el fichero montado.
+5. el chequeo de aislamiento visto fallar cinco veces: un `bob-intruso` con la service role, otro `bob-*` en la red de
+   entrada, una red de más, el modo estricto y la service role en el fichero montado.
 
 ```bash
 docker build -t bob-web:banco-a .

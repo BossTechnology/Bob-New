@@ -43,8 +43,14 @@ BOB_WEB_IMAGEN=${BOB_WEB_IMAGEN:-x} BOB_HOST=${BOB_HOST:-x} \
 
 docker ps -aq --no-trunc > "$T/todos" || { echo "no-medible: docker ps falló"; exit 2; }
 if [ -s "$T/todos" ]; then
-  xargs docker inspect < "$T/todos" > "$T/contenedores.json" || { echo "no-medible: docker inspect falló"; exit 2; }
-  docker network ls -q --no-trunc | xargs docker network inspect > "$T/redes.json" || { echo "no-medible: docker network inspect falló"; exit 2; }
+  # Entre `ps` y `inspect` otro proceso puede borrar un contenedor o una red: inspect sale con 1 pero imprime los
+  # que siguen. Lo que ya no existe no puede estar mal aislado; solo es «no medible» si no sale un JSON legible.
+  xargs docker inspect < "$T/todos" > "$T/contenedores.json" 2> "$T/err.c" || true
+  docker network ls -q --no-trunc | xargs docker network inspect > "$T/redes.json" 2> "$T/err.r" || true
+  for j in contenedores redes; do
+    python3 -I -c 'import json,sys; assert isinstance(json.load(open(sys.argv[1])), list)' "$T/$j.json" 2>/dev/null \
+      || { echo "no-medible: docker inspect de $j no dio un JSON: $(head -1 "$T/err.${j:0:1}")"; exit 2; }
+  done
 else
   echo '[]' > "$T/contenedores.json"; echo '[]' > "$T/redes.json"
 fi
