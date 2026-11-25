@@ -36,7 +36,7 @@
 - `npm run build` se corta una vez con `SecurityFatalError` (Next 16.4.2). Ya estaba en `main`.
 
 ## Bloqueado
-- BOb-engine#40 (y detrás el #43 y el PR #37 de bob-web) espera que Federico acepte la 0.6 (F-28 a F-34, F-38, F-39) en BOB-6. Al 24-11 no la ha aceptado. En BOB-6 el turno está en Henry, no en Federico.
+- BOb-engine#40 (y detrás el #43 y el PR #37 de bob-web) espera que Federico acepte la 0.6 (F-28 a F-34, F-38, F-39) en BOB-6. Al 24-11 no la ha aceptado. El 24-11 se le corrigió en BOB-6 que F-41 ya estaba respondida y se le pasó el turno.
 
 Resuelto el 23-11 (respuestas oficiales de Federico en Relevo):
 - BOB-7: los consumidores del Slice 3 son siete, y los tres inferidos eran correctos: los cuatro del §2, los drill-downs del Slice 7, el conteo de fallas del clasificador del Slice 4 y la fila de afirmaciones sin fundamento del Slice 5. Las reglas siguen siendo cuatro (FR-32, UI-03, PR-10, SR-2). El «siete» y el «nueve reglas» del Word no tenían fuente; el documento llevará la lista, no la cuenta. En la spec, los siete son por dónde se ejercita la implementación, no siete reglas más.
