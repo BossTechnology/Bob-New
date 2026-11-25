@@ -2,12 +2,21 @@
 # Lo que en una caja es fijo (Bzzz D77). Lo cargan deploy.sh, rollback.sh y comprobar-aislamiento.sh.
 #
 # Ninguno de estos valores sale del entorno en una caja: si alguno viene puesto con otro valor, el guion no
-# empieza. Solo el banco local puede cambiarlos, y solo con BOB_BANCO=1 en una máquina SIN /opt/bzzz, para que
-# un BOB_BANCO=1 olvidado en una caja no apague nada.
+# empieza. Solo el banco local puede cambiarlos, y solo si se cumplen las tres cosas:
+#   - BOB_BANCO=1;
+#   - la máquina NO tiene /opt/bzzz (un BOB_BANCO=1 olvidado en una caja no apaga nada);
+#   - BOB_BANCO_MARCA apunta a la marca que crea banco.sh: un fichero normal (no un enlace), de quien corre esto,
+#     fuera de /opt, cuya única línea es «banco-bobcaja <la carpeta del banco>» y que está en esa carpeta.
 #
 # Uso: FIJOS_NO=«prefijo de la línea de salida con rc 2» y después `. fijos.sh`.
 
-bob_banco() { [ "${BOB_BANCO:-}" = 1 ] && [ ! -e /opt/bzzz ]; }
+bob_banco() {
+  local m=${BOB_BANCO_MARCA:-}
+  [ "${BOB_BANCO:-}" = 1 ] && [ ! -e /opt/bzzz ] || return 1
+  [ -n "$m" ] && [ -f "$m" ] && [ ! -L "$m" ] && [ -O "$m" ] || return 1
+  case "$m" in /opt/*) return 1 ;; esac
+  [ "$(cat "$m")" = "banco-bobcaja $(dirname "$m")" ]
+}
 
 # fijo NOMBRE VALOR_DE_CAJA
 fijo() {

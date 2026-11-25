@@ -34,14 +34,16 @@ Los contenedores son `bob-web` y `bob-feeder`, del proyecto de compose `bob`:
 
 **Lo fijo no se cambia desde el entorno.** `fijos.sh` fija:
 - la raíz `/opt/bob`;
-- el comprobador de atestaciones (`/opt/bzzz/scripts/comprobar-atestacion-bob.sh`) y sus firmantes
+- el comprobador de atestaciones (`/opt/bzzz/scripts/comprobar-atestacion-bob.sh`, que necesita a su lado
+  `id-de-imagen.sh`; llegan juntos por rsync, bzzz#454) y sus firmantes
   (`/opt/bzzz/config/bob/firmantes_imagen`);
 - la imagen de `psql`;
 - la URL de la puerta;
 - los nombres de red.
 
-Si alguno llega del entorno con otro valor, el guion no empieza. Solo el banco local los cambia, con `BOB_BANCO=1` y
-en una máquina sin `/opt/bzzz`. Lo único que se ajusta es `BOB_ESPERA_SALUD`, los segundos de espera.
+Si alguno llega del entorno con otro valor, el guion no empieza. Solo el banco local los cambia, y necesita las tres
+cosas: `BOB_BANCO=1`, una máquina sin `/opt/bzzz` y la marca que crea `banco.sh` (`BOB_BANCO_MARCA`, un fichero
+propio fuera de `/opt` que nombra la carpeta del banco). Lo único que se ajusta es `BOB_ESPERA_SALUD`, los segundos de espera.
 
 **La salida a internet de `bob-web`.** Henry eligió el 2026-11-25, en el chat de Relevo, «(A) bzzz-edge como
 excepción»:
@@ -102,14 +104,21 @@ Con migraciones nuevas de BOb, **solo si Henry lo decide**, en el orden en que s
 ```
 
 **Lo que hace `deploy.sh`:**
+0. **Copia el tar y la atestación** a una carpeta de root, `/opt/bob/entrega/`. Todo lo que sigue mira esa copia: lo
+   que se comprueba es lo que se carga, aunque el fichero de origen cambie entre medias.
 1. **Lee el tar sin cargarlo.**
    - Tiene que traer una sola imagen.
    - No puede traer ninguna etiqueta que no sea `bob-web:<12 hex>`, la que pone `construir-imagen-bob.sh`. Si no, al
      cargarlo podría mover una etiqueta que la caja usa sin digest.
-   - Su id es el sha256 de su configuración.
+   - Su id es el sha256 de su configuración. Esa es la identidad que firma la atestación, y es la misma en cualquier
+     almacén de docker. No se usa `.Id`: con el almacén de containerd, `.Id` es el digest del índice, no el de la
+     configuración. `construir-imagen-bob.sh` (Bzzz) tiene que firmar la configuración.
    - El sha256 del tar tiene que ser el de la atestación.
 2. **Comprueba la atestación** contra ese id. Si no casa, no carga nada.
-3. **Carga la imagen** y comprueba que cargó ese id.
+3. **Carga la imagen** y busca su referencia local: la configuración con overlay2, o el digest al que apunta el
+   `index.json` del tar con containerd. Esa referencia es la que corre y la que se guarda en `.env`. Para volver
+   atrás, la configuración de la anterior se saca de la imagen del disco (con containerd, con `docker save`), no de
+   `.env`.
 4. **Aplica las migraciones pedidas** como `bob_migrador`, cada una en su transacción, desde un contenedor de usar y
    tirar en `bzzz-vecina-bob`. Van contra la base, el puerto y el nombre de `config/caja.env`.
 5. **Guarda la imagen que corría** como anterior, levanta la nueva y espera a que esté sana.
@@ -119,7 +128,8 @@ Con migraciones nuevas de BOb, **solo si Henry lo decide**, en el orden en que s
    - Un **200 sin sesión** quiere decir que la puerta no está, y se trata como un fallo de seguridad.
 7. **Corre `comprobar-aislamiento.sh`.**
 8. **Si la nueva no queda sana**, comprueba otra vez la atestación de la anterior y vuelve a ella. Si lo que falla es
-   la **seguridad** (aislamiento roto o sin la puerta), no vuelve atrás: **para todo lo de BOb** (`compose stop`).
+   la **seguridad** (aislamiento roto o sin la puerta), no vuelve atrás: **para todo lo de BOb**, es decir, el
+   compose y, por id, cualquier `bob-*` que descubra el chequeo. Si la anterior tampoco queda sana, también para todo.
 
 **La línea final:**
 
@@ -230,7 +240,12 @@ Recorre, en orden:
 ```bash
 docker build -t bob-web:banco-a .
 deploy/caja/banco/banco.sh bob-web:banco-a <checkout de Bzzz>/scripts/comprobar-atestacion-bob.sh
+BANCO_CONTAINERD=1 deploy/caja/banco/banco.sh bob-web:banco-a <checkout de Bzzz>/scripts/comprobar-atestacion-bob.sh
 ```
+
+El banco copia también `id-de-imagen.sh` de la misma carpeta. Con `BANCO_CONTAINERD=1`, los guiones de la caja ven
+un `docker` falso (`banco/docker-containerd-falso.sh`) que se porta como el almacén de containerd: `.Id` y `.Image`
+son el digest del índice y la configuración no sirve de referencia.
 
 En el CI, `lib/bob/caja-compose.test.ts` comprueba el compose resuelto:
 - sin puertos;

@@ -6,10 +6,13 @@
 #   deploy.sh [--feeder] --imagen <bob-web-xxx.tar> --atestacion <bob-web-xxx.atestacion> [--migrar <fichero.sql>]...
 #
 # EN ESTE ORDEN, y se para en el primer paso que falla:
-#   1. lee el tar SIN cargarlo: una sola imagen, ninguna etiqueta que no sea <servicio>:<12 hex>, y su id (el
-#      sha256 de su configuración); el sha256 del tar tiene que ser el de la atestación;
+#   0. copia el tar y la atestación a una carpeta de root (/opt/bob/entrega): lo que se comprueba es lo que se carga;
+#   1. lee esa copia SIN cargarla: una sola imagen, ninguna etiqueta que no sea <servicio>:<12 hex>, y su id (el
+#      sha256 de su configuración, la identidad que firma la atestación en cualquier almacén de docker); el sha256
+#      del tar tiene que ser el de la atestación;
 #   2. comprueba la atestación firmada contra ese id con el guion de Bzzz (#407). Sin una que case, no carga nada;
-#   3. carga la imagen (docker load) y comprueba que cargó ese id;
+#   3. carga la imagen (docker load) y busca su referencia local: con overlay2 es la config; con el almacén de
+#      containerd, el digest al que apunta el index.json del tar. Esa referencia es la que corre y la que se guarda;
 #   4. solo con --migrar: aplica esas migraciones, en el orden dado, cada una en su transacción, como bob_migrador,
 #      desde un contenedor desechable en la red de la vecina, contra la base, el puerto y el nombre de caja.env. La
 #      contraseña la lee este guion de /opt/bob/secrets/migrador.env y se la pasa por stdin: no va al entorno ni a la
@@ -55,10 +58,19 @@ for s in app.env $( [ "$COMP" = feeder ] && echo feeder.env ) $( [ "${#MIGR[@]}"
 done
 [ "$COMP" = web ] && fijar_url_salud
 
-say "== 1. leer $TAR sin cargarlo"
-ID=$(id_del_tar "$TAR") || no_empieza "el tar no se acepta: $ID"
-es_id "$ID" || no_empieza "no saco el id de la imagen del tar"
-say "   $ID"
+say "== 0. copiar lo recibido a una carpeta de root"
+P=$(carpeta_privada) || no_empieza "no puedo crear la carpeta privada en $BOB_RAIZ/entrega"
+trap 'rm -rf "$P"' EXIT
+NOMBRE_AT=$(basename "$AT")
+cp "$TAR" "$P/imagen.tar" && cp "$AT" "$P/$NOMBRE_AT" && cp "$AT.sig" "$P/$NOMBRE_AT.sig" \
+  || no_empieza "no pude copiar el tar y la atestación a $P"
+TAR=$P/imagen.tar; AT=$P/$NOMBRE_AT
+
+say "== 1. leer el tar sin cargarlo"
+SAL=$(id_del_tar "$TAR") || no_empieza "el tar no se acepta: $SAL"
+ID=${SAL%% *}; OBJ=${SAL##* }
+es_id "$ID" && es_id "$OBJ" || no_empieza "no saco el id de la imagen del tar"
+say "   config $ID · objetivo $OBJ"
 TSHA=$(sha256_de "$TAR")
 [ "$TSHA" = "$(clave_de imagen_tar_sha256 "$AT")" ] || no_empieza "el sha256 del tar ($TSHA) no es el de la atestación"
 
@@ -69,12 +81,12 @@ say "   $LINEA"
 
 say "== 3. cargar"
 docker load -q -i "$TAR" >&2 || no_empieza "docker load falló"
-[ "$(docker image inspect -f '{{.Id}}' "$ID" 2>/dev/null)" = "$ID" ] || no_empieza "después de cargar no está $ID"
+REF=$(ref_cargada "$ID" "$OBJ") || no_empieza "después de cargar no está ni $ID ni $OBJ"
+say "   referencia local: $REF"
+rm -f "$TAR"
 mkdir -p "$BOB_RAIZ/atestaciones"
-GUARDADA=$BOB_RAIZ/atestaciones/$(basename "$AT")
-if [ "$(cd "$(dirname "$AT")" && pwd)/$(basename "$AT")" != "$GUARDADA" ]; then
-  cp "$AT" "$GUARDADA" && cp "$AT.sig" "$GUARDADA.sig" || no_empieza "no pude guardar la atestación en $BOB_RAIZ/atestaciones"
-fi
+GUARDADA=$BOB_RAIZ/atestaciones/$NOMBRE_AT
+cp "$AT" "$GUARDADA" && cp "$AT.sig" "$GUARDADA.sig" || no_empieza "no pude guardar la atestación en $BOB_RAIZ/atestaciones"
 
 if [ "${#MIGR[@]}" -gt 0 ]; then
   say "== 4. migraciones con bob_migrador (${#MIGR[@]})"
@@ -104,10 +116,10 @@ fi
 say "== 5. poner $ID"
 ANT_ID=$(docker inspect -f '{{.Image}}' "$SERVICIO" 2>/dev/null || true)
 ANT_AT=$(leer "${CLAVE}_ATESTACION")
-if es_id "$ANT_ID" && [ "$ANT_ID" != "$ID" ]; then
+if es_id "$ANT_ID" && [ "$ANT_ID" != "$REF" ]; then
   escribir "${CLAVE}_IMAGEN_ANTERIOR" "$ANT_ID" "${CLAVE}_ATESTACION_ANTERIOR" "$ANT_AT"
   say "   anterior: $ANT_ID"
-elif [ "$ANT_ID" = "$ID" ]; then
+elif [ "$ANT_ID" = "$REF" ]; then
   say "   ya corría esta imagen: la anterior guardada no cambia"
   ANT_ID=$(leer "${CLAVE}_IMAGEN_ANTERIOR"); ANT_AT=$(leer "${CLAVE}_ATESTACION_ANTERIOR")
 else
@@ -116,7 +128,7 @@ else
 fi
 
 say "== 6. comprobar"
-poner "$ID" "$GUARDADA"; RC=$?
+poner "$REF" "$GUARDADA"; RC=$?
 case "$RC" in
   0) echo "desplegada: $ID ($SERVICIO)"; exit 0 ;;
   3) echo "fallo: $ID no es segura (aislamiento roto o sin la puerta delante); todo lo de BOb queda parado"; exit 1 ;;
@@ -128,7 +140,8 @@ if ! es_id "${ANT_ID:-}"; then
   echo "fallo: $ID no quedó sana y no hay imagen anterior; $SERVICIO queda parado"
   exit 1
 fi
-LINEA=$(atestar "$ANT_AT" "$ANT_ID"); RC=$?
+ANT_CFG=$(config_de "$ANT_ID")
+LINEA=$(atestar "$ANT_AT" "${ANT_CFG:-sin-config}"); RC=$?
 say "   atestación de la anterior: $LINEA"
 if [ "$RC" != 0 ]; then
   compose stop "$SERVICIO" >&2 || true
@@ -136,7 +149,7 @@ if [ "$RC" != 0 ]; then
   exit 1
 fi
 # La imagen nueva queda como «anterior» para poder mirarla; la que vuelve es la que corría.
-escribir "${CLAVE}_IMAGEN_ANTERIOR" "$ID" "${CLAVE}_ATESTACION_ANTERIOR" "$GUARDADA"
+escribir "${CLAVE}_IMAGEN_ANTERIOR" "$REF" "${CLAVE}_ATESTACION_ANTERIOR" "$GUARDADA"
 poner "$ANT_ID" "$ANT_AT"; RC=$?
 case "$RC" in
   0) echo "vuelta-atras: $ID no quedó sana; corre otra vez $ANT_ID" ;;

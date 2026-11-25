@@ -147,9 +147,13 @@ cp "$R/secrets/app.env" "$R/app.env.limpio"
 
 ssh-keygen -q -t ed25519 -N '' -C banco -f "$R/llave" || { echo "no-empieza: ssh-keygen"; exit 2; }
 printf 'banco@bob namespaces="bzzz-bob-imagen" %s\n' "$(cut -d' ' -f1,2 "$R/llave.pub")" > "$R/firmantes"
-cp "$CHECKER" "$R/comprobar-atestacion-bob.sh"; chmod +x "$R/comprobar-atestacion-bob.sh"
+# El comprobador de Bzzz (#454) necesita id-de-imagen.sh a su lado: se copian los dos, como llegan a la caja.
+[ -f "$(dirname "$CHECKER")/id-de-imagen.sh" ] || { echo "no-empieza: falta id-de-imagen.sh junto a $CHECKER"; exit 2; }
+cp "$CHECKER" "$R/comprobar-atestacion-bob.sh"; cp "$(dirname "$CHECKER")/id-de-imagen.sh" "$R/id-de-imagen.sh"
+chmod +x "$R/comprobar-atestacion-bob.sh" "$R/id-de-imagen.sh"
 
-export BOB_BANCO=1 BOB_RAIZ=$R BOB_COMPROBAR_ATESTACION=$R/comprobar-atestacion-bob.sh BOB_FIRMANTES=$R/firmantes
+printf 'banco-bobcaja %s\n' "$R" > "$R/.banco-bobcaja"   # la marca que fijos.sh exige además de BOB_BANCO=1
+export BOB_BANCO=1 BOB_BANCO_MARCA=$R/.banco-bobcaja BOB_RAIZ=$R BOB_COMPROBAR_ATESTACION=$R/comprobar-atestacion-bob.sh BOB_FIRMANTES=$R/firmantes
 export BOB_URL_SALUD="https://$HOST:$PUERTO/api/health" BOB_URL_SALUD_RESOLVER="$HOST:$PUERTO:127.0.0.1" BOB_ESPERA_SALUD=150
 
 # --- imágenes, tars y atestaciones ----------------------------------------------------------------------------
@@ -161,16 +165,18 @@ derivar bob-web:$HS 'LABEL banco.version="sin-atestar"' || { echo "no-empieza: i
 derivar $AJENA 'LABEL banco.version="ajena"' || { echo "no-empieza: imagen ajena"; exit 2; }
 A=$(id_de bob-web:$HA); B=$(id_de bob-web:$HB); MALA=$(id_de bob-web:$HM); SIN=$(id_de bob-web:$HS); Z=$(id_de $AJENA)
 
-firmar() {  # firmar <nombre> <id que dice la atestación>: <nombre>.atestacion y .sig sobre <nombre>.tar
+firmar() {  # firmar <nombre> <id que dice la atestación> [servicio]: <nombre>.atestacion y .sig sobre <nombre>.tar
   local n=$1 id=$2
   cat > "$R/entrega/$n.atestacion" <<EOF
 formato=bzzz-bob-atestacion/1
 commit=$(git -C "$CAJA" rev-parse HEAD 2>/dev/null || printf '0%.0s' $(seq 40))
 repo=BossTechnology/Bob-New
 imagen_id=$id
+servicio=${3:-bob-web}
 comando=banco local
 imagen_tar_sha256=$(openssl dgst -sha256 -r "$R/entrega/$n.tar" | cut -d' ' -f1)
 dockerfile_sha256=banco
+dockerfile=Dockerfile
 EOF
   ssh-keygen -q -Y sign -f "$R/llave" -n bzzz-bob-imagen "$R/entrega/$n.atestacion" >/dev/null 2>&1
 }
@@ -183,14 +189,34 @@ docker tag bob-web:$HB $AJENA                              # B solo con una etiq
 entregar ajena "$B" $AJENA
 docker tag "$Z" $AJENA                                     # la etiqueta vuelve a su imagen
 entregar dos "$A" bob-web:$HA bob-web:$HB                  # dos imágenes en un tar
+docker save -o "$R/entrega/otro-servicio.tar" bob-web:$HA && firmar otro-servicio "$A" bob-feeder   # A, firmada como feeder
+python3 -I "$CAJA/banco/tar-con-indice.py" "$R/entrega/a.tar" "$R/entrega/indice.tar" 1    # index.json → índice amd64 + atestación
+python3 -I "$CAJA/banco/tar-con-indice.py" "$R/entrega/a.tar" "$R/entrega/indice-doble.tar" 2
 docker rmi bob-web:$HS >/dev/null                          # para ver que un tar rechazado no se carga
 
 D="$CAJA/deploy.sh"; RB="$CAJA/rollback.sh"; AIS="$CAJA/comprobar-aislamiento.sh"
+# BANCO_CONTAINERD=1: los guiones de la caja ven un docker que se porta como el almacén de containerd (.Id y .Image
+# son el objetivo del índice, la config no es una referencia). El banco sigue usando el docker de verdad.
+if [ "${BANCO_CONTAINERD:-0}" = 1 ]; then
+  F=$R/falso; mkdir -p "$F"
+  export BANCO_DOCKER_REAL; BANCO_DOCKER_REAL=$(command -v docker); export BANCO_MAPA_CONTAINERD=$R/mapa-containerd
+  ln -s "$CAJA/banco/docker-containerd-falso.sh" "$F/docker"
+  for g in deploy rollback comprobar-aislamiento; do
+    printf '#!/usr/bin/env bash\nPATH=%q:"$PATH" exec %q "$@"\n' "$F" "$CAJA/$g.sh" > "$F/$g.sh"; chmod +x "$F/$g.sh"
+  done
+  D=$F/deploy.sh; RB=$F/rollback.sh; AIS=$F/comprobar-aislamiento.sh
+  echo "== con un docker que imita containerd"
+fi
+# Lo que corre bob-web, como lo ve la caja (con containerd, el objetivo): para comparar con el .env.
+objetivo_de() { if [ -f "${BANCO_MAPA_CONTAINERD:-/nada}" ]; then awk -v c="$1" '$2==c{print $1; exit}' "$BANCO_MAPA_CONTAINERD"; else echo "$1"; fi; }
 dep() { "$D" --imagen "$R/entrega/$1.tar" --atestacion "$R/entrega/$1.atestacion" "${@:2}"; }
 
 echo "== lo fijo de la caja no se cambia desde el entorno"
 espera 2 "no-empieza: BOB_FIRMANTES" "deploy con BOB_FIRMANTES de otro sitio y sin BOB_BANCO" -- env -u BOB_BANCO -u BOB_RAIZ -u BOB_COMPROBAR_ATESTACION "$D" --imagen "$R/entrega/a.tar" --atestacion "$R/entrega/a.atestacion"
 espera 2 "no-medible:" "el chequeo con BOB_RAIZ de otro sitio y sin BOB_BANCO" -- env -u BOB_BANCO "$AIS"
+espera 2 "no-empieza: BOB_RAIZ" "BOB_BANCO=1 sin la marca del banco" -- env -u BOB_BANCO_MARCA "$D" --imagen "$R/entrega/a.tar" --atestacion "$R/entrega/a.atestacion"
+printf 'banco-bobcaja /otra\n' > "$R/marca-falsa"
+espera 2 "no-empieza: BOB_RAIZ" "BOB_BANCO=1 con una marca que no es de esta carpeta" -- env BOB_BANCO_MARCA="$R/marca-falsa" "$D" --imagen "$R/entrega/a.tar" --atestacion "$R/entrega/a.atestacion"
 espera 2 "no-medible:" "BOB_SALIDA_ACEPTADA ya no existe" -- env BOB_SALIDA_ACEPTADA=bob-web=bzzz-data "$AIS"
 
 echo "== el paquete"
@@ -198,6 +224,8 @@ espera 2 "no-medible:" "aislamiento sin ningún bob-* (vacío no es aislado)" --
 espera 2 "no-empieza:" "rollback.sh sin deploy anterior" -- "$RB"
 espera 0 "desplegada:" "deploy de A (atestada, sana, la puerta por Traefik, aislada)" -- dep a
 cierto "corre A" '[ "$(corre)" = "$A" ]'
+cierto "en .env queda la referencia local que ve la caja" '[ "$(sed -n "s/^BOB_WEB_IMAGEN=//p" "$R/.env")" = "$(objetivo_de "$A")" ]'
+[ "${BANCO_CONTAINERD:-0}" = 1 ] && cierto "  y con containerd no es la config" '[ "$(objetivo_de "$A")" != "$A" ]'
 cierto "por Traefik sin sesión: 401 de la puerta" '[ "$(por_traefik)" = 401 ]'
 cierto "por Traefik con sesión: 200 de bob-web" '[ "$(por_traefik -H "X-Banco-Sesion: si")" = 200 ]'
 espera 0 "aislada:" "aislamiento con bob-web en marcha" -- "$AIS"
@@ -213,6 +241,11 @@ grep -q 'atestación de la anterior: atestada' "$R/ultimo.err" && ok "  la vuelt
 
 echo "== el tar se lee antes de cargarlo"
 espera 2 "no-empieza:" "un tar con la atestación de otra imagen" -- dep sin-atestar
+espera 2 "no-empieza: la imagen no está atestada: no-atestada: la atestación es del servicio «bob-feeder»" "un tar de bob-web firmado como bob-feeder" -- dep otro-servicio
+del_tar() { ( . "$CAJA/lib.sh"; componente web; id_del_tar "$1" ); }
+cierto "id_del_tar sigue un índice hasta su manifiesto linux/amd64 (config = A)" '[ "$(del_tar "$R/entrega/indice.tar" | cut -d" " -f1)" = "$A" ]'
+cierto "id_del_tar rechaza un índice con dos linux/amd64" '! del_tar "$R/entrega/indice-doble.tar" >/dev/null'
+cierto "id_del_tar sigue leyendo bien un tar sin índice anidado (config = A)" '[ "$(del_tar "$R/entrega/a.tar" | cut -d" " -f1)" = "$A" ]'
 cierto "  no se cargó: la imagen sigue sin estar en el disco" '[ -z "$(id_de "$SIN")" ]'
 espera 2 "no-empieza: el tar no se acepta: nombra etiquetas" "un tar de una imagen que solo lleva la etiqueta $AJENA" -- dep ajena
 cierto "  $AJENA sigue apuntando a su imagen" '[ "$(id_de $AJENA)" = "$Z" ]'

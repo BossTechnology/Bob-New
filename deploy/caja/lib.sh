@@ -43,14 +43,19 @@ escribir() {
 
 es_id() { [[ "$1" =~ ^sha256:[0-9a-f]{64}$ ]]; }
 
-# Lee un tar de `docker save` SIN cargarlo y, si es aceptable, imprime el id de su única imagen (el sha256 de su
-# configuración, que es lo que firma la atestación). Se niega si trae más de una imagen o si nombra algo que no sea
-# <servicio>:<12 hex>, la etiqueta que pone construir-imagen-bob.sh: un tar así podría mover, al cargarlo, una
-# etiqueta que la caja usa sin digest (bzzz-conector:local…), aunque su atestación no case después.
+# Lee un tar de `docker save` SIN cargarlo y, si es aceptable, imprime «<config> <objetivo>»:
+#   config    sha256 de la configuración de su única imagen. Es LA identidad de la imagen: lo que firma la atestación,
+#             igual en cualquier almacén de docker.
+#   objetivo  el digest al que apunta index.json, que es el .Id que le da docker con el almacén de containerd (con
+#             overlay2, .Id es la config). Si el tar no trae index.json, la config.
+# Se niega si trae más de una imagen o si nombra algo que no sea <servicio>:<12 hex>, la etiqueta que pone
+# construir-imagen-bob.sh: un tar así podría mover, al cargarlo, una etiqueta que la caja usa sin digest
+# (bzzz-conector:local…), aunque su atestación no case después. Con un tercer argumento «sin-etiquetas» no mira
+# las etiquetas: es para un tar que esta caja acaba de sacar de su propio docker (config_de).
 id_del_tar() {
-  python3 -I - "$1" "$SERVICIO" <<'PY'
+  python3 -I - "$1" "$SERVICIO" "${2:-}" <<'PY'
 import hashlib, json, re, sys, tarfile
-ruta, servicio = sys.argv[1:3]
+ruta, servicio, modo = sys.argv[1:4]
 def no(m): print(m); sys.exit(1)
 nombre = re.compile(rf"^(docker\.io/library/)?{re.escape(servicio)}:[0-9a-f]{{12}}$")
 try:
@@ -82,33 +87,88 @@ try:
     idx = json.loads(leer("index.json"))
 except KeyError:
     idx = {"manifests": []}
+if modo == "sin-etiquetas":
+    malas = []
 if len(idx.get("manifests", [])) > 1:
     no(f"index.json trae {len(idx['manifests'])} imágenes; tiene que traer una")
 for d in idx.get("manifests", []):
     n = (d.get("annotations") or {}).get("io.containerd.image.name")
-    if n and not nombre.match(n):
+    if n and not nombre.match(n) and modo != "sin-etiquetas":
         malas.append(n)
-    try:
-        mf = json.loads(leer("blobs/sha256/" + d["digest"].split(":", 1)[1]))
-        if mf.get("config", {}).get("digest") != "sha256:" + real:
-            no("index.json apunta a otra configuración que manifest.json")
-    except KeyError:
-        no("index.json apunta a un manifiesto que no está en el tar")
+    # index.json apunta a un manifiesto o a un índice (multiplataforma, o con atestaciones de buildx). De un índice
+    # se sigue el único manifiesto linux/amd64. Cada blob tiene que casar con su digest.
+    def blob(dg):
+        try:
+            b = leer("blobs/sha256/" + dg.split(":", 1)[1])
+        except KeyError:
+            no(f"index.json apunta a {dg}, que no está en el tar")
+        if "sha256:" + hashlib.sha256(b).hexdigest() != dg:
+            no(f"el blob {dg} no casa con su digest")
+        return json.loads(b)
+    mf = blob(d["digest"])
+    if "manifests" in mf:
+        amd = [x for x in mf["manifests"] if (x.get("platform") or {}).get("os") == "linux"
+               and (x.get("platform") or {}).get("architecture") == "amd64"]
+        if len(amd) != 1:
+            no(f"el índice trae {len(amd)} manifiestos linux/amd64; tiene que traer uno")
+        mf = blob(amd[0]["digest"])
+    if mf.get("config", {}).get("digest") != "sha256:" + real:
+        no("index.json apunta a otra configuración que manifest.json")
 if malas:
     no("nombra etiquetas que no son de " + servicio + ": " + ", ".join(sorted(set(malas))))
-print("sha256:" + real)
+objetivo = idx["manifests"][0]["digest"] if idx.get("manifests") else "sha256:" + real
+if not re.fullmatch(r"sha256:[0-9a-f]{64}", objetivo):
+    no("index.json apunta a un digest que no es sha256")
+print("sha256:" + real, objetivo)
 PY
+}
+
+# Carpeta de root bajo /opt/bob donde deploy.sh copia lo que recibe antes de mirarlo: lo que se comprueba es lo que
+# se carga, aunque alguien cambie el fichero de origen entre medias.
+carpeta_privada() {
+  local d=$BOB_RAIZ/entrega
+  mkdir -p "$d" && chmod 700 "$d" || return 1
+  [ -O "$d" ] && [ ! -L "$d" ] || { say "  $d no es de $(id -un) o es un enlace"; return 1; }
+  mktemp -d "$d/XXXXXX"
+}
+
+# La referencia local de una imagen ya cargada: el .Id que le da docker, que es la config (overlay2) o el objetivo
+# (containerd). Imprime el que exista con ese mismo .Id; falla si no está ninguno.
+ref_cargada() {
+  local c
+  for c in "$@"; do
+    [ "$(docker image inspect -f '{{.Id}}' "$c" 2>/dev/null)" = "$c" ] && { echo "$c"; return 0; }
+  done
+  return 1
+}
+
+# La config (la identidad atestada) de una imagen en el disco, por su referencia local. Con overlay2 la referencia
+# YA es la config. Con containerd no hay forma de preguntarla: se saca la imagen con docker save y se lee del tar.
+config_de() {
+  local ref=$1 d out
+  if ! docker info -f '{{json .DriverStatus}}' 2>/dev/null | grep -q 'io.containerd.snapshotter'; then
+    [ "$(docker image inspect -f '{{.Id}}' "$ref" 2>/dev/null)" = "$ref" ] && echo "$ref"; return
+  fi
+  d=$(carpeta_privada) || return 1
+  docker save -o "$d/i.tar" "$ref" 2>/dev/null && out=$(id_del_tar "$d/i.tar" sin-etiquetas) && echo "${out%% *}"
+  rm -rf "$d"
 }
 
 sha256_de() { if command -v sha256sum >/dev/null; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi; }
 
-# La atestación de una imagen: <fichero> y <fichero>.sig, comprobados con el guion de Bzzz (#407).
+# La atestación de una imagen: <fichero> y <fichero>.sig, comprobados con el guion de Bzzz (#407, #454). Ese guion
+# necesita a su lado scripts/id-de-imagen.sh (llegan juntos a /opt/bzzz/scripts por rsync) y recibe el servicio.
 # Imprime su línea; devuelve su rc (0 atestada, 1 no, 2 no medible).
 atestar() {
   local at=$1 id=$2
   [ -n "$at" ] && [ -f "$at" ] || { echo "no-atestada: no hay atestación guardada (${at:-ninguna})"; return 1; }
   [ -x "$BOB_COMPROBAR_ATESTACION" ] || { echo "no-medible: no encuentro $BOB_COMPROBAR_ATESTACION"; return 2; }
-  "$BOB_COMPROBAR_ATESTACION" "$at" "$BOB_FIRMANTES" "$id"
+  # La atestación nombra el servicio (construir-imagen-bob.sh lo firma): una imagen de bob-web no se pone como feeder.
+  local s; s=$(clave_de servicio "$at")
+  [ "$s" = "$SERVICIO" ] || { echo "no-atestada: la atestación es del servicio «${s:-ninguno}», no de $SERVICIO"; return 1; }
+  [ -r "$(dirname "$BOB_COMPROBAR_ATESTACION")/id-de-imagen.sh" ] \
+    || { echo "no-medible: falta id-de-imagen.sh junto a $BOB_COMPROBAR_ATESTACION"; return 2; }
+  "$BOB_COMPROBAR_ATESTACION" "$at" "$BOB_FIRMANTES" "$id" "$SERVICIO"
 }
 
 # Espera a que el contenedor del servicio corra la imagen pedida y esté sano.

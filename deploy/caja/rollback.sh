@@ -34,7 +34,10 @@ for c in docker python3 curl; do command -v "$c" >/dev/null || no_empieza "falta
 ANT=$(leer "${CLAVE}_IMAGEN_ANTERIOR"); ANT_AT=$(leer "${CLAVE}_ATESTACION_ANTERIOR")
 es_id "$ANT" || no_empieza "no hay ${CLAVE}_IMAGEN_ANTERIOR en $BOB_ENV: no hubo un deploy antes de este"
 docker image inspect "$ANT" >/dev/null 2>&1 || no_empieza "la imagen anterior $ANT ya no está en el disco"
-LINEA=$(atestar "$ANT_AT" "$ANT"); RC=$?
+# La atestación firma la config. Con containerd, $ANT es otra cosa (el objetivo del índice): se saca la config de
+# la imagen que hay en el disco, no de lo que diga .env.
+ANT_CFG=$(config_de "$ANT")
+LINEA=$(atestar "$ANT_AT" "${ANT_CFG:-sin-config}"); RC=$?
 say "   atestación de la anterior: $LINEA"
 [ "$RC" = 0 ] || no_empieza "la imagen anterior no está atestada: $LINEA"
 
