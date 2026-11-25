@@ -7,6 +7,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { FORBIDDEN_IN_BOX } from './runtime.ts'
 
 const COMPOSE = new URL('../../deploy/caja/compose.yml', import.meta.url).pathname
@@ -75,14 +76,44 @@ test('networks: the neighbour network for both, the edge only for the app', { sk
   for (const n of Object.values(c.networks)) assert.equal(n.external, true)
 })
 
+// Every router the labels name, not only the ones that already have a
+// middlewares label: a router without one would skip the gate.
+export function gateProblems(labels: Record<string, string>): string[] {
+  const out: string[] = []
+  for (const k of Object.keys(labels)) {
+    if (/^traefik\.(tcp|udp)\./.test(k)) out.push(`${k}: BOb only enters over HTTP behind the gate`)
+  }
+  const routers = new Set(Object.keys(labels).flatMap((k) => k.match(/^traefik\.http\.routers\.([^.]+)\./)?.[1] ?? []))
+  for (const r of routers) {
+    const mw = (labels[`traefik.http.routers.${r}.middlewares`] ?? '').split(',').map((x) => x.trim()).filter(Boolean)
+    if (mw[0] !== 'puerta-apps@file') out.push(`router ${r} does not start with puerta-apps@file (${mw.join(',') || 'no middlewares'})`)
+  }
+  return out
+}
+
+test('gateProblems catches a router without middlewares and tcp/udp routes', () => {
+  const ok = { 'traefik.http.routers.a.rule': 'Host(`x`)', 'traefik.http.routers.a.middlewares': 'puerta-apps@file,cabeceras@file' }
+  assert.deepEqual(gateProblems(ok), [])
+  assert.equal(gateProblems({ ...ok, 'traefik.http.routers.b.rule': 'Host(`x`) && PathPrefix(`/api`)' }).length, 1)
+  assert.equal(gateProblems({ ...ok, 'traefik.http.routers.a.middlewares': 'cabeceras@file,puerta-apps@file' }).length, 1)
+  assert.equal(gateProblems({ ...ok, 'traefik.tcp.routers.t.rule': 'HostSNI(`*`)' }).length, 1)
+  assert.equal(gateProblems({ ...ok, 'traefik.udp.routers.u.entrypoints': 'x' }).length, 1)
+})
+
 test('every router puts the box gate first; the feeder has no route', { skip }, () => {
   const { services } = full()
   const web = services['bob-web'].labels ?? {}
-  const mws = Object.entries(web).filter(([k]) => /^traefik\.http\.routers\.[^.]+\.middlewares$/.test(k))
-  assert.ok(mws.length >= 2)
-  for (const [k, v] of mws) assert.match(v, /^puerta-apps@file,/, `${k} does not start with the gate`)
+  assert.ok(Object.keys(web).some((k) => k.startsWith('traefik.http.routers.')))
+  assert.deepEqual(gateProblems(web), [])
   assert.equal(web['traefik.docker.network'], 'bzzz-edge')
   const feeder = services['bob-feeder']
   assert.ok(!Object.keys(feeder.labels ?? {}).some((k) => k.startsWith('traefik.')))
   assert.deepEqual(feeder.profiles, ['feeder'])
+})
+
+test('the isolation check forbids exactly FORBIDDEN_IN_BOX', () => {
+  const script = readFileSync(new URL('../../deploy/caja/comprobar-aislamiento.sh', import.meta.url), 'utf8')
+  const block = script.split('# --- FORBIDDEN_IN_BOX ---')[1]?.split('# --- fin ---')[0] ?? ''
+  const names = [...block.matchAll(/"([A-Z0-9_]+)"/g)].map((m) => m[1])
+  assert.deepEqual(names, [...FORBIDDEN_IN_BOX])
 })

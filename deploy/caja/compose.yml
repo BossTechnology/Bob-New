@@ -18,11 +18,12 @@
 #   4. Redes: bzzz-vecina-bob (internal, la crea el alta de la vecina en Bzzz;
 #      dentro solo están supabase-db, supabase-auth y bzzz-vecinos) y, solo para
 #      la aplicación, bzzz-edge, por donde llega Traefik. bzzz-edge sale a internet
-#      (D77 §5: «le toca a D59»); comprobar-aislamiento.sh la acepta para bob-web
-#      y para nadie más.
+#      (D77 §5). Henry eligió el 2026-11-25 «(A) bzzz-edge como excepción»:
+#      comprobar-aislamiento.sh la acepta para bob-web y para nadie más, con lo
+#      permitido fijo en el guion (no leído de este fichero). Cerrarla, D59.
 #
-# Los nombres de red y la raíz van como variables solo para el banco local
-# (deploy/caja/banco/). En una caja se dejan como están.
+# BOB_RAIZ es /opt/bob en una caja (deploy.sh lo fija); solo el banco local
+# (deploy/caja/banco/) lo cambia.
 # ============================================================================
 name: bob
 
@@ -71,7 +72,7 @@ services:
     labels:
       bob.vecina: "bob"
       traefik.enable: "true"
-      traefik.docker.network: "${BOB_RED_ENTRADA:-bzzz-edge}"
+      traefik.docker.network: "bzzz-edge"
       traefik.http.routers.bob.rule: "Host(`${BOB_HOST:?falta BOB_HOST en /opt/bob/.env}`)"
       traefik.http.routers.bob.entrypoints: "websecure"
       traefik.http.routers.bob.tls.certresolver: "le"
@@ -120,8 +121,8 @@ services:
 
 networks:
   vecina:
-    name: ${BOB_RED_VECINA:-bzzz-vecina-bob}
+    name: bzzz-vecina-bob
     external: true
   entrada:
-    name: ${BOB_RED_ENTRADA:-bzzz-edge}
+    name: bzzz-edge
     external: true

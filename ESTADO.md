@@ -50,10 +50,16 @@
   - el alta de la vecina y `generar-secretos-vecina.sh` (sesión de Bzzz);
   - sacar `compose/l7-bob.yml` (77.4);
   - confirmar los nombres de `migrador.env` (`BOB_MIGRADOR_USUARIO` y `BOB_MIGRADOR_CLAVE`) y los ficheros del feeder.
+  - **la imagen del feeder no la construye ni la firma nadie**: `construir-imagen-bob.sh` de Bzzz solo hace bob-web, y por P-H8 el guion del feeder va en Bzzz. `deploy.sh --feeder` ya exige tar de una imagen `bob-feeder:<12 hex>` y atestación que case.
+- **Riesgos de v1 aceptados, anotados en el runbook:**
+  - cualquiera en `bzzz-edge` llega a `bob-web:3000` sin la puerta y puede falsear `X-Forwarded-For` (ligado a D59);
+  - tras una migración, la vuelta atrás pone la imagen vieja sobre el esquema nuevo;
+  - los `.sql` de `--migrar` no van ligados al commit atestado.
 - Probar en una caja real con la imagen de `main`. La lista de verificación está en las notas compartidas de la sesión (`bob-web-real-box-checklist.md`). Lo primero que vigilar: la primera conexión a la base, que en local tardó ~15 s y dio un 503 hasta reintentar.
 
 ## Notas de sesión
 <!-- AAAA-MM-DD: una o dos líneas -->
+- 2026-11-25 (revisión de #55): el tar se lee y se atesta antes de cargarlo (una imagen, sin etiquetas ajenas); un fallo de seguridad para todo; las redes permitidas salen de D77, fijas en el chequeo; lo de la caja no se cambia desde el entorno salvo en el banco; la puerta por Traefik es obligatoria; migraciones a la base de `caja.env`; la lista de secretos es la de `FORBIDDEN_IN_BOX`.
 - 2026-11-25: paquete de BOb al lado de la caja (D77). Probado en el banco local, sin tocar ninguna caja. Henry eligió (A): `bzzz-edge` como excepción solo de bob-web; cerrar su salida queda para D59.
 - 2026-11-23: PR #48 (codificación de salida del simulador) fusionado con CI en verde. El comentario de cabecera de `lib/bob/simulator-sinks.test.ts` en el PR #43 ya no depende del orden en que entren #43 y #48.
 - 2026-11-21 (cierre): #34, #35, #36 y #31 fusionados. #35 entró sin `4bd24a4`; viajó en #36, retargeteado a `main`. Caso viewer de los umbrales probado en caja local (papel cambiado a viewer y devuelto a admin; login temporal borrado).

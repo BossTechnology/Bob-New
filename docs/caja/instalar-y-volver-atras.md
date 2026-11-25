@@ -9,13 +9,15 @@ repo contra una caja de cliente sin su visto bueno en cada corrida.
 /opt/bob/
   compose.yml              copia de deploy/caja/compose.yml
   .env                     BOB_HOST y las imágenes (las escribe deploy.sh; no lleva secretos)
-  config/caja.env          BOB_ORG_ID, BOB_GOTRUE_URL, BOB_DB_HOST (configuración, no secretos)
+  config/caja.env          BOB_ORG_ID, BOB_GOTRUE_URL, BOB_DB_HOST y, si no son los de siempre, BOB_DB_PORT y
+                           BOB_DB_NAME (configuración, no secretos; las migraciones van a esa base)
   secrets/app.env          bob_app            600, del usuario 65534
   secrets/feeder.env       bob_feeder         600, del usuario 65534 (cuando haya feeder)
   secrets/vecinos.{crt,key} y vecinos-ca.crt  mTLS hacia bzzz-vecinos (cuando haya feeder)
-  secrets/migrador.env     bob_migrador       600, de root: solo lo lee el paso de migración
-  atestaciones/            las atestaciones de cada imagen desplegada, con su .sig
-  deploy.sh  rollback.sh  lib.sh  comprobar-aislamiento.sh
+  secrets/migrador.env     bob_migrador       600, de root: solo lo lee deploy.sh, que pasa la clave por stdin
+  atestaciones/            las atestaciones de cada imagen desplegada, con su .sig (la caja las lee de aquí:
+                           Henry, 2026-11-25, «/opt/<v>/atestaciones/»)
+  deploy.sh  rollback.sh  lib.sh  fijos.sh  comprobar-aislamiento.sh
 ```
 
 Los contenedores son `bob-web` y `bob-feeder`, del proyecto de compose `bob`:
@@ -30,14 +32,39 @@ Los contenedores son `bob-web` y `bob-feeder`, del proyecto de compose `bob`:
 - **Los contenedores son de solo lectura**, corren como `65534` y sin capacidades.
 - **Cada contenedor tiene techo de memoria, CPU y procesos.**
 
+**Lo fijo no se cambia desde el entorno.** `fijos.sh` fija:
+- la raíz `/opt/bob`;
+- el comprobador de atestaciones (`/opt/bzzz/scripts/comprobar-atestacion-bob.sh`) y sus firmantes
+  (`/opt/bzzz/config/bob/firmantes_imagen`);
+- la imagen de `psql`;
+- la URL de la puerta;
+- los nombres de red.
+
+Si alguno llega del entorno con otro valor, el guion no empieza. Solo el banco local los cambia, con `BOB_BANCO=1` y
+en una máquina sin `/opt/bzzz`. Lo único que se ajusta es `BOB_ESPERA_SALUD`, los segundos de espera.
+
 **La salida a internet de `bob-web`.** Henry eligió el 2026-11-25, en el chat de Relevo, «(A) bzzz-edge como
 excepción»:
 - `bob-web` va en `bzzz-edge`, como dice D77 §5. Esa red no es `internal`, así que `bob-web` puede salir.
-- `comprobar-aislamiento.sh` acepta esa red **solo para `bob-web`** (`BOB_SALIDA_ACEPTADA=bob-web=bzzz-edge`). Falla
-  con cualquier otra red con salida y con cualquier otro `bob-*` en `bzzz-edge`. El feeder no tiene salida.
+- `comprobar-aislamiento.sh` la acepta **solo para `bob-web`**, fijo en el código. Falla con cualquier otra red con
+  salida y con cualquier otro `bob-*` en `bzzz-edge`. El feeder no tiene salida.
+- `BOB_SALIDA_ESTRICTA=1` quita la excepción, y el chequeo falla mientras siga así. Solo endurece; por eso se acepta.
 - **Cerrar la salida de `bzzz-edge` queda para D59.** Hasta entonces, que BOb no salga depende de la imagen: en modo
-  caja no arranca con claves de salida. Con `BOB_SALIDA_ACEPTADA=` (vacía), el chequeo es estricto y falla mientras
-  siga así.
+  caja no arranca con claves de salida.
+
+## Riesgos de v1 que se aceptan (ligados a D59)
+
+- **`bzzz-edge` llega a `bob-web:3000` sin pasar por la puerta.** Cualquier contenedor de `bzzz-edge` (Traefik, el
+  portal, Hivemonic…) puede hablarle directo, sin `puerta-apps@file`, y poner el `X-Forwarded-For` que quiera.
+  `BOB_PROXY_HOPS` cuenta los saltos, pero no puede saber si el primero fue Traefik. Por lo mismo, los límites por
+  dirección del login de BOb se pueden falsear desde dentro de esa red.
+  - Lo que lo acota: la sesión de BOb se valida contra GoTrue en cada petición. Sin un token válido no se lee nada.
+  - Lo que lo cerraría: una red de entrada propia, interna, a la que se una solo Traefik (un PR en Bzzz), o D59.
+- **Tras una migración, la vuelta atrás pone la imagen vieja sobre el esquema nuevo.** Ni `deploy.sh` ni `rollback.sh`
+  deshacen migraciones. Si la imagen anterior no casa con el esquema, la vuelta atrás es del esquema `bob`, que se
+  recupera por esquema (D77 77.14), aparte.
+- **Los `.sql` de `--migrar` no van ligados al commit atestado.** La atestación firma la imagen, no las migraciones,
+  que vienen de BOb-engine. Henry decide cuáles pasa y en qué orden. Ligarlas a la atestación queda pendiente.
 
 ## Antes de la primera instalación (lo hace la caja, no este paquete)
 
@@ -75,31 +102,46 @@ Con migraciones nuevas de BOb, **solo si Henry lo decide**, en el orden en que s
 ```
 
 **Lo que hace `deploy.sh`:**
-1. Carga la imagen.
-2. Comprueba la atestación con `/opt/bzzz/scripts/comprobar-atestacion-bob.sh` y los firmantes de
-   `/opt/bzzz/config/bob/firmantes_imagen`. Si no casa, no toca nada.
-3. Aplica las migraciones pedidas como `bob_migrador`, cada una en su transacción, desde un contenedor de usar y
-   tirar en `bzzz-vecina-bob`.
-4. Guarda la imagen que corría como anterior, levanta la nueva y espera a que esté sana.
-5. Corre `comprobar-aislamiento.sh`.
-6. Si algo de los pasos 4 y 5 falla, vuelve sola a la imagen anterior.
-
-**Para comprobar también la entrada por Traefik**, se define `BOB_URL_SALUD=https://<host de BOb>/api/health`.
-Valen los códigos de `BOB_URL_SALUD_CODIGOS`: por omisión 200, 302, 303, 307 y 401. La puerta sin sesión redirige o
-niega, y eso ya prueba que el router existe y que BOb está sano: Traefik no enruta a un contenedor que no lo está.
+1. **Lee el tar sin cargarlo.**
+   - Tiene que traer una sola imagen.
+   - No puede traer ninguna etiqueta que no sea `bob-web:<12 hex>`, la que pone `construir-imagen-bob.sh`. Si no, al
+     cargarlo podría mover una etiqueta que la caja usa sin digest.
+   - Su id es el sha256 de su configuración.
+   - El sha256 del tar tiene que ser el de la atestación.
+2. **Comprueba la atestación** contra ese id. Si no casa, no carga nada.
+3. **Carga la imagen** y comprueba que cargó ese id.
+4. **Aplica las migraciones pedidas** como `bob_migrador`, cada una en su transacción, desde un contenedor de usar y
+   tirar en `bzzz-vecina-bob`. Van contra la base, el puerto y el nombre de `config/caja.env`.
+5. **Guarda la imagen que corría** como anterior, levanta la nueva y espera a que esté sana.
+6. **Comprueba por Traefik**, siempre: `https://<BOB_HOST>/api/health` sin sesión, por el 443 del propio servidor.
+   - Tiene que contestar **la puerta**: 302, 303, 307 o 401. Eso prueba que el router existe (Traefik no enruta a un
+     contenedor que no está sano) y que `puerta-apps@file` va delante.
+   - Un **200 sin sesión** quiere decir que la puerta no está, y se trata como un fallo de seguridad.
+7. **Corre `comprobar-aislamiento.sh`.**
+8. **Si la nueva no queda sana**, comprueba otra vez la atestación de la anterior y vuelve a ella. Si lo que falla es
+   la **seguridad** (aislamiento roto o sin la puerta), no vuelve atrás: **para todo lo de BOb** (`compose stop`).
 
 **La línea final:**
 
 | Línea | rc | Qué quiere decir |
 |---|---|---|
-| `desplegada: …` | 0 | La nueva corre y está sana |
+| `desplegada: …` | 0 | La nueva corre, está sana, detrás de la puerta y aislada |
 | `vuelta-atras: …` | 1 | La nueva no quedó sana y corre otra vez la anterior |
-| `fallo: …` | 1 | Una migración falló, o ni la nueva ni la anterior quedaron sanas. La línea dice qué quedó |
-| `no-empieza: …` | 2 | No se tocó nada que corra |
+| `fallo: …` | 1 | Una migración falló; la seguridad falló y todo quedó parado; o ni la nueva ni la anterior quedaron sanas. La línea dice cómo quedó |
+| `no-empieza: …` | 2 | No se tocó nada que corra (un tar rechazado ni siquiera se carga) |
 
 ### El feeder
 
-Cuando existan el adaptador (tarea 3.7 de BOb-engine) y las vistas de `bzzz-vecinos` (P-F1):
+**Pendiente: hoy nadie construye ni firma la imagen del feeder.** `construir-imagen-bob.sh` de Bzzz solo construye
+y firma bob-web. P-H8 dice que los guiones de atestación se quedan en Bzzz y cubren también el feeder, así que el
+guion para el feeder se escribe en Bzzz, no aquí.
+
+`deploy.sh --feeder` ya exige lo mismo que para bob-web:
+- un tar con una sola imagen, etiquetada `bob-feeder:<12 hex>`;
+- una atestación firmada que case, guardada en `/opt/bob/atestaciones/`.
+
+Sin ese guion no hay imagen que pase, y el feeder tampoco tiene todavía adaptador (tarea 3.7 de BOb-engine) ni vistas
+en `bzzz-vecinos` (P-F1). Cuando existan los tres:
 
 ```bash
 ./deploy.sh --feeder --imagen bob-feeder-<12>.tar --atestacion bob-feeder-<12>.atestacion
@@ -116,11 +158,11 @@ cd /opt/bob
 ```
 
 - **Qué hace:** vuelve a la imagen anterior que dejó `deploy.sh`, comprobando otra vez su atestación, y comprueba la
-  salud y el aislamiento igual que el deploy. La que corría pasa a ser la anterior, así que correrlo dos veces deja
-  todo como estaba.
+  salud, la puerta por Traefik y el aislamiento igual que el deploy. La que corría pasa a ser la anterior, así que
+  correrlo dos veces deja todo como estaba.
+- **Si falla la seguridad**, para todo lo de BOb.
 - **Lo que sale:** `vuelta-atras: …` con rc 0, `fallo: …` con rc 1 o `no-empieza: …` con rc 2.
-- **No deshace migraciones.** Si la imagen anterior no casa con el esquema que dejó una migración, la vuelta atrás es
-  del esquema `bob` y se recupera por esquema (D77 77.14), aparte.
+- **No deshace migraciones** (ver «Riesgos de v1»).
 
 ## Comprobar el aislamiento cuando se quiera
 
@@ -129,10 +171,21 @@ cd /opt/bob
 ```
 
 **Qué mira.** Descubre todo contenedor del demonio que se llame `bob-*` o que lleve las etiquetas del proyecto `bob`,
-también los parados. Para cada uno, falla si:
-- no está declarado en `compose.yml`;
-- está en una red que su servicio no declara, o en una red con salida que no sea la excepción;
-- su entorno o un fichero montado trae la service role, `JWT_SECRET`, `POSTGRES_PASSWORD` o la credencial de migración;
+también los parados.
+
+**Lo permitido sale de D77, fijo en el guion**, y no de `/opt/bob/compose.yml`, que es lo que se protege:
+- `bob-web` puede estar en `bzzz-vecina-bob` y `bzzz-edge`;
+- `bob-feeder`, solo en `bzzz-vecina-bob`.
+
+Para cada contenedor, falla si:
+- no es `bob-web` ni `bob-feeder` del proyecto `bob`;
+- está en una red que D77 no le da, o en una red con salida que no sea la excepción;
+- lleva etiquetas `traefik.tcp.*` o `traefik.udp.*`;
+- es enrutable sin ser `bob-web`;
+- tiene un router HTTP sin `puerta-apps@file` primero;
+- su entorno trae algo de `FORBIDDEN_IN_BOX` (`lib/bob/runtime.ts`, la misma lista que usa la app) o un JWT con
+  `role=service_role`;
+- un fichero montado trae la service role, `JWT_SECRET`, `POSTGRES_PASSWORD` o la credencial de migración;
 - monta algo fuera de `/opt/bob/config` y `/opt/bob/secrets`;
 - publica un puerto.
 
@@ -146,19 +199,33 @@ también los parados. Para cada uno, falla si:
 
 ## El banco local
 
-`deploy/caja/banco/banco.sh` prueba todo esto en un portátil, nunca en una caja. Imita la caja con:
-- una red interna y otra con salida;
+`deploy/caja/banco/banco.sh` prueba todo esto en un portátil. Se niega a correr si hay `/opt/bzzz` o si las redes de
+la caja ya existen. Imita la caja con:
+- las redes con sus nombres de caja;
 - `supabase/postgres:17.6.1.136`, la imagen de la caja, con `bob_app` y `bob_migrador`;
 - el GoTrue de Supabase;
-- un Traefik v3.7.18 con middlewares de mentira que llevan los nombres de la caja.
+- un Traefik v3.7.18 con los middlewares de la caja. La puerta es un forwardAuth que niega sin sesión.
 
 Recorre, en orden:
-1. instalar A, actualizar a B, `rollback.sh` y otra vez `rollback.sh`;
-2. una imagen que no queda sana, que vuelve sola;
-3. una imagen sin atestación que case, que no empieza;
-4. `--migrar` con una migración buena y una que bob_migrador no puede aplicar;
-5. el chequeo de aislamiento visto fallar cinco veces: un `bob-intruso` con la service role, otro `bob-*` en la red de
-   entrada, una red de más, el modo estricto y la service role en el fichero montado.
+1. Lo fijo no se cambia desde el entorno sin `BOB_BANCO`.
+2. Instalar A (401 de la puerta sin sesión, 200 con ella), actualizar a B, `rollback.sh` y otra vez `rollback.sh`.
+3. Una imagen que no queda sana vuelve sola, con la atestación de la anterior comprobada otra vez.
+4. Tres tars rechazados sin cargarse:
+   - uno con la atestación de otra imagen;
+   - uno que además etiqueta una imagen ajena, que sigue donde estaba;
+   - uno con dos imágenes.
+5. `--migrar` con una migración buena y una que `bob_migrador` no puede aplicar.
+6. El chequeo de aislamiento, visto fallar seis veces:
+   - un intruso con la service role;
+   - otro `bob-*` en `bzzz-edge`;
+   - un router TCP;
+   - una red de más;
+   - el modo estricto;
+   - y, ya con parada, la service role en el fichero montado.
+7. Tres fallos de seguridad que paran todo:
+   - la service role en `app.env`;
+   - Traefik sin la puerta delante;
+   - `bzzz-data` añadida a `bob-web` en el `compose.yml` de la caja.
 
 ```bash
 docker build -t bob-web:banco-a .
@@ -171,5 +238,8 @@ En el CI, `lib/bob/caja-compose.test.ts` comprueba el compose resuelto:
 - sin root y de solo lectura;
 - con techos;
 - sin secretos en el entorno;
-- con las redes declaradas;
-- con la puerta primero en cada router.
+- con las redes de D77;
+- cada router, descubierto por sus etiquetas, con `puerta-apps@file` primero;
+- sin `tcp` ni `udp`.
+
+También comprueba que la lista de secretos del chequeo sea idéntica a `FORBIDDEN_IN_BOX`.

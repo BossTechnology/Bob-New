@@ -5,17 +5,17 @@
 # USO
 #   rollback.sh [--feeder]
 #
-# Toma de /opt/bob/.env la imagen anterior y su atestación, que dejó deploy.sh; comprueba otra vez esa
-# atestación contra la imagen (que siga en el disco y que siga casando); la pone, levanta y comprueba la
-# salud y el aislamiento igual que deploy.sh. La que corría pasa a ser la anterior: correrlo dos veces
-# vuelve adonde estaba.
+# Toma de /opt/bob/.env la imagen anterior y su atestación, que dejó deploy.sh; comprueba otra vez esa atestación
+# contra la imagen (que siga en el disco y que siga casando); la pone, levanta y comprueba la salud, la puerta por
+# Traefik y el aislamiento igual que deploy.sh. La que corría pasa a ser la anterior: correrlo dos veces vuelve
+# adonde estaba. Si lo que falla es la seguridad (aislamiento roto o sin la puerta delante), para todo lo de BOb.
 #
-# NO toca la base: las migraciones no se deshacen aquí. Si la imagen anterior no casa con el esquema que
-# dejó una migración, la vuelta atrás es del esquema `bob` (D77 §3.2), y eso es otro procedimiento.
+# NO toca la base: las migraciones no se deshacen aquí. Tras una migración, esto pone la imagen vieja sobre el
+# esquema nuevo; si no casan, la vuelta atrás es del esquema `bob` (D77 77.14), y eso es otro procedimiento.
 #
 # SALIDA (una línea por stdout; el detalle, por stderr):
 #   0  «vuelta-atras: corre <id>»
-#   1  «fallo: …»        la anterior no quedó sana; se dice cuál quedó puesta
+#   1  «fallo: …»        la anterior no quedó sana o no es segura; se dice cómo quedó la caja
 #   2  «no-empieza: …»   no se tocó nada
 set -uo pipefail
 . "$(cd "$(dirname "$0")" && pwd)/lib.sh"
@@ -27,8 +27,9 @@ case "${1:-}" in
   *) no_empieza "argumento desconocido «$1»" ;;
 esac
 componente "$COMP"
-command -v docker >/dev/null || no_empieza "falta docker"
+for c in docker python3 curl; do command -v "$c" >/dev/null || no_empieza "falta $c"; done
 [ -f "$BOB_ENV" ] || no_empieza "no está $BOB_ENV"
+[ "$COMP" = web ] && fijar_url_salud
 
 ANT=$(leer "${CLAVE}_IMAGEN_ANTERIOR"); ANT_AT=$(leer "${CLAVE}_ATESTACION_ANTERIOR")
 es_id "$ANT" || no_empieza "no hay ${CLAVE}_IMAGEN_ANTERIOR en $BOB_ENV: no hubo un deploy antes de este"
@@ -43,9 +44,10 @@ ACT_AT=$(leer "${CLAVE}_ATESTACION")
 
 say "== de ${ACT:-nada} a $ANT"
 escribir "${CLAVE}_IMAGEN_ANTERIOR" "$ACT" "${CLAVE}_ATESTACION_ANTERIOR" "$ACT_AT"
-if poner "$ANT" "$ANT_AT"; then
-  echo "vuelta-atras: corre $ANT ($SERVICIO)"
-  exit 0
-fi
+poner "$ANT" "$ANT_AT"; RC=$?
+case "$RC" in
+  0) echo "vuelta-atras: corre $ANT ($SERVICIO)"; exit 0 ;;
+  3) echo "fallo: $ANT no es segura (aislamiento roto o sin la puerta delante); todo lo de BOb queda parado"; exit 1 ;;
+esac
 echo "fallo: $ANT puesta en $BOB_ENV pero no quedó sana; la de antes ($ACT) es ahora la anterior: rollback.sh otra vez la devuelve"
 exit 1
