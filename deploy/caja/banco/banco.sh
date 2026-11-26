@@ -227,6 +227,8 @@ if [ "$(id -u)" != 0 ]; then
     env -u BOB_BANCO -u BOB_BANCO_MARCA -u BOB_RAIZ -u BOB_COMPROBAR_ATESTACION -u BOB_FIRMANTES -u BOB_URL_SALUD -u BOB_URL_SALUD_RESOLVER "$D" "${A_DEP[@]}"
   espera 2 "no-empieza: hay que correrlo como root" "rollback sin nada del banco y sin ser root" -- \
     env -u BOB_BANCO -u BOB_BANCO_MARCA -u BOB_RAIZ -u BOB_COMPROBAR_ATESTACION -u BOB_FIRMANTES -u BOB_URL_SALUD -u BOB_URL_SALUD_RESOLVER "$RB"
+else
+  echo "SALTA la guarda de root: este banco corre como root, así que no puede verla fallar"
 fi
 espera 2 "no-empieza: BOB_ESPERA_SALUD" "BOB_ESPERA_SALUD=08 (octal en \$(( )))" -- env BOB_ESPERA_SALUD=08 "$D" "${A_DEP[@]}"
 espera 2 "no-empieza: BOB_ESPERA_SALUD" "BOB_ESPERA_SALUD=0" -- env BOB_ESPERA_SALUD=0 "$D" "${A_DEP[@]}"
@@ -235,11 +237,18 @@ ln -s app.env "$R/secrets/vecinos.key"
 espera 2 "no-empieza: secrets/vecinos.key no es un fichero normal" "un enlace en secrets/ (se mira todo secrets/, no solo tres)" -- "$D" "${A_DEP[@]}"
 rm "$R/secrets/vecinos.key"; mkdir "$R/secrets/raro"
 espera 2 "no-empieza: secrets/raro no es un fichero normal" "un directorio en secrets/" -- "$D" "${A_DEP[@]}"
-rmdir "$R/secrets/raro"; chmod 644 "$R/secrets/app.env"
+rmdir "$R/secrets/raro"; ln -s app.env "$R/secrets/..x"
+espera 2 "no-empieza: secrets/..x no es un fichero normal" "un enlace «..x» en secrets/ (find, no un glob)" -- "$D" "${A_DEP[@]}"
+rm "$R/secrets/..x"; chmod 644 "$R/secrets/app.env"
 espera 2 "no-empieza: secrets/app.env tiene permisos 644" "app.env legible por otros" -- "$D" "${A_DEP[@]}"
 chmod 600 "$R/secrets/app.env"; chmod 777 "$R/secrets"
 espera 2 "no-empieza: $R/secrets tiene permisos 777" "secrets/ escribible por otros" -- "$D" "${A_DEP[@]}"
 chmod 700 "$R/secrets"
+mkdir -p "$R/padres/malo/hijo"; chmod 777 "$R/padres/malo"
+cierto "comprobar_padres ve un padre escribible por otros" '[[ "$( (. "$CAJA/lib.sh"; comprobar_padres "$R/padres/malo/hijo" "$R" "$(id -u)") )" == *"padres/malo tiene permisos 777"* ]]'
+chmod 755 "$R/padres/malo"
+cierto "comprobar_padres da por buena la cadena arreglada" '( . "$CAJA/lib.sh"; comprobar_padres "$R/padres/malo/hijo" "$R" "$(id -u)" )'
+rm -rf "$R/padres"
 
 echo "== el paquete"
 espera 2 "no-medible:" "aislamiento sin ningún bob-* (vacío no es aislado)" -- "$AIS"

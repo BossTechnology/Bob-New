@@ -282,16 +282,31 @@ fallo_y_parar() {
 # (bob-web y el feeder corren con ese usuario: un 600 de root no lo podrían leer). En el banco, del que lo corre.
 modo_de() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }
 dueno_de() { stat -c %u "$1" 2>/dev/null || stat -f %u "$1"; }
+# comprobar_padres <dir> <tope> <uid>: cada directorio desde el padre de <dir> hasta <tope> (incluido) es de <uid>,
+# no es un enlace y nadie más puede escribir en él. Quien pudiera escribir en /opt o en / podría cambiar /opt/bob.
+# Imprime el primero que falla y devuelve 1.
+comprobar_padres() {
+  local d=$1 tope=$2 uid=$3 m
+  while [ "$d" != "$tope" ] && [ "$d" != / ]; do
+    d=$(dirname "$d")
+    [ -d "$d" ] && [ ! -L "$d" ] || { echo "$d no es un directorio (o es un enlace)"; return 1; }
+    [ "$(dueno_de "$d")" = "$uid" ] || { echo "$d no es del uid $uid (es del $(dueno_de "$d"))"; return 1; }
+    m=$(modo_de "$d"); [ $(( 8#$m & 022 )) = 0 ] || { echo "$d tiene permisos $m: otros pueden escribir"; return 1; }
+  done
+}
 comprobar_raiz_y_secretos() {
-  local raiz=$BOB_RAIZ d f n m u root=0 app=65534
+  local raiz=$BOB_RAIZ d f n m u root=0 app=65534 malo
   bob_banco && { root=$(id -u); app=$(id -u); }
+  # En una caja, la cadena entera hasta / (/opt y /). En el banco la raíz cuelga de la carpeta temporal del sistema,
+  # que no es suya: esa cadena no se mira (comprobar_padres tiene su propio caso de banco).
+  if ! bob_banco; then malo=$(comprobar_padres "$raiz" / 0) || no_empieza "$malo"; fi
   for d in "$raiz" "$raiz/secrets"; do
     [ -d "$d" ] && [ ! -L "$d" ] || no_empieza "$d no es un directorio (o es un enlace)"
     [ "$(dueno_de "$d")" = "$root" ] || no_empieza "$d no es de root (uid $(dueno_de "$d"))"
     m=$(modo_de "$d"); [ $(( 8#$m & 022 )) = 0 ] || no_empieza "$d tiene permisos $m: otros pueden escribir"
   done
-  for f in "$raiz/secrets"/* "$raiz/secrets"/.[!.]*; do
-    [ -e "$f" ] || [ -L "$f" ] || continue
+  # Se descubre con find, no con un glob: «*» y «.[!.]*» no ven, por ejemplo, «..x».
+  while IFS= read -r -d '' f; do
     n=$(basename "$f")
     [ -f "$f" ] && [ ! -L "$f" ] || no_empieza "secrets/$n no es un fichero normal (enlace o directorio)"
     m=$(modo_de "$f"); [ "$m" = 600 ] || [ "$m" = 400 ] || no_empieza "secrets/$n tiene permisos $m: tiene que ser 600"
@@ -300,7 +315,7 @@ comprobar_raiz_y_secretos() {
       migrador.env) [ "$u" = "$root" ] || no_empieza "secrets/$n es del uid $u: tiene que ser de root" ;;
       *)            [ "$u" = "$app" ]  || no_empieza "secrets/$n es del uid $u: tiene que ser del $app (el usuario de los contenedores)" ;;
     esac
-  done
+  done < <(find "$raiz/secrets" -mindepth 1 -maxdepth 1 -print0)
 }
 
 # Pone una imagen (ya atestada) en .env, levanta y comprueba.
