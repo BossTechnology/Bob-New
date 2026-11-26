@@ -29,8 +29,12 @@ writeFileSync(secrets, 'BOB_APP_USUARIO=bob_app_example\nBOB_APP_CLAVE=example-o
 // process group, so one signal stops whatever it starts.
 const server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', String(PORT)], {
   detached: true,
+  // Only what a box container has: the runner's own variables are not the box's,
+  // and a secret-named one among them would (rightly) stop box mode.
   env: {
-    ...process.env,
+    PATH: process.env.PATH ?? '',
+    HOME: process.env.HOME ?? '',
+    NODE_ENV: 'production',
     BOB_CAJA: '1',
     BOB_ORG_ID: 'aaaaaaaa-0000-4000-8000-000000000001',
     BOB_GOTRUE_URL: 'http://127.0.0.1:9',

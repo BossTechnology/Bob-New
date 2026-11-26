@@ -20,8 +20,11 @@
 #   salida     está en una red que no es `internal` (sale a internet), salvo bob-web en bzzz-edge
 #   traefik    una etiqueta traefik.tcp.* o traefik.udp.*, enrutable sin ser bob-web, por otra red que bzzz-edge, o un
 #              router HTTP sin puerta-apps@file como primer middleware
-#   secreto    su entorno trae algo de FORBIDDEN_IN_BOX (lib/bob/runtime.ts) o un JWT con role=service_role; o un
-#              fichero montado trae la service role, JWT_SECRET, POSTGRES_PASSWORD o la credencial de migración
+#   secreto    su entorno trae una variable con nombre de contraseña, llave, token o secreto (SECRET_NAME, el mismo
+#              patrón que lib/bob/runtime.ts: descubre, no enumera; MIGRADOR_CLAVE cae aunque nadie la nombre), una de
+#              FORBIDDEN_IN_BOX, una URL con contraseña o un JWT con role=service_role; o un fichero montado trae lo
+#              mismo, salvo el login propio de ese contenedor en su fichero de /opt/bob/secrets (BOB_APP_CLAVE de
+#              bob-web, BOB_FEEDER_CLAVE del feeder)
 #   montaje    monta algo fuera de /opt/bob/config y /opt/bob/secrets, un volumen, un directorio o un enlace
 #   puertos    publica un puerto en el host
 #
@@ -65,20 +68,31 @@ redes = {n["Name"]: n for n in json.load(open(f"{d}/redes.json"))}
 PERMITIDAS = {"bob-web": {vecina, entrada}, "bob-feeder": {vecina}}
 SALIDA = set() if estricta == "1" else {("bob-web", entrada)}
 
-# FORBIDDEN_IN_BOX, copia literal de lib/bob/runtime.ts. lib/bob/caja-compose.test.ts falla si se separan.
+# SECRET_NAME, FORBIDDEN_IN_BOX y URL_WITH_PASSWORD, copia literal de lib/bob/runtime.ts. lib/bob/caja-compose.test.ts
+# falla si se separan.
 # --- FORBIDDEN_IN_BOX ---
+SECRET_NAME = re.compile(r"PASS|_PWD|CLAVE|CONTRASE|SECRET|TOKEN|LLAVE|KEY|CREDENTIAL|CREDENCIAL|SERVICE_ROLE|DATABASE_URL|DSN", re.I)
 FORBIDDEN_IN_BOX = [
-    "SUPABASE_SERVICE_ROLE_KEY", "SERVICE_ROLE_KEY", "JWT_SECRET", "GOTRUE_JWT_SECRET",
-    "POSTGRES_PASSWORD", "BOB_MIGRADOR_USUARIO", "BOB_MIGRADOR_CLAVE",
-    "BOB_DATABASE_URL", "BOB_APP_CLAVE",
-    "ANTHROPIC_API_KEY", "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "RESEND_API_KEY",
-    "SLACK_WEBHOOK_URL", "CRON_SECRET", "INTERNAL_SERVICE_API_KEY",
+    "TWILIO_ACCOUNT_SID", "SLACK_WEBHOOK_URL",
 ]
+URL_WITH_PASSWORD = re.compile(r"[a-z][a-z0-9+.-]*:\/\/[^\s/:@]*:[^\s/@]+@", re.I)
+MOUNTED_SECRETS = "/run/secrets/bob/"
 # --- fin ---
-# En el entorno, nada de la lista. En un fichero montado, todo menos las dos credenciales que están en la lista
-# solo por estar en el entorno (la del propio contenedor va precisamente en su fichero).
-EN_FICHERO = set(FORBIDDEN_IN_BOX) - {"BOB_DATABASE_URL", "BOB_APP_CLAVE"}
-PATRON = re.compile(r"SERVICE_ROLE|JWT_SECRET", re.I)
+# Una variable con nombre de secreto puede llevar la ruta de un fichero: uno montado aquí (BOB_VECINOS_CLAVE del
+# feeder) o cualquier ruta absoluta con un nombre *_FILE (la convención de Docker). La ruta no es el secreto.
+def es_ruta(k, v):
+    return re.fullmatch(r"/\S*", v) is not None and ".." not in v.split("/") \
+        and (v.startswith(MOUNTED_SECRETS) or k.upper().endswith("_FILE"))
+def secreto(k, v, ruta_ok=True):
+    if k in FORBIDDEN_IN_BOX:
+        return "trae " + k
+    if SECRET_NAME.search(k) and not (ruta_ok and es_ruta(k, v)):
+        return "trae " + k
+    if URL_WITH_PASSWORD.search(v):
+        return k + " lleva una contraseña dentro de una URL"
+    return None
+# En un fichero montado de /opt/bob/secrets, el login de ese contenedor (va precisamente ahí). Nada más.
+PROPIA = {"bob-web": {"BOB_APP_CLAVE"}, "bob-feeder": {"BOB_FEEDER_CLAVE"}}
 JWT = re.compile(r"eyJ[A-Za-z0-9_-]+\.([A-Za-z0-9_-]+)\.[A-Za-z0-9_-]*")
 PERMITIDOS = (os.path.join(raiz, "config") + "/", os.path.join(raiz, "secrets") + "/")
 ROUTER = re.compile(r"^traefik\.http\.routers\.([^.]+)\.")
@@ -137,8 +151,9 @@ for c in conts:
             f("traefik", f"el router {r} no lleva puerta-apps@file primero ({','.join(mw) or 'sin middlewares'})")
     for e in c["Config"].get("Env") or []:
         k, _, v = e.partition("=")
-        if k in FORBIDDEN_IN_BOX or PATRON.search(k):
-            f("secreto", f"el entorno trae {k}")
+        por = secreto(k, v)
+        if por:
+            f("secreto", f"el entorno {por}" if por.startswith("trae") else f"en el entorno, {por}")
         elif jwt_service_role(v):
             f("secreto", f"{k} es un JWT con role=service_role")
     for m in c.get("Mounts") or []:
@@ -159,10 +174,17 @@ for c in conts:
                 texto = open(src, errors="replace").read(1 << 20)
             except OSError as ex:
                 no_medible.append(f"{n}: no puedo leer {src} ({ex.strerror})"); continue
+            propia = PROPIA.get(n, set()) if src.startswith(PERMITIDOS[1]) else set()
             for linea in texto.splitlines():
-                k = linea.split("=", 1)[0].strip()
-                if "=" in linea and (k in EN_FICHERO or PATRON.search(k)):
-                    f("secreto", f"{src} trae {k}")
+                if "=" not in linea or linea.lstrip().startswith("#"):
+                    continue
+                k, _, v = linea.partition("=")
+                k = re.sub(r"^export\s+", "", k.strip()); v = v.strip().strip("'\"")
+                if k in propia:
+                    continue
+                por = secreto(k, v, ruta_ok=False)
+                if por:
+                    f("secreto", f"{src} {por}")
             if jwt_service_role(texto):
                 f("secreto", f"{src} trae un JWT con role=service_role")
     pb = [k for k, v in (c["HostConfig"].get("PortBindings") or {}).items() if v]

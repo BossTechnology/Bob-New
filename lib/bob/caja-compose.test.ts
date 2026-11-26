@@ -8,7 +8,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { FORBIDDEN_IN_BOX } from './runtime.ts'
+import { FORBIDDEN_IN_BOX, SECRET_NAME, URL_WITH_PASSWORD, MOUNTED_SECRETS } from './runtime.ts'
 
 const COMPOSE = new URL('../../deploy/caja/compose.yml', import.meta.url).pathname
 const WEB_ID = 'sha256:' + 'a'.repeat(64)
@@ -117,9 +117,21 @@ test('every router puts the box gate first; the feeder has no route', { skip }, 
   assert.deepEqual(feeder.profiles, ['feeder'])
 })
 
-test('the isolation check forbids exactly FORBIDDEN_IN_BOX', () => {
+test('the isolation check forbids exactly what the app forbids: same pattern, same list', () => {
   const script = readFileSync(new URL('../../deploy/caja/comprobar-aislamiento.sh', import.meta.url), 'utf8')
   const block = script.split('# --- FORBIDDEN_IN_BOX ---')[1]?.split('# --- fin ---')[0] ?? ''
-  const names = [...block.matchAll(/"([A-Z0-9_]+)"/g)].map((m) => m[1])
-  assert.deepEqual(names, [...FORBIDDEN_IN_BOX])
+  const list = block.match(/FORBIDDEN_IN_BOX = \[([^\]]*)\]/)?.[1] ?? ''
+  assert.deepEqual([...list.matchAll(/"([A-Z0-9_]+)"/g)].map((m) => m[1]), [...FORBIDDEN_IN_BOX])
+  assert.equal(block.match(/SECRET_NAME = re\.compile\(r"(.*)", re\.I\)/)?.[1], SECRET_NAME.source)
+  assert.equal(block.match(/URL_WITH_PASSWORD = re\.compile\(r"(.*)", re\.I\)/)?.[1], URL_WITH_PASSWORD.source)
+  assert.equal(block.match(/MOUNTED_SECRETS = "(.*)"/)?.[1], MOUNTED_SECRETS)
+})
+
+test('the compose hands no container a secret-named variable with a value', { skip }, () => {
+  for (const [name, s] of Object.entries(full().services)) {
+    for (const [k, v] of Object.entries(s.environment ?? {})) {
+      if (!SECRET_NAME.test(k)) continue
+      assert.ok(v.startsWith(MOUNTED_SECRETS) || /_FILE$/i.test(k), `${name}: ${k} is not a mounted file path`)
+    }
+  }
 })
