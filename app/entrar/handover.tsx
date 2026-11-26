@@ -3,7 +3,7 @@
 // /auth/portal. On failure it says so and offers the portal as a link: it
 // never sends the person back by itself (no loop).
 import { useEffect, useState } from 'react'
-import { handover } from '@/lib/bob/portal.ts'
+import { handover } from '@/lib/bob/portal-handover.ts'
 
 export default function Handover({ portal }: { portal: string }) {
   const [message, setMessage] = useState('')

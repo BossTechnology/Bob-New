@@ -61,7 +61,9 @@ async function up() {
 const problems = []
 const check = (label, res, data) => {
   const got = (h) => res.headers.get(h)
-  for (const [h, v] of Object.entries(expected)) {
+  // /entrar holds the portal's token in its URL until it clears it: no Referer at all (lib/bob/portal.ts).
+  const want = label.split(/[ ?]/)[0] === '/entrar' ? { ...expected, 'Referrer-Policy': 'no-referrer' } : expected
+  for (const [h, v] of Object.entries(want)) {
     if (got(h) !== v) problems.push(`${label} (${res.status}): ${h} is ${JSON.stringify(got(h))}`)
   }
   if (got('x-powered-by')) problems.push(`${label}: X-Powered-By is sent`)
