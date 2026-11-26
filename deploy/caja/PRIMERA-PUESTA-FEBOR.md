@@ -58,10 +58,10 @@ nada comprueba en la base de datos que de verdad no hay BOb. Si `cadena` falla a
 |---|---|---|---|
 | Bzzz | #445, #449, #450, #454, #457, #458 | `l7-bob.yml` fuera; `bzzz-vecinos`; el alta de vecinas; la atestación por la config e `id-de-imagen.sh` | en `main` |
 | Bzzz | #460 | el bit de ejecución en los guiones de `scripts/` | en `main` |
-| Bzzz | — | la llave pública de imagen en `config/bob/firmantes_imagen` **[llave-img]** | en `main` (`188f2ee`); `deploy.sh` dijo «firmada por henry» en lab-02 y model-01 el 26 nov |
+| Bzzz | — | la llave pública de imagen en `config/bob/firmantes_imagen` **[llave-img]** | en `main` (`188f2ee`); medido el 26 nov: `deploy.sh` dijo «firmada por henry» en lab-02 y model-01 |
 | Bzzz | BossTechnology/bzzz#467 | `bob.conf` declara los dos `EXECUTE` de `bob_app` fuera de `bob` (sin esto B6 se niega con dos hallazgos de V14) | en `main` (`f1fa719`) |
 | Bzzz | BossTechnology/bzzz#468 | D78: `bob-web` en `bzzz-edge` y en la lista de lo que sale (sin esto B13 falla en §7, «salen sin estar en ella: bob-web») | en `main` (`2cebc7d`) |
-| Bzzz | BossTechnology/bzzz#469 | §15 compara ids enteros: lo de `config/caja/fuera-del-repo.txt` deja de salir como vecina (el latido de lab-02, V4) | **abierto** |
+| Bzzz | BossTechnology/bzzz#469 | §15 compara ids enteros: lo de `config/caja/fuera-del-repo.txt` deja de salir como vecina (el latido de lab-02, V4) | **abierto**: mientras no entre, B13 en lab-02 da 1 fallo (V4 y V5 del latido) y es el único que se acepta |
 | Bob-New | #55, #37 | el paquete de `/opt/bob`; las pantallas del Slice 3 | en `main` |
 | Bob-New | BossTechnology/Bob-New#56 | `deploy.sh` ya no migra; los chequeos de secretos descubren por patrón | en `main` |
 | BOb-engine | #48, #52 | O-3 firmado (`cadena` y `resto`); el texto de P5 por D77 | en `main` |
@@ -69,19 +69,19 @@ nada comprueba en la base de datos que de verdad no hay BOb. Si `cadena` falla a
 | BOb-engine | #53 | `postgres.env` fuera de `secrets/` (B2), cómo llega root a la base (B3), requisitos de `firma-instalacion` (H5) | en `main` |
 | BOb-engine | #54 | la base vacía (H4), para una caja donde BOb nunca se instaló (model-01 y Febor), y el reintento de un `cadena` a medias | en `main` (`ccd9269`) |
 | BOb-engine | BossTechnology/BOb-engine#56 | una aprobación `d → d` nombra su caja (`--caja <machine-id>`); la marca de un `cadena` a medias nombra su base de datos | en `main` (`731a405`) |
-| BOb-engine | — | la llave de Henry en `supabase/provision/firmantes_instalacion` **[llave-fido]** | en `main` (`8378591`); las aprobaciones se validaron en las cajas el 26 nov |
+| BOb-engine | — | la llave de Henry en `supabase/provision/firmantes_instalacion` **[llave-fido]** | en `main` (`8af7da7`, retocada en `8378591`); medido en las cajas el 26 nov: la firma se valida |
 | BOb-engine | BossTechnology/BOb-engine#58 | `cadena` hace el `db push` con `sslmode=disable` (sin esto B5 falla con «server does not support SSL») | en `main` (`0b2e9bc`) |
 
 ## A. Una vez, en el portátil
 
 **Antes de nada, la sonda del alias de B0** (primera de B0): A ya usa `ssh bzzz-<caja>` y `scp`.
 
-**A1. La llave de imagen.** **[llave-img] [pendiente: PR de Bzzz por abrir]** La línea pública de la llave SSH con la
+**A1. La llave de imagen.** **[llave-img] [en `main` de Bzzz (`188f2ee`)]** La línea pública de la llave SSH con la
 que se firma va en `config/bob/firmantes_imagen` de Bzzz, por PR. Tiene que estar en `main` y llegar a cada caja con
 B1. Si no, `construir-imagen-bob.sh` acaba en rc 1 (comprueba contra la copia del portátil) y `deploy.sh` no carga la
 imagen (comprueba contra la de la caja).
 
-**A2. La llave de instalación.** **[llave-fido] [pendiente: PR de BOb-engine por abrir]** La línea
+**A2. La llave de instalación.** **[llave-fido] [en `main` de BOb-engine (`8af7da7`)]** La línea
 pública de la llave de Henry va en `supabase/provision/firmantes_instalacion` de BOb-engine, por PR. Antes de abrirlo,
 comprobar que la huella es la de la llave:
 
@@ -271,8 +271,9 @@ sudo /opt/bob/bin/firma-instalacion herramienta /usr/bin
 
 ```bash
 sudo apt-get purge -y at
-``` Lo que falte se instala antes
-de la ventana (H5) en lab-02 y model-01. **En Febor, dentro de la ventana, en B0b:** apt y needrestart pueden
+```
+
+Lo que falte se instala antes de la ventana (H5) en lab-02 y model-01. **En Febor, dentro de la ventana, en B0b:** apt y needrestart pueden
 reiniciar servicios de una caja en producción. En lab-02 no había ni el CLI ni psql. Así se instalaron el 25 nov:
 
 ```bash
@@ -552,7 +553,7 @@ sudo grep -c '^POSTGRES_PASSWORD=.' /root/bob-install/postgres.env; sudo stat -c
 Lo esperado: `1` y `root 600`. Si da `0` o más de `1`, se para, y no se arregla a mano con un editor. Nada de esta
 secuencia imprime la contraseña.
 
-### B5. `cadena`, como `postgres` **[llave-fido] [pendiente: la llave de A2]**
+### B5. `cadena`, como `postgres` **[llave-fido]**
 
 ```bash
 sudo /opt/bob/bin/firma-instalacion caja ~/bob-engine <C_ENG> cadena POSTGRES_ENV=/root/bob-install/postgres.env POSTGRES_HOST=<IP de bzzz-supabase-db>
@@ -593,7 +594,7 @@ cd /opt/bzzz && scripts/generar-secretos-vecina.sh bob --reiniciar; echo "rc=$?"
 Lo esperado: `rc=0`. El alta deja `/opt/bob/secrets/migrador.env`, de root y 600, en un directorio 700. Lo deja
 incluso cuando sale 3. Lo lee `resto` (B7) y nada más: ningún contenedor lo monta, y `deploy.sh` ya no lo lee.
 
-### B7. `resto`, como `bob_migrador` **[llave-fido] [pendiente: la llave de A2]**
+### B7. `resto`, como `bob_migrador` **[llave-fido]**
 
 ```bash
 sudo /opt/bob/bin/firma-instalacion caja ~/bob-engine <C_ENG> resto POSTGRES_ENV=/root/bob-install/postgres.env POSTGRES_HOST=<IP de bzzz-supabase-db>
