@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # Lo que comparten deploy.sh y rollback.sh. No se corre solo.
 #
-# Las rutas, el comprobador de atestaciones, sus firmantes y la imagen de psql son fijos en una caja (fijos.sh).
+# Las rutas, el comprobador de atestaciones y sus firmantes son fijos en una caja (fijos.sh).
 # Lo único que se ajusta desde el entorno es cuánto se espera: BOB_ESPERA_SALUD (segundos, 180).
 
 AQUI=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -278,8 +278,11 @@ fallo_y_parar() {
 }
 
 # /opt/bob y secrets/: de root y sin escritura para otros; en secrets/, cada entrada un fichero normal (sin enlaces
-# ni directorios), 600 o 400, y del usuario que lo lee: migrador.env de root (lo lee deploy.sh) y el resto de 65534
-# (bob-web y el feeder corren con ese usuario: un 600 de root no lo podrían leer). En el banco, del que lo corre.
+# ni directorios), 600 o 400, y del usuario que lo lee: migrador.env de root y el resto de 65534 (bob-web y el feeder
+# corren con ese usuario: un 600 de root no lo podrían leer). En el banco, del que lo corre.
+# migrador.env no lo lee nada de este paquete: lo escribe el alta de Bzzz (generar-secretos-vecina.sh bob) y lo lee
+# `firma-instalacion … resto` de BOb-engine (MIGRADOR_ENV, por defecto aquí). Ningún contenedor lo monta, y el
+# chequeo de aislamiento falla si alguno lo hiciera (monta secretos de otro y MIGRADOR_CLAVE cae por el patrón).
 modo_de() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }
 dueno_de() { stat -c %u "$1" 2>/dev/null || stat -f %u "$1"; }
 # comprobar_padres <dir> <tope> <uid>: cada directorio desde el padre de <dir> hasta <tope> (incluido) es de <uid>,

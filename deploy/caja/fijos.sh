@@ -32,7 +32,6 @@ fijo() {
 fijo BOB_RAIZ /opt/bob
 fijo BOB_COMPROBAR_ATESTACION /opt/bzzz/scripts/comprobar-atestacion-bob.sh
 fijo BOB_FIRMANTES /opt/bzzz/config/bob/firmantes_imagen
-fijo BOB_PSQL_IMAGEN supabase/postgres@sha256:f371b5f3f2ac0a05703f33d6e6134515fb2498cab708fb948a0aeb7481467c00
 BOB_COMPOSE=$BOB_RAIZ/compose.yml
 BOB_ENV=$BOB_RAIZ/.env
 BOB_PROYECTO=bob
