@@ -344,25 +344,31 @@ no empieza sobre una caja rota.
 
 ### B1. Bzzz a `main`, con `generar-secretos.sh` primero (H2)
 
-Enviar el árbol de `main` de Bzzz como siempre (`docs/OPERACION_actualizar.md`, la lista blanca de `lista-de-envio.sh`)
-a `/data/bzzz/misc/actualizaciones/nuevo/`.
+Enviar el árbol de `main` de Bzzz como siempre (`docs/OPERACION_actualizar.md`, la lista blanca de `lista-de-envio.sh`),
+**a una carpeta nueva con el SHA**, `/data/bzzz/misc/actualizaciones/main-<sha7>/`, no a `nuevo/`: esa carpeta ya existe
+en las cajas con un árbol viejo dentro y `rsync` no borra nada, así que lo viejo se mezclaría con lo nuevo. `<árbol>`
+es esa carpeta, y es la ruta de todo B1. Si el `rsync` usa un ssh que no lee `~/.ssh/config`, añadir
+`-e /usr/bin/ssh`.
 
 Con #449, ClickHouse monta en toda caja los usuarios de `bzzz-vecinos`, y `actualizar.sh` no lo recrea sin sus hashes
 en `clickhouse.env`. Por eso, **antes** de `--aplicar`, el `generar-secretos.sh` del árbol nuevo. No pisa nada de lo
 que ya existe:
 
 ```bash
-sudo /data/bzzz/misc/actualizaciones/nuevo/scripts/generar-secretos.sh
+sudo /data/bzzz/misc/actualizaciones/main-<sha7>/scripts/generar-secretos.sh
 ```
 
 ```bash
-cd /opt/bzzz && scripts/actualizar.sh --plan /data/bzzz/misc/actualizaciones/nuevo
+cd /opt/bzzz && bash /data/bzzz/misc/actualizaciones/main-<sha7>/scripts/actualizar.sh --plan /data/bzzz/misc/actualizaciones/main-<sha7>
 ```
 
-Ninguna ruta `desconocido`. `compose/l7-bob.yml` sale en amarillo como SOBRA si la caja lo trae: se queda hasta B14.
+Se corre el `actualizar.sh` **del árbol enviado**, no el instalado en `/opt/bzzz/scripts`: el instalado no conoce las
+rutas nuevas (`vecinos/`, `conectores/acciones/`, `config/caja/fuera-del-repo.txt`, `config/salida/…`) y en lab-02 dio
+19 «desconocido»; el del árbol enviado dio 0 (`docs/OPERACION_actualizar.md` de Bzzz, líneas 178-180). Ninguna ruta
+`desconocido`. `compose/l7-bob.yml` sale en amarillo como SOBRA si la caja lo trae: se queda hasta B14.
 
 ```bash
-cd /opt/bzzz && scripts/actualizar.sh --aplicar /data/bzzz/misc/actualizaciones/nuevo; echo "rc=$?"
+cd /opt/bzzz && bash /data/bzzz/misc/actualizaciones/main-<sha7>/scripts/actualizar.sh --aplicar /data/bzzz/misc/actualizaciones/main-<sha7>; echo "rc=$?"
 ```
 
 Lo esperado: `rc=0` («ACTUALIZACIÓN OK»), o `rc=3` con el paso de SigNoz que nombra. Luego mirar que llegó lo de BOb:
