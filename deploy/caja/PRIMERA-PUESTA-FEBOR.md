@@ -46,27 +46,26 @@ Se apunta antes de empezar. El resto de la secuencia es igual en las tres.
 | Quién | Henry, con quien ayude | Henry, con quien ayude | **solo Henry** |
 
 **La base vacía** es para una caja sin BOb: no hay commit del que sacar la huella. Henry decidió «Defined empty base»
-el 2026-11-25. **[pendiente: BossTechnology/BOb-engine#54, abierto]**. Esta guía sigue su interfaz tal como está en el PR; si cambia
-antes de fusionarse, se revisan A5, B3, B5 y C.
+el 2026-11-25, y está en `main` de BOb-engine (BossTechnology/BOb-engine#54 y #56).
 model-01 y Febor son de esas cajas. Su `<base>` es el sha256 de nada, que ningún árbol tiene
 (`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`; `firma-instalacion.sh vacia`). La aprobación se
 firma desde ella (A5) y `instalacion-firmada` la lleva (B3). Desde la base vacía solo corre `cadena`, y antes de aplicar
 nada comprueba en la base de datos que de verdad no hay BOb. Si `cadena` falla a medias, se reintenta como dice C.
-Hasta que entre #54, una caja sin BOb no tiene `<base>`, y desde B3 no se sigue.
 
 ## Lo que tiene que estar fusionado
 
-| Repo | PR | Qué trae | Estado (25 nov) |
+| Repo | PR | Qué trae | Estado (26 nov) |
 |---|---|---|---|
 | Bzzz | #445, #449, #450, #454, #457, #458 | `l7-bob.yml` fuera; `bzzz-vecinos`; el alta de vecinas; la atestación por la config e `id-de-imagen.sh` | en `main` |
 | Bzzz | #460 | el bit de ejecución en los guiones de `scripts/` | en `main` |
 | Bzzz | por abrir | la llave pública de imagen en `config/bob/firmantes_imagen` **[llave-img]** | **pendiente** |
 | Bob-New | #55, #37 | el paquete de `/opt/bob`; las pantallas del Slice 3 | en `main` |
-| Bob-New | BossTechnology/Bob-New#56 | `deploy.sh` ya no migra; los chequeos de secretos descubren por patrón | **abierto** |
+| Bob-New | BossTechnology/Bob-New#56 | `deploy.sh` ya no migra; los chequeos de secretos descubren por patrón | en `main` |
 | BOb-engine | #48, #52 | O-3 firmado (`cadena` y `resto`); el texto de P5 por D77 | en `main` |
 | BOb-engine | #51 | `verify-required` lo comprueba el guion, no `ssh-keygen` | en `main` (`946cb19`) |
 | BOb-engine | #53 | `postgres.env` fuera de `secrets/` (B2), cómo llega root a la base (B3), requisitos de `firma-instalacion` (H5) | en `main` |
-| BOb-engine | #54 | la base vacía (H4), para una caja donde BOb nunca se instaló (model-01 y Febor), y el reintento de un `cadena` a medias | **abierto**: su interfaz puede cambiar hasta que entre |
+| BOb-engine | #54 | la base vacía (H4), para una caja donde BOb nunca se instaló (model-01 y Febor), y el reintento de un `cadena` a medias | en `main` (`ccd9269`) |
+| BOb-engine | BossTechnology/BOb-engine#56 | una aprobación `d → d` nombra su caja (`--caja <machine-id>`); la marca de un `cadena` a medias nombra su base de datos | en `main` (`731a405`) |
 | BOb-engine | por abrir | la llave de Henry en `supabase/provision/firmantes_instalacion` **[llave-fido]** | **pendiente** (#51 ya está en `main`) |
 
 ## A. Una vez, en el portátil
@@ -87,7 +86,8 @@ ssh-keygen -lf <llave de instalación>.pub
 **A3. Los dos commits.** Apuntar los SHA completos, de 40 caracteres:
 - `<C_WEB>`: el de `main` de Bob-New que se construye. Va en `3a74911` o después, y con BossTechnology/Bob-New#56
   dentro;
-- `<C_ENG>`: el de `main` de BOb-engine que se instala. Lleva #51, la base vacía y la llave de A2;
+- `<C_ENG>`: el de `main` de BOb-engine que se instala. Lleva #51, #54 y BossTechnology/BOb-engine#56 (`731a405` o
+  después), y la llave de A2;
 - solo para lab-02, `<C_WEB_ANTES>`: un commit anterior de `main` de Bob-New que ya tiene el paquete de la caja
   (`f73be3e`, la fusión de #55, o después). Es la segunda imagen de la vuelta atrás con containerd (B13).
 
@@ -101,7 +101,11 @@ git -C <checkout de BOb-engine> rev-parse origin/main
 
 **A4. Construir y firmar la imagen, una sola vez.** **[llave-img]** El mismo tar sirve para las tres cajas. Desde el
 checkout de Bzzz en `main`, con `bash` delante (M3). Con Bzzz#460 el guion ya es ejecutable, pero `bash` vale igual
-con un checkout más viejo:
+con un checkout más viejo. Las carpetas de salida tienen que existir antes: si no, el guion sale con `no-empieza`.
+
+```bash
+mkdir -p /tmp/bob-entrega /tmp/bob-entrega-antes
+```
 
 ```bash
 bash scripts/construir-imagen-bob.sh <checkout de Bob-New> <C_WEB> <llave SSH de imagen> /tmp/bob-entrega
@@ -117,7 +121,8 @@ bash scripts/construir-imagen-bob.sh <checkout de Bob-New> <C_WEB_ANTES> <llave 
 ```
 
 **A5. Firmar la instalación, una aprobación por cada `<base>` distinta.** **[llave-fido]** Desde un checkout limpio de
-`main` de BOb-engine, en `origin/main`. `FIRMA_LLAVE` es la llave de instalación de Henry, si no es la de por
+`main` de BOb-engine, en `origin/main`, que tiene que llevar BossTechnology/BOb-engine#56 (`731a405`): las
+herramientas de firma son las de `main`. `FIRMA_LLAVE` es la llave de instalación de Henry, si no es la de por
 defecto:
 
 lab-02, desde el commit que tiene aplicado:
@@ -126,7 +131,7 @@ lab-02, desde el commit que tiene aplicado:
 FIRMA_LLAVE=<llave de instalación> bash scripts/firmar-instalacion.sh <C_ENG> --base 5e5b9be
 ```
 
-model-01 y Febor, desde la base vacía. **[pendiente: BossTechnology/BOb-engine#54]** Es una sola aprobación y vale
+model-01 y Febor, desde la base vacía. Es una sola aprobación y vale
 para las dos:
 
 ```bash
@@ -137,6 +142,24 @@ El guion enseña el log y el diff entre las dos revisiones. Desde la base vacía
 `<C_ENG>` entero y el diff sale de nada, así que es largo. Escribir `firmo` y tocar la llave. Guardar
 `<base>-<nueva>.aprobacion` y su `.sig`. `<base>` y `<nueva>` son huellas de 64 caracteres. Desde la base vacía,
 `<base>` es `e3b0c442…b855`.
+
+Ninguna de las dos lleva `--caja`: `--caja` es solo para la misma huella (`d → d`), y el guion lo rechaza si la base y
+la nueva son distintas. En la primera puesta no hace falta. Lo normal es que `resto` (B7) corra con la aprobación con la
+que `cadena` llegó a `<C_ENG>`: `caja` la guarda en `instalacion-aprobacion`.
+
+**`d → d`, solo si hace falta.** Es para una caja que ya está en la huella de `<C_ENG>` y no tiene
+`instalacion-aprobacion` (no se sabe con qué aprobación llegó): por ejemplo, para correr otra vez `resto`. La
+aprobación nombra esa caja, y no vale para otra. Su `machine-id` se lee en la caja:
+
+```bash
+ssh bzzz-<caja> cat /etc/machine-id
+```
+
+```bash
+FIRMA_LLAVE=<llave de instalación> bash scripts/firmar-instalacion.sh <C_ENG> --base <C_ENG> --caja <machine-id>
+```
+
+No hay diff: el guion dice que firma `d → d` para esa caja sola. Sin `--caja`, rechaza la misma huella dos veces.
 
 **A6. Lo que se lleva a cada caja.** Los tres ficheros de A4, la aprobación de A5 y dos copias de código: el paquete
 de Bob-New en `<C_WEB>` y un clon de BOb-engine en `<C_ENG>`. Ambas desde git, no desde el árbol de trabajo.
@@ -400,7 +423,7 @@ cd ~/bob-engine && scripts/firma-instalacion.sh huella 5e5b9be
 echo '<base>' | sudo tee /opt/bob/instalacion-firmada >/dev/null && sudo chmod 644 /opt/bob/instalacion-firmada
 ```
 
-En una caja sin BOb (model-01 y Febor), `<base>` es la base vacía. **[pendiente: BossTechnology/BOb-engine#54]** En
+En una caja sin BOb (model-01 y Febor), `<base>` es la base vacía. En
 vez de las dos órdenes de arriba:
 
 ```bash
@@ -745,7 +768,7 @@ sudo rm /root/bob-install/postgres.env
 
 ## C. Volver atrás en la primera puesta
 
-### Si `cadena` (B5) falla a medias desde la base vacía (model-01, Febor) **[pendiente: BossTechnology/BOb-engine#54]**
+### Si `cadena` (B5) falla a medias desde la base vacía (model-01, Febor)
 
 `instalacion-firmada` sigue en la base vacía, y `caja` deja `/opt/bob/instalacion-en-curso`. No se toca a mano.
 Comprobarlo:
@@ -754,14 +777,15 @@ Comprobarlo:
 cat /opt/bob/instalacion-firmada /opt/bob/instalacion-en-curso
 ```
 
-Lo esperado:
-- la primera línea es la base vacía, `e3b0c442…b855`;
-- la segunda es `e3b0c442…b855-<huella de C_ENG>`.
+Lo esperado, tres líneas:
+- la base vacía, `e3b0c442…b855` (de `instalacion-firmada`);
+- `e3b0c442…b855-<huella de C_ENG>`;
+- `db <system_identifier>/<nombre>/<oid>`: la base de datos que `cadena` comprobó.
 
-El reintento es la misma orden de B5. Si el commit no cambia, vale la misma aprobación: sigue siendo de la base vacía
-a `<C_ENG>`. Si hay que arreglar algo en BOb-engine, hace falta un commit nuevo. Se vuelve a A5 con `--base vacia` para
-él. De A6 y B3 solo se rehacen el clon de `~/bob-engine` en ese commit y la aprobación nueva en
-`/opt/bob/aprobaciones/`, y la orden de abajo va con ese commit en vez de `<C_ENG>`.
+El reintento es la misma orden de B5, con el mismo `<C_ENG>` y la misma aprobación. `caja` solo acepta el mismo commit,
+en la misma base de datos: un commit nuevo lo rechaza («a retry installs the same commit»), y también una base distinta
+(por ejemplo, si se recreó `bzzz-supabase-db` con otra base). Si con `<C_ENG>` no se puede acabar, se para y se avisa.
+No se borra `instalacion-en-curso` para firmar otro commit.
 
 ```bash
 sudo /opt/bob/bin/firma-instalacion caja ~/bob-engine <C_ENG> cadena POSTGRES_ENV=/root/bob-install/postgres.env POSTGRES_HOST=<IP de bzzz-supabase-db>
