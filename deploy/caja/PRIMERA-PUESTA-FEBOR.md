@@ -33,9 +33,9 @@ Se apunta antes de empezar. El resto de la secuencia es igual en las tres.
 
 | | lab-02 | model-01 | Febor |
 |---|---|---|---|
-| `<host de BOb>` (`BOB_HOST` y `BZZZ_HOST_BOB`) | `<host de BOb de lab-02>` | `<host de BOb de model-01>` | `<host de BOb de Febor>` |
-| `<dominio base>` (`generar-config-portal.sh`) | `<dominio base de lab-02>` | `<dominio base de model-01>` | `<dominio base de Febor>` |
-| `<uuid de la org>` (`BOB_ORG_ID`) | `<uuid de la org de lab-02>` | `<uuid de la org de model-01>` | `<uuid de la org de Febor>` |
+| `<host de BOb>` (`BOB_HOST` y `BZZZ_HOST_BOB`) | `<host de BOb de lab-02>` (confirmado por Henry el 26 nov) | `<host de BOb de model-01>` (confirmado por Henry el 26 nov) | `<host de BOb de Febor>` (ya resuelve, 26 nov) |
+| `<dominio base>` (`generar-config-portal.sh`) | `<dominio base de lab-02>` (el portal está en la raíz del dominio) | `<dominio base de model-01>` (el portal está en `app.` del dominio) | `<dominio base de Febor>` |
+| `<uuid de la org>` (`BOB_ORG_ID`) | creada el 26 nov (slug `laboratorio`); el uuid lo da el `select` de B8b | creada el 26 nov (slug `modelo`, la demo); el uuid lo da el `select` de B8b | sale de B8b en la ventana (slug `febor`) |
 | Herramientas del servidor (B0) | instaladas el 25 nov: CLI de Supabase 2.120.0 y `postgresql-client-16`; `git`, `setpriv` y `flock` ya estaban | ni CLI ni psql (medido el 25 nov): se instalan como en B0; `git`, `setpriv` y `flock` ya están | ni CLI ni psql (medido el 25 nov); `git`, `setpriv` y `flock` ya están. **Se instalan dentro de la ventana (B0b), no antes:** apt y needrestart pueden reiniciar servicios |
 | Pendiente del servidor (B0b) | apt dejó diferido `systemctl restart docker.service`; el kernel **ya está en `6.8.0-151`** (medido el 26 nov): en B0b solo se comprueba | lo mismo: Docker diferido y kernel 147 → 151, aún sin reiniciar | kernel `7.0.0-1014-gcp` corriendo con `7.0.0-1018-gcp` instalado y `/var/run/reboot-required` presente (medido el 26 nov; no es 147 → 151); además «System restart required», swap al 27 % y 2 procesos zombi (25 nov): el reinicio de B0b |
 | Almacén de imágenes de Docker | **containerd** (medido el 25 nov: `29.7.2 overlayfs [["driver-type","io.containerd.snapshotter.v1"]]`): B12 y B13 llevan la parte de containerd | **containerd** (medido el 25 nov: Docker 29.6.1, `overlayfs` con `io.containerd.snapshotter.v1`): lo mismo que lab-02 | **containerd** (medido el 25 nov: Docker 29.7.2, `overlayfs` con `io.containerd.snapshotter.v1`): lo mismo que lab-02 |
@@ -44,6 +44,10 @@ Se apunta antes de empezar. El resto de la secuencia es igual en las tres.
 | `<base>` de `instalacion-firmada` | la huella de `5e5b9be` | **la base vacía** (BossTechnology/BOb-engine#54) | **la base vacía** (BossTechnology/BOb-engine#54), la misma que model-01: comparten aprobación (A5) |
 | Dónde está Bzzz | `/opt/bzzz` (`docs/OPERACION_bob.md` de Bzzz) | `/opt/bzzz` (sin medir: la sonda del `working_dir` en B0) | `/opt/bzzz`, con el compose en `/opt/bzzz/compose` (medido el 25 nov: l1 a l5, y el `working_dir` de `bzzz-supabase-db` es ese) |
 | Quién | Henry, con quien ayude | Henry, con quien ayude | **solo Henry** |
+
+Los hosts y dominios reales no van en este repo: se apuntan aparte antes de la ventana. El dominio base sale de las URL
+de `/data/bzzz/supabase/portal/config.js` de la caja (`grep -oE 'https?://[a-z0-9.-]+' …`), y `BZZZ_HOST_PORTAL` de
+`compose/.env` dice dónde está el portal.
 
 **La base vacía** es para una caja sin BOb: no hay commit del que sacar la huella. Henry decidió «Defined empty base»
 el 2026-11-25, y está en `main` de BOb-engine (BossTechnology/BOb-engine#54 y #56).
@@ -58,7 +62,10 @@ nada comprueba en la base de datos que de verdad no hay BOb. Si `cadena` falla a
 |---|---|---|---|
 | Bzzz | #445, #449, #450, #454, #457, #458 | `l7-bob.yml` fuera; `bzzz-vecinos`; el alta de vecinas; la atestación por la config e `id-de-imagen.sh` | en `main` |
 | Bzzz | #460 | el bit de ejecución en los guiones de `scripts/` | en `main` |
-| Bzzz | por abrir | la llave pública de imagen en `config/bob/firmantes_imagen` **[llave-img]** | **pendiente** |
+| Bzzz | — | la llave pública de imagen en `config/bob/firmantes_imagen` **[llave-img]** | en `main` (`188f2ee`); medido el 26 nov: `deploy.sh` dijo «firmada por henry» en lab-02 y model-01 |
+| Bzzz | BossTechnology/bzzz#467 | `bob.conf` declara los dos `EXECUTE` de `bob_app` fuera de `bob` (sin esto B6 se niega con dos hallazgos de V14) | en `main` (`f1fa719`) |
+| Bzzz | BossTechnology/bzzz#468 | D78: `bob-web` en `bzzz-edge` y en la lista de lo que sale (sin esto B13 falla en §7, «salen sin estar en ella: bob-web») | en `main` (`2cebc7d`) |
+| Bzzz | BossTechnology/bzzz#469 | §15 compara ids enteros: lo de `config/caja/fuera-del-repo.txt` deja de salir como vecina (el latido de lab-02, V4) | **abierto**: mientras no entre, B13 en lab-02 da 1 fallo (V4 y V5 del latido) y es el único que se acepta |
 | Bob-New | #55, #37 | el paquete de `/opt/bob`; las pantallas del Slice 3 | en `main` |
 | Bob-New | BossTechnology/Bob-New#56 | `deploy.sh` ya no migra; los chequeos de secretos descubren por patrón | en `main` |
 | BOb-engine | #48, #52 | O-3 firmado (`cadena` y `resto`); el texto de P5 por D77 | en `main` |
@@ -66,18 +73,19 @@ nada comprueba en la base de datos que de verdad no hay BOb. Si `cadena` falla a
 | BOb-engine | #53 | `postgres.env` fuera de `secrets/` (B2), cómo llega root a la base (B3), requisitos de `firma-instalacion` (H5) | en `main` |
 | BOb-engine | #54 | la base vacía (H4), para una caja donde BOb nunca se instaló (model-01 y Febor), y el reintento de un `cadena` a medias | en `main` (`ccd9269`) |
 | BOb-engine | BossTechnology/BOb-engine#56 | una aprobación `d → d` nombra su caja (`--caja <machine-id>`); la marca de un `cadena` a medias nombra su base de datos | en `main` (`731a405`) |
-| BOb-engine | por abrir | la llave de Henry en `supabase/provision/firmantes_instalacion` **[llave-fido]** | **pendiente** (#51 ya está en `main`) |
+| BOb-engine | — | la llave de Henry en `supabase/provision/firmantes_instalacion` **[llave-fido]** | en `main` (`8af7da7`, retocada en `8378591`); medido en las cajas el 26 nov: la firma se valida |
+| BOb-engine | BossTechnology/BOb-engine#58 | `cadena` hace el `db push` con `sslmode=disable` (sin esto B5 falla con «server does not support SSL») | en `main` (`0b2e9bc`) |
 
 ## A. Una vez, en el portátil
 
 **Antes de nada, la sonda del alias de B0** (primera de B0): A ya usa `ssh bzzz-<caja>` y `scp`.
 
-**A1. La llave de imagen.** **[llave-img] [pendiente: PR de Bzzz por abrir]** La línea pública de la llave SSH con la
+**A1. La llave de imagen.** **[llave-img] [en `main` de Bzzz (`188f2ee`)]** La línea pública de la llave SSH con la
 que se firma va en `config/bob/firmantes_imagen` de Bzzz, por PR. Tiene que estar en `main` y llegar a cada caja con
 B1. Si no, `construir-imagen-bob.sh` acaba en rc 1 (comprueba contra la copia del portátil) y `deploy.sh` no carga la
 imagen (comprueba contra la de la caja).
 
-**A2. La llave de instalación.** **[llave-fido] [pendiente: PR de BOb-engine por abrir]** La línea
+**A2. La llave de instalación.** **[llave-fido] [en `main` de BOb-engine (`8af7da7`)]** La línea
 pública de la llave de Henry va en `supabase/provision/firmantes_instalacion` de BOb-engine, por PR. Antes de abrirlo,
 comprobar que la huella es la de la llave:
 
@@ -253,8 +261,23 @@ supabase --version; ls /usr/lib/postgresql/*/bin/psql; command -v git setpriv fl
 
 Lo esperado: el CLI de Supabase en `2.120.0`, la que fija el CI de BOb-engine, dentro del `PATH` fijo de
 `firma-instalacion` (`/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/sbin:/usr/local/bin`); un psql 16 o más nuevo en
-`/usr/lib/postgresql/<v>/bin/`; `git`, `setpriv` y `flock`; y un tmpfs en `/dev/shm`. Lo que falte se instala antes
-de la ventana (H5) en lab-02 y model-01. **En Febor, dentro de la ventana, en B0b:** apt y needrestart pueden
+`/usr/lib/postgresql/<v>/bin/`; `git`, `setpriv` y `flock`; y un tmpfs en `/dev/shm`.
+
+**Todo lo que está en ese `PATH` tiene que ser de root.** `firma-instalacion caja` lo comprueba y se niega si algo no lo es.
+En lab-02, B5 se negó el 26 nov por `/usr/bin/at` (del usuario `daemon`, que lo instala así el paquete `at`). Henry: «Desinstala at».
+Se purgó en lab-02 y en model-01; Febor no lo tiene. Para mirarlo antes, sin esperar a B5:
+
+```bash
+sudo /opt/bob/bin/firma-instalacion herramienta /usr/bin
+```
+
+(Necesita B3 hecho.) Si sale `at`, en lab-02 y model-01 antes de la ventana, y en Febor en B0b:
+
+```bash
+sudo apt-get purge -y at
+```
+
+Lo que falte se instala antes de la ventana (H5) en lab-02 y model-01. **En Febor, dentro de la ventana, en B0b:** apt y needrestart pueden
 reiniciar servicios de una caja en producción. En lab-02 no había ni el CLI ni psql. Así se instalaron el 25 nov:
 
 ```bash
@@ -371,6 +394,22 @@ que ya existe:
 ```bash
 sudo bash <árbol>/scripts/generar-secretos.sh
 ```
+
+**Después, la llave de la puerta.** El `chown -R` de `generar-secretos.sh` deja `puerta.clave` de root, y `bzzz-puerta`
+entra en bucle con «no puedo leer la clave… Permission denied» (lab-02 y model-01, 26 nov). Mirarlo siempre:
+
+```bash
+sudo stat -c '%U %a' /opt/bzzz/secrets/puerta.clave
+```
+
+Tiene que dar `nobody 400`. Si no:
+
+```bash
+sudo chown 65534:65534 /opt/bzzz/secrets/puerta.clave && sudo chmod 400 /opt/bzzz/secrets/puerta.clave
+```
+
+Y `docker inspect -f '{{.State.Health.Status}}' bzzz-puerta` vuelve a `healthy`. Cuando Bzzz lo arregle en el guion,
+este paso queda como comprobación.
 
 ```bash
 cd /opt/bzzz && bash <árbol>/scripts/actualizar.sh --plan <árbol>
@@ -491,7 +530,8 @@ Esa IP y `bzzz-supabase-db`, que es el `MIGRADOR_HOST` del alta y lo pide `resto
 printf '%s\n' '<IP de bzzz-supabase-db>' bzzz-supabase-db | sudo tee /opt/bob/hosts-permitidos >/dev/null && sudo chmod 644 /opt/bob/hosts-permitidos
 ```
 
-**[pendiente: medirlo en lab-02 a través de `firma-instalacion`; texto en BossTechnology/BOb-engine#53]** La IP cambia
+Medido en lab-02 y model-01 el 26 nov a través de `firma-instalacion`: con la IP de `bzzz-app`, B5 y B7 entran. **No la
+de `bzzz-vecina-bob`**, que es otra: con ella `caja` se niega («is not loopback nor in /opt/bob/hosts-permitidos»). La IP cambia
 si se recrea el contenedor. Leerla otra vez antes de B5 y de B7, y antes de cada instalación.
 
 ### B4. La contraseña de `postgres`, FUERA de `/opt/bob/secrets` (B2)
@@ -517,7 +557,7 @@ sudo grep -c '^POSTGRES_PASSWORD=.' /root/bob-install/postgres.env; sudo stat -c
 Lo esperado: `1` y `root 600`. Si da `0` o más de `1`, se para, y no se arregla a mano con un editor. Nada de esta
 secuencia imprime la contraseña.
 
-### B5. `cadena`, como `postgres` **[llave-fido] [pendiente: la llave de A2]**
+### B5. `cadena`, como `postgres` **[llave-fido]**
 
 ```bash
 sudo /opt/bob/bin/firma-instalacion caja ~/bob-engine <C_ENG> cadena POSTGRES_ENV=/root/bob-install/postgres.env POSTGRES_HOST=<IP de bzzz-supabase-db>
@@ -558,11 +598,14 @@ cd /opt/bzzz && scripts/generar-secretos-vecina.sh bob --reiniciar; echo "rc=$?"
 Lo esperado: `rc=0`. El alta deja `/opt/bob/secrets/migrador.env`, de root y 600, en un directorio 700. Lo deja
 incluso cuando sale 3. Lo lee `resto` (B7) y nada más: ningún contenedor lo monta, y `deploy.sh` ya no lo lee.
 
-### B7. `resto`, como `bob_migrador` **[llave-fido] [pendiente: la llave de A2]**
+### B7. `resto`, como `bob_migrador` **[llave-fido]**
 
 ```bash
 sudo /opt/bob/bin/firma-instalacion caja ~/bob-engine <C_ENG> resto POSTGRES_ENV=/root/bob-install/postgres.env POSTGRES_HOST=<IP de bzzz-supabase-db>
 ```
+
+`<IP de bzzz-supabase-db>` es la de `bzzz-app` (B3), la misma de B5. No la de `bzzz-vecina-bob`: B6 une la base a esa red
+y `docker inspect` enseña las dos.
 
 Escribir `instalo`. Lo esperado: aplica, como `bob_migrador`, las migraciones de `<C_ENG>` que no están en la cadena.
 Hoy son tres: las dos del Slice 3 y la de `organizations`:
@@ -599,6 +642,22 @@ Ni `postgres.env` (B4), ni `vecinos/`, ni enlaces. Si algún día va el feeder, 
 **No correr `cert-vecina.sh` para `bob` antes de v1 (M2).** Deja un directorio `secrets/vecinos/`, y `deploy.sh` no
 empieza con un directorio en `secrets/`. Eso tumba también el deploy de bob-web. El feeder, y con él su certificado, va
 después de v1.
+
+### B8b. La organización de la caja
+
+Una caja, una organización (P5). Ningún guion la crea, y sin ella no hay `BOB_ORG_ID` para B9. Medido el 26 nov:
+`bob.organizations` vacía en lab-02 y model-01 después de B7. Como `postgres`, dentro de la caja:
+
+```bash
+sudo docker exec bzzz-supabase-db psql -U postgres -d postgres -tA -c "insert into bob.organizations (name, slug, plan) values ('<Nombre>', '<slug>', 'enterprise') on conflict (slug) do nothing; select id, slug from bob.organizations;"
+```
+
+El `id` que imprime es `<uuid de la org>`. El slug va en minúsculas, cifras y guiones; `plan` es `starter`, `growth` o
+`enterprise`. Los de lab-02 y model-01 están en «Lo que cambia» (Henry, 26 nov: «Laboratorio son pruebas model es la
+caja modelo la versión demo y febor es la caja del Cliente»).
+
+Quien entra a BOb necesita fila activa en `bob.users` de esa organización; sin ella, 403 (P-1). Hoy la fila se crea a mano.
+**[pendiente: alta sola como viewer con la sesión de BzzzBX, Henry 26 nov; PR en BOb-engine y Bob-New]**
 
 ### B9. El paquete de Bob-New en `/opt/bob`
 
@@ -705,6 +764,25 @@ cd /opt/bzzz && scripts/verify-deployment.sh
 
 Lo esperado: 0 fallos. Mira la puerta de BOb, su vecina y la redirección puerta → portal → BOb (por eso B10).
 
+**§15 pide `bzzz-vecinos` en marcha** en cuanto existe la vecina `bob`, aunque en v1 no vaya el feeder. En lab-02 y model-01
+no existía (26 nov). Henry: «Encenderlo sin cert de bob». La CA y el certificado del SERVIDOR, sí; el de `bob`, no
+(`cert-vecina.sh` para `bob` deja `secrets/vecinos/` y tumba `deploy.sh`, B8). Como `bzzzops`:
+
+```bash
+cd /opt/bzzz && scripts/cert-vecina.sh --crear-ca && scripts/cert-vecina.sh --servidor
+```
+
+```bash
+sudo chown 10091 /opt/bzzz/secrets/vecinos-mtls/servidor/servidor.key
+```
+
+```bash
+cd /opt/bzzz && docker compose --env-file compose/.env -f compose/l6-vecinos.yml --profile vecinos up -d --build && bash scripts/vecinos-redes.sh
+```
+
+Lo esperado: `red bzzz-vecina-bob unida`, `bzzz-vecinos` `healthy`, y `/opt/bob/secrets` sigue con solo `app.env` y
+`migrador.env`. Si ya estaba encendido en la caja, no se repite. Con esto model-01 dio 0 fallos el 26 nov.
+
 #### La rama de containerd (lab-02, y cualquier caja que dé containerd en B0)
 
 **Qué cambia.** La identidad que firma la atestación (`imagen_id`) es siempre el sha256 de la **configuración** de la
@@ -784,6 +862,10 @@ Lo esperado: `desplegada` dos veces y después `vuelta-atras` dos veces, todo co
 correr `<C_WEB>` (`docker inspect -f '{{.Image}}' bob-web` = su `<objetivo>`).
 
 Las tres cajas dan containerd. Si algo de esto falla en lab-02, model-01 y Febor no siguen hasta arreglarlo.
+
+**Medido en lab-02 el 26 nov, la primera vez en una caja de verdad:** `<config>` `sha256:482a03ff…` = el `imagen_id` de la
+atestación; `<objetivo>` `sha256:bac90ec5…` en el contenedor, en `docker image inspect` y en `.env`; `id-de-imagen.sh`
+dio `<config>`; las cuatro órdenes de la vuelta atrás, con `rc=0`, y al final corría `<C_WEB>`.
 
 ### B14. Quitar `l7-bob.yml`
 
