@@ -82,10 +82,20 @@ test('an inactive row stays inactive (403), not a new viewer', { skip }, async (
   assert.deepEqual(await row(INACTIVE), [{ org_id: TENANT_A, role: 'admin', active: false, email: 'inactive@example.com' }])
 })
 
-test('another organization\'s account takes no seat in this box (403)', { skip }, async () => {
+test('another organization\'s account takes no seat in this box (403), and the refusal is logged', { skip }, async () => {
   const before = await row(USER_A)
-  assert.equal(await boxRoleOrSeat(TENANT_B, { id: USER_A, email: 'a@example.com' }, pool!), null)
+  const logged: string[] = []
+  assert.equal(await boxRoleOrSeat(TENANT_B, { id: USER_A, email: 'a@example.com' }, pool!, (e) => { logged.push(e) }), null)
   assert.deepEqual(await row(USER_A), before)
+  assert.deepEqual(logged, ['access.seat_refused'])
+})
+
+test('a first visit logs the seat it took; an inactive row logs no refusal (its row is there)', { skip }, async () => {
+  const logged: string[] = []
+  await pool!.query('DELETE FROM bob.users WHERE id = $1', [NEWCOMER])
+  assert.equal(await boxRoleOrSeat(TENANT_A, { id: NEWCOMER, email: 'newcomer@example.com' }, pool!, (e) => { logged.push(e) }), 'viewer')
+  assert.equal(await boxRoleOrSeat(TENANT_A, { id: INACTIVE, email: 'inactive@example.com' }, pool!, (e) => { logged.push(e) }), null)
+  assert.deepEqual(logged, ['access.seat_taken'])
 })
 
 test('a GoTrue account with no email takes no seat (403)', { skip }, async () => {

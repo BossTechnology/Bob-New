@@ -492,8 +492,14 @@ export function enableSignOut() {
   b.style.cssText = 'position:fixed;top:10px;right:12px;z-index:9999;padding:4px 10px;border:1px solid #ccc;border-radius:6px;background:#fff;cursor:pointer;font:12px sans-serif'
   b.onclick = async () => {
     b.disabled = true
-    try { await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' }) } catch { /* the page still goes */ }
-    window.location.replace('/login')
+    let next = '/login'
+    try {
+      const r = await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' })
+      // In the box the answer names the portal's way out (lib/bob/sign-out.ts).
+      const named = (await r.json().catch(() => null))?.data?.next
+      if (typeof named === 'string' && /^https:\/\/[^/?#@\s]+\/\?salir=1$/.test(named)) next = named
+    } catch { /* the page still goes */ }
+    window.location.replace(next)
   }
   document.body.appendChild(b)
 }

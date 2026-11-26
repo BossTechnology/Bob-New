@@ -14,6 +14,27 @@ test('signing out ends the session, then replaces the page with /login', async (
   assert.deepEqual(steps, ['POST /auth/logout', 'replace /login'])
 })
 
+// Henry, 2026-11-26: the session is the portal's, so leaving BOb leaves
+// BzzzBX too, and the portal says so (its ?salir=1).
+test('in the box, signing out goes to the portal\'s way out that the answer names', async () => {
+  const steps: string[] = []
+  await signOut(async () => Response.json({ ok: true, data: { signed_out: true, next: 'https://portal.example/?salir=1' } }),
+    (url) => { steps.push(url) })
+  assert.deepEqual(steps, ['https://portal.example/?salir=1'])
+  for (const next of ['http://portal.example/', '//evil.example', 'javascript:alert(1)', 42]) {
+    const s2: string[] = []
+    await signOut(async () => Response.json({ ok: true, data: { next } }), (url) => { s2.push(url) })
+    assert.deepEqual(s2, ['/login'], String(next))
+  }
+})
+
+test('the box\'s logout answer names the portal\'s way out', async () => {
+  const cookies: string[] = []
+  const jar: CookieJar = { get: () => undefined, set: (n) => { cookies.push(n) } }
+  const r = await boxLogout(jar, async () => 'revoked', () => {}, 'https://portal.example/?salir=1')
+  assert.equal((await r.json()).data.next, 'https://portal.example/?salir=1')
+})
+
 test('the page goes even when the request fails', async () => {
   const steps: string[] = []
   await signOut(async () => { throw new TypeError('fetch failed') }, (url) => { steps.push(url) })
@@ -62,6 +83,24 @@ test('the live dashboard\'s button posts the logout, then replaces the page', as
     await button!.onclick()
   } finally { w.restore() }
   assert.deepEqual(w.calls, ['POST /auth/logout', 'replace /login'])
+})
+
+test('in the box, the live dashboard\'s button goes to the portal\'s way out too', async () => {
+  const { enableSignOut } = await import('../../public/bob-live.mjs')
+  const w = fakeWindow()
+  const g = globalThis as Record<string, unknown>
+  let button: { onclick: () => Promise<void> } | null = null
+  g.document = {
+    getElementById: () => null,
+    createElement: () => ({ style: {} }),
+    body: { appendChild: (el: { onclick: () => Promise<void> }) => { button = el } },
+  }
+  g.fetch = async () => Response.json({ ok: true, data: { next: 'https://portal.example/?salir=1' } })
+  try {
+    enableSignOut()
+    await button!.onclick()
+  } finally { w.restore() }
+  assert.deepEqual(w.calls, ['replace https://portal.example/?salir=1'])
 })
 
 function jar() {

@@ -6,7 +6,10 @@
 //   _next/static, review of PR #30 point 4);
 // - no identity configuration, GoTrue down or the role lookup failing: 503
 //   (not /login: that would loop against the same dead GoTrue);
-// - GoTrue's 401: /login for pages, 401 for the API;
+// - no session (Henry, 2026-11-26, «se quita el login de bob»): pages go to
+//   the BzzzBX portal once and come back through /entrar (portal.ts); back
+//   without a session, a page with a link and no second trip; /login goes to
+//   the portal too. The API answers 401;
 // - no row in bob.users: a viewer seat on the first visit (Henry,
 //   2026-11-26, «Alta sola, como viewer»); an inactive row: 403 on /bob/*,
 //   /api/bob/* and /api/config/* (Henry, 2026-11-21);
@@ -15,7 +18,8 @@
 import { NextResponse, type NextRequest } from 'next/server.js'
 import { boxAccess } from './surface.ts'
 import { refuseWrite } from './request-guard.ts'
-import { boxOrgId, gotrueUrl } from './runtime.ts'
+import { boxOrgId, gotrueUrl, portalUrl } from './runtime.ts'
+import { PORTAL_COOKIE, portalLoginUrl, portalMark } from './portal.ts'
 import { resolveSession, type CookieJar, type CookieOptions, type SessionState } from './session.ts'
 import { logSecurity } from './security-log.ts'
 import { Attempts } from './login.ts'
@@ -25,6 +29,7 @@ import { withSecurityHeaders } from './security-headers.ts'
 
 export type BoxProxyDeps = {
   gotrueUrl: () => string
+  portalUrl: () => string
   resolveSession: (jar: CookieJar, base: string) => Promise<SessionState>
   // Takes a viewer seat on a first visit (roles.ts): only ever the account
   // GoTrue answered for this request.
@@ -45,6 +50,7 @@ const THROTTLE_LOGGED = new Attempts(1, 60_000)
 
 const DEFAULT_DEPS: BoxProxyDeps = {
   gotrueUrl,
+  portalUrl: () => portalUrl(),
   resolveSession,
   role: (user) => boxRoleOrSeat(boxOrgId(), user),
   apiBudget: API_BUDGET,
@@ -60,6 +66,30 @@ export const needsRole = (path: string) =>
 
 const plain = (status: number, body: string) =>
   new NextResponse(body, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } })
+
+// Where the person goes without a session: the portal, once. The mark says a
+// trip is under way; back with it and still no session, the trip failed, and
+// another one would only repeat it.
+function toPortal(request: NextRequest, deps: BoxProxyDeps, back: string): NextResponse {
+  let portal: string
+  try {
+    portal = deps.portalUrl()
+  } catch {
+    return plain(503, 'BOb no tiene configurado el portal de la caja.')
+  }
+  if (request.cookies.get(PORTAL_COOKIE)?.value) {
+    logSecurity('portal.no_session_back', { path: request.nextUrl.pathname })
+    return new NextResponse(
+      '<!doctype html><meta charset="utf-8"><title>BOb</title>'
+      + '<p>BOb no recibió la sesión de BzzzBX.</p>'
+      + `<p><a href="${portal}/">Entrar por el portal de BzzzBX</a></p>`,
+      { status: 401, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } })
+  }
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? request.nextUrl.host
+  const r = NextResponse.redirect(portalLoginUrl(portal, host, back))
+  r.cookies.set(PORTAL_COOKIE, '1', portalMark())
+  return r
+}
 
 async function roleResponse(request: NextRequest, deps: BoxProxyDeps, user: GoTrueUser, isApi: boolean) {
   const userId = user.id
@@ -98,6 +128,7 @@ async function decide(request: NextRequest, deps: BoxProxyDeps): Promise<NextRes
     logSecurity('access.write_refused', { status: refused.status, method: request.method, path })
     return NextResponse.json({ ok: false, error: refused.error }, { status: refused.status })
   }
+  if (path === '/login') return toPortal(request, deps, '/bob/performance')
   if (access === 'public') return NextResponse.next({ request })
 
   let base: string
@@ -122,7 +153,7 @@ async function decide(request: NextRequest, deps: BoxProxyDeps): Promise<NextRes
   } else if (s.kind === 'none') {
     response = isApi
       ? NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
-      : NextResponse.redirect(new URL('/login', request.url))
+      : toPortal(request, deps, request.nextUrl.pathname + request.nextUrl.search)
   } else if (needsRole(path) && overBudget(deps, s.user.id, isApi)) {
     const kind = isApi ? 'api' : 'page'
     if (deps.throttleLogged?.take(`${s.user.id}|${kind}`) ?? true) {

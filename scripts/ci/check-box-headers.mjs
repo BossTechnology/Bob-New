@@ -38,6 +38,7 @@ const server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'star
     BOB_CAJA: '1',
     BOB_ORG_ID: 'aaaaaaaa-0000-4000-8000-000000000001',
     BOB_GOTRUE_URL: 'http://127.0.0.1:9',
+    BOB_PORTAL_URL: 'https://portal.example',
     BOB_DB_HOST: '127.0.0.1',
     BOB_DB_PORT: '9',
     BOB_SECRETS_FILE: secrets,

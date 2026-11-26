@@ -11,13 +11,16 @@ export async function boxLogout(
   jar: CookieJar,
   revoke: (accessToken: string) => Promise<LogoutResult>,
   log: (line: string) => void = console.info,
+  // The portal's way out (portal.ts): the session was the portal's, so
+  // leaving BOb leaves BzzzBX too (Henry, 2026-11-26).
+  next?: string,
 ): Promise<Response> {
   const at = jar.get(ACCESS_COOKIE)
   const result: LogoutResult = at ? await revoke(at) : 'unauthorized'
   clearSessionCookies(jar)
   const revoked = result !== 'unavailable'
   log(securityLine(revoked ? 'logout.ok' : 'logout.not_revoked', { result }))
-  const res = ok({ signed_out: true, revoked })
+  const res = ok({ signed_out: true, revoked, ...(next ? { next } : {}) })
   // What the browser cached of the signed-in pages goes too.
   res.headers.set('Clear-Site-Data', '"cache"')
   return res

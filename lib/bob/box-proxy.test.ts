@@ -7,6 +7,7 @@ import { NextRequest } from 'next/server.js'
 import { Attempts } from './login.ts'
 import { boxProxy, type BoxProxyDeps } from './box-proxy.ts'
 import { ACCESS_COOKIE, resolveSession, type SessionState } from './session.ts'
+import { PORTAL_COOKIE } from './portal.ts'
 
 // proxy.ts must export `config` as a literal (Next reads it statically), so
 // the test reads the literal rather than importing the file.
@@ -26,6 +27,7 @@ test('the proxy sees every request but Next\'s static chunks', () => {
 const USER: SessionState = { kind: 'user', user: { id: 'aaaaaaaa-1111-4000-8000-000000000001', email: 'user@example.com' } } as SessionState
 const deps = (o: Partial<BoxProxyDeps> = {}): BoxProxyDeps => ({
   gotrueUrl: () => 'http://gotrue.test',
+  portalUrl: () => 'https://portal.test',
   resolveSession: async () => USER,
   role: async () => 'viewer',
   ...o,
@@ -41,7 +43,7 @@ test('a route that is off answers 404, whatever its extension', async () => {
 
 test('public routes pass without a session', async () => {
   const d = deps({ resolveSession: async () => { throw new Error('must not be called') } })
-  assert.ok(passes(await boxProxy(req('/login'), d)))
+  assert.ok(passes(await boxProxy(req('/entrar'), d)))
   assert.ok(passes(await boxProxy(req('/api/health'), d)))
 })
 
@@ -55,7 +57,59 @@ test('no identity configuration or GoTrue down is a 503; no session is the login
   assert.equal((await boxProxy(req('/api/bob/quality'), none)).status, 401)
   const page = await boxProxy(req('/bob/quality'), none)
   assert.equal(page.status, 307)
-  assert.match(page.headers.get('location') ?? '', /\/login$/)
+  assert.equal(page.headers.get('location'), 'https://portal.test/?volver=https%3A%2F%2Fbox.test%2Fbob%2Fquality')
+})
+
+// Henry, 2026-11-26 («se quita el login de bob», «H1: el portal pasa el
+// token»): BOb has no login of its own in the box. Without a session, a page
+// goes to the BzzzBX portal and comes back; the portal hands the token to
+// /entrar. If it comes back without one, BOb does not send it out again.
+const noSession = (o: Partial<BoxProxyDeps> = {}) =>
+  deps({ resolveSession: async () => ({ kind: 'none' }) as SessionState, ...o })
+const withCookie = (path: string, cookie: string) => new NextRequest(`http://box.test${path}`, { headers: { cookie } })
+
+test('without a session a page goes to the portal once, and marks that it went', async () => {
+  const r = await boxProxy(req('/bob/performance?range=week'), noSession())
+  assert.equal(r.status, 307)
+  assert.equal(r.headers.get('location'), 'https://portal.test/?volver=https%3A%2F%2Fbox.test%2Fbob%2Fperformance%3Frange%3Dweek')
+  const mark = r.cookies.get(PORTAL_COOKIE)
+  assert.ok(mark, 'no mark set')
+  assert.equal(mark.httpOnly, true)
+  assert.ok((mark.maxAge ?? 0) > 0 && (mark.maxAge ?? 0) <= 120)
+})
+
+test('back from the portal still without a session, it is not sent again: a page with a link, no loop', async () => {
+  const r = await boxProxy(withCookie('/bob/performance', `${PORTAL_COOKIE}=1`), noSession())
+  assert.equal(r.status, 401)
+  assert.equal(r.headers.get('location'), null)
+  assert.match(r.headers.get('content-type') ?? '', /text\/html/)
+  const body = await r.text()
+  assert.match(body, /href="https:\/\/portal\.test\/"/)
+})
+
+test('/login has no form in the box: it goes to the portal, and comes back to the screens', async () => {
+  const r = await boxProxy(req('/login'), noSession({ resolveSession: async () => { throw new Error('must not be called') } }))
+  assert.equal(r.status, 307)
+  assert.equal(r.headers.get('location'), 'https://portal.test/?volver=https%3A%2F%2Fbox.test%2Fbob%2Fperformance')
+  const again = await boxProxy(withCookie('/login', `${PORTAL_COOKIE}=1`), noSession())
+  assert.equal(again.status, 401)
+})
+
+test('BOb\'s own password login is off in the box', async () => {
+  assert.equal((await boxProxy(write('/auth/login', JSON_TYPE), deps())).status, 404)
+})
+
+test('the handover page and its POST need no session; the page sends no referrer', async () => {
+  const d = noSession({ resolveSession: async () => { throw new Error('must not be called') } })
+  const r = await boxProxy(req('/entrar'), d)
+  assert.ok(passes(r))
+  assert.equal(r.headers.get('referrer-policy'), 'no-referrer')
+  assert.ok(passes(await boxProxy(write('/auth/portal', JSON_TYPE), d)))
+})
+
+test('without BOB_PORTAL_URL a page without a session is a 503, not a loop to nowhere', async () => {
+  const r = await boxProxy(req('/bob/quality'), noSession({ portalUrl: () => { throw new Error('unset') } }))
+  assert.equal(r.status, 503)
 })
 
 test('Henry, 2026-11-21: an account with no role (inactive, another organization, no seat) is a 403', async () => {
@@ -125,7 +179,7 @@ test('a write from another origin is refused before the session is read', async 
     { origin: 'http://box.test:8081' },
     { origin: 'null' },
   ] as Record<string, string>[]) {
-    for (const [path, method] of [['/auth/login', 'POST'], ['/auth/logout', 'POST'], ['/api/config/thresholds/res', 'PUT'],
+    for (const [path, method] of [['/auth/portal', 'POST'], ['/auth/logout', 'POST'], ['/api/config/thresholds/res', 'PUT'],
       ['/api/config/responses/x', 'DELETE']]) {
       const r = await boxProxy(write(path, { ...JSON_TYPE, ...h }, method), d)
       assert.equal(r.status, 403, `${method} ${path} ${JSON.stringify(h)}`)
@@ -141,7 +195,7 @@ test('a body that is not JSON is refused', async () => {
     { 'content-length': '12' },
     { 'transfer-encoding': 'chunked' },
   ] as Record<string, string>[]) {
-    assert.equal((await boxProxy(write('/auth/login', h), deps())).status, 415, JSON.stringify(h))
+    assert.equal((await boxProxy(write('/auth/portal', h), deps())).status, 415, JSON.stringify(h))
   }
 })
 
@@ -160,7 +214,7 @@ test('the box\'s own writes, and clients that are not browsers, pass', async () 
 })
 
 test('a read is never refused for where it comes from', async () => {
-  assert.ok(passes(await boxProxy(new NextRequest('http://box.test/login', { headers: { 'sec-fetch-site': 'cross-site' } }), deps())))
+  assert.ok(passes(await boxProxy(new NextRequest('http://box.test/entrar', { headers: { 'sec-fetch-site': 'cross-site' } }), deps())))
 })
 
 test('a refused write is recorded, without its origin header verbatim or the query string', async () => {
@@ -169,12 +223,12 @@ test('a refused write is recorded, without its origin header verbatim or the que
   console.info = (l: string) => { lines.push(l) }
   try {
     await boxProxy(write('/api/config/thresholds/res?token=abc', { ...JSON_TYPE, origin: 'https://evil.test' }, 'PUT'), deps())
-    await boxProxy(write('/auth/login', { 'content-type': 'text/plain' }), deps())
+    await boxProxy(write('/auth/portal', { 'content-type': 'text/plain' }), deps())
   } finally { console.info = info }
   const events = lines.map((l) => JSON.parse(l))
   assert.deepEqual(events.map((e) => [e.event, e.status, e.method, e.path]), [
     ['access.write_refused', 403, 'PUT', '/api/config/thresholds/res'],
-    ['access.write_refused', 415, 'POST', '/auth/login'],
+    ['access.write_refused', 415, 'POST', '/auth/portal'],
   ])
   for (const l of lines) assert.doesNotMatch(l, /token=abc/)
 })

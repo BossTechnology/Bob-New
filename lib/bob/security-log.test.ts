@@ -11,6 +11,7 @@ test('the proxy records who was refused and where, without the query string', as
   try {
     const r = await boxProxy(new NextRequest('http://box.test/api/bob/quality?secret=1'), {
       gotrueUrl: () => 'http://gotrue.test',
+      portalUrl: () => 'https://portal.test',
       resolveSession: async () => ({ kind: 'user', user: { id: 'aaaaaaaa-1111-4000-8000-000000000001', email: 'user@example.com' } }),
       role: async () => null,
     })

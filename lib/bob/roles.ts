@@ -20,6 +20,7 @@
 import type { Pool } from 'pg'
 import { asBobApp } from './db.ts'
 import type { GoTrueUser } from './gotrue.ts'
+import { logSecurity } from './security-log.ts'
 
 export const ROLES = ['admin', 'analyst', 'viewer'] as const
 export type Role = (typeof ROLES)[number]
@@ -32,12 +33,21 @@ export async function boxRole(orgId: string, userId: string, source?: Pool): Pro
 
 // The role, or on a first visit a viewer seat. One write transaction, so the
 // seat and the read that follows it agree.
-export async function boxRoleOrSeat(orgId: string, user: GoTrueUser, source?: Pool): Promise<Role | null> {
+//
+// A seat refused with no row for the id in this organization (another
+// organization's row, or an email another account holds) is logged: nobody
+// can see that from the 403 alone (review of BOb-engine #59).
+export async function boxRoleOrSeat(
+  orgId: string, user: GoTrueUser, source?: Pool, log: typeof logSecurity = logSecurity,
+): Promise<Role | null> {
   const known = await boxRole(orgId, user.id, source)
   if (known || !user.email) return known
-  const row = await asBobApp(orgId, async (db) => {
-    await db.query('SELECT bob.claim_viewer_seat($1, $2)', [user.id, user.email])
-    return (await db.query('SELECT role FROM bob.users WHERE id = $1 AND active IS TRUE', [user.id])).rows[0]
+  const { took, row } = await asBobApp(orgId, async (db) => {
+    const took = (await db.query('SELECT bob.claim_viewer_seat($1, $2) AS took', [user.id, user.email])).rows[0]?.took === true
+    const row = (await db.query('SELECT role, active FROM bob.users WHERE id = $1', [user.id])).rows[0]
+    return { took, row }
   }, source, { write: true })
-  return (ROLES as readonly string[]).includes(row?.role) ? (row.role as Role) : null
+  if (took) log('access.seat_taken', { user: user.id })
+  else if (!row) log('access.seat_refused', { user: user.id })
+  return row?.active === true && (ROLES as readonly string[]).includes(row.role) ? (row.role as Role) : null
 }

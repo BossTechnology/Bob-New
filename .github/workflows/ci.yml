@@ -18,7 +18,7 @@ env:
   # Bump it by hand when the contract moves. The head of BOb-engine #59
   # (bob.claim_viewer_seat, «Alta sola, como viewer»), on top of main; move it
   # to #59's merge commit once Henry merges it.
-  BOB_ENGINE_REF: 9d4d7db48a67bb80d400802818d27b30d45cc6e5
+  BOB_ENGINE_REF: 44256e3b41deb9f7652b345e661e1481c08e0c6a
   # Same CLI version as BOb-engine's own CI.
   SUPABASE_CLI_VERSION: 2.120.0
 

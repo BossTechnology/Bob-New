@@ -9,8 +9,12 @@ export async function signOut(
   post: (url: string, init?: RequestInit) => Promise<Response> = fetch,
   replace: (url: string) => void = (url) => window.location.replace(url),
 ) {
+  let next = '/login'
   try {
-    await post('/auth/logout', { method: 'POST', credentials: 'same-origin' })
+    const r = await post('/auth/logout', { method: 'POST', credentials: 'same-origin' })
+    // In the box the answer names the portal's way out (Henry, 2026-11-26).
+    const named = (await r.json().catch(() => null))?.data?.next
+    if (typeof named === 'string' && /^https:\/\/[^/?#@\s]+\/\?salir=1$/.test(named)) next = named
   } catch { /* the page still goes */ }
-  replace('/login')
+  replace(next)
 }

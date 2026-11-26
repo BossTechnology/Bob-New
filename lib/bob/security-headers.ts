@@ -41,5 +41,8 @@ const isData = (path: string) => path.startsWith('/api/') || path.startsWith('/a
 export function withSecurityHeaders<R extends Response>(r: R, path = ''): R {
   for (const [k, v] of Object.entries(securityHeaders())) r.headers.set(k, v)
   if (isData(path)) r.headers.set('Content-Disposition', 'attachment')
+  // /entrar holds the portal's token in its URL until it clears it: nothing of
+  // that address may leave as a Referer.
+  if (path === '/entrar') r.headers.set('Referrer-Policy', 'no-referrer')
   return r
 }
