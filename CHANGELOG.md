@@ -3,6 +3,7 @@
 Una línea por cambio entregado, en lenguaje de usuario.
 
 ## Sin publicar
+- Los chequeos de secretos de la caja ven también las contraseñas dentro de cadenas de conexión, los nombres con PW, AUTH, PRIVATE, SIGNING y SALT, el JWT de service role en cualquier variable, y las líneas de los ficheros montados que no son `CLAVE=valor`; `migrador.env` no se monta en ningún contenedor.
 - BOb al lado de la caja: `deploy.sh` ya no migra (`--migrar` quitado); las migraciones de BOb van solo por la instalación firmada de BOb-engine (`firma-instalacion … resto`). El chequeo de aislamiento y el arranque en modo caja rechazan cualquier variable con nombre de contraseña, llave, token o secreto (también `MIGRADOR_CLAVE`, la del alta de Bzzz) y cualquier URL con contraseña, sin depender de una lista.
 - CI: el job en vivo corre contra el Slice 3 ya fusionado en BOb-engine (`51f991b`) y falla si no encuentra el rollup de celdas, en vez de saltarse la prueba.
 - Rendimiento, Interacciones, Calidad y el simulador pintan el estado de cada celda que resuelve BOb (Slice 3): «No aplica», «No configurado» con su motivo, «Pendiente», «—» (no observado) o la cifra; el motivo completo y la cobertura van en el título. Sin el Slice 3 en la base, se pintan como antes.

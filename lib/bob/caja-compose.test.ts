@@ -8,7 +8,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { FORBIDDEN_IN_BOX, SECRET_NAME, URL_WITH_PASSWORD, MOUNTED_SECRETS } from './runtime.ts'
+import { FORBIDDEN_IN_BOX, SECRET_NAME, URL_WITH_PASSWORD, PARAM_WITH_PASSWORD, MOUNTED_SECRETS } from './runtime.ts'
 
 const COMPOSE = new URL('../../deploy/caja/compose.yml', import.meta.url).pathname
 const WEB_ID = 'sha256:' + 'a'.repeat(64)
@@ -124,6 +124,7 @@ test('the isolation check forbids exactly what the app forbids: same pattern, sa
   assert.deepEqual([...list.matchAll(/"([A-Z0-9_]+)"/g)].map((m) => m[1]), [...FORBIDDEN_IN_BOX])
   assert.equal(block.match(/SECRET_NAME = re\.compile\(r"(.*)", re\.I\)/)?.[1], SECRET_NAME.source)
   assert.equal(block.match(/URL_WITH_PASSWORD = re\.compile\(r"(.*)", re\.I\)/)?.[1], URL_WITH_PASSWORD.source)
+  assert.equal(block.match(/PARAM_WITH_PASSWORD = re\.compile\(r"(.*)", re\.I\)/)?.[1], PARAM_WITH_PASSWORD.source)
   assert.equal(block.match(/MOUNTED_SECRETS = "(.*)"/)?.[1], MOUNTED_SECRETS)
 })
 
