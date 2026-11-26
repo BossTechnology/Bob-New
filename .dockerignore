@@ -16,3 +16,4 @@ validate.py
 tsconfig.tsbuildinfo
 Dockerfile
 .dockerignore
+deploy

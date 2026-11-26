@@ -3,6 +3,7 @@
 Una línea por cambio entregado, en lenguaje de usuario.
 
 ## Sin publicar
+- BOb al lado de la caja (Bzzz D77): compose para `/opt/bob` con `bob-web` y `bob-feeder`, `deploy.sh` (atestación, migraciones con `bob_migrador` solo con `--migrar`, salud y vuelta atrás sola), `rollback.sh` y `comprobar-aislamiento.sh`, que descubre los `bob-*` y falla con la service role, una red no declarada o una red con salida. `deploy.sh` lee el tar y comprueba su atestación antes de cargarlo, y si el aislamiento o la puerta fallan para todo lo de BOb. La imagen se identifica por el sha256 de su configuración, igual con overlay2 que con el almacén de containerd. Runbook en `docs/caja/instalar-y-volver-atras.md`.
 - Modo caja: hay un botón «Cerrar sesión» en las pantallas `/bob` y en el simulador; cierra solo la sesión de este equipo, borra las cookies (también las de antes del prefijo `__Host-`) y la caché de la página. El formulario de inicio de sesión deja ver la contraseña escrita.
 - Modo caja: borrar un canal y desconectar sus reglas es una sola transacción; una ventana pico vacía ya no impide guardar el umbral, y una a medio llenar se rechaza. Cada cuenta tiene un límite de peticiones por minuto en la API (120) y en las pantallas `/bob` (60).
 - Modo caja: el simulador no lee ni escribe la configuración guardada mientras no confirme que es la demo, y la comprobación de salud tiene tiempo máximo.

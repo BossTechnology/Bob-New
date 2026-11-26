@@ -1,0 +1,128 @@
+# ============================================================================
+# BOb al lado de la caja (Bzzz D77). Vive en /opt/bob/compose.yml.
+#
+# Lo despliega deploy.sh y lo devuelve rollback.sh, que corre Henry a mano. Nunca
+# con `docker compose up` suelto: así se salta la atestación y el chequeo de
+# salud. El runbook está en docs/caja/instalar-y-volver-atras.md.
+#
+# LO QUE NO SE NEGOCIA
+#   1. Ningún puerto publicado. Se entra por Traefik de la caja (puerta-apps@file
+#      primero) y por ningún otro 443 (D77 §5).
+#   2. Imágenes por id (sha256:…), no por etiqueta. Las imágenes no pasan por un
+#      registro: llegan con docker save/load, y su id es su digest. deploy.sh
+#      escribe el id en /opt/bob/.env después de comprobar su atestación (Bzzz #407).
+#   3. Un secreto, un lector, montado como fichero: nunca por env_file ni por
+#      environment, porque lo que va en el entorno lo devuelve la API de Docker a
+#      quien inspeccione el contenedor. Ni la service role, ni JWT_SECRET, ni la
+#      credencial de migración: esa la lee solo el paso de migración de deploy.sh.
+#   4. Redes: bzzz-vecina-bob (internal, la crea el alta de la vecina en Bzzz;
+#      dentro solo están supabase-db, supabase-auth y bzzz-vecinos) y, solo para
+#      la aplicación, bzzz-edge, por donde llega Traefik. bzzz-edge sale a internet
+#      (D77 §5). Henry eligió el 2026-11-25 «(A) bzzz-edge como excepción»:
+#      comprobar-aislamiento.sh la acepta para bob-web y para nadie más, con lo
+#      permitido fijo en el guion (no leído de este fichero). Cerrarla, D59.
+#
+# BOB_RAIZ es /opt/bob en una caja (deploy.sh lo fija); solo el banco local
+# (deploy/caja/banco/) lo cambia.
+# ============================================================================
+name: bob
+
+x-endurecido: &endurecido
+  restart: unless-stopped
+  user: "65534:65534"
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pull_policy: never
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+
+services:
+
+  bob-web:
+    <<: *endurecido
+    image: ${BOB_WEB_IMAGEN:?falta BOB_WEB_IMAGEN en /opt/bob/.env (la escribe deploy.sh)}
+    container_name: bob-web
+    tmpfs:
+      - /tmp:size=64m
+      - /app/.next/cache:size=128m,uid=65534,gid=65534
+    # Configuración, no secretos: BOB_ORG_ID, BOB_GOTRUE_URL
+    # (http://bzzz-supabase-auth:9999), BOB_DB_HOST (bzzz-supabase-db) y, si
+    # hacen falta, BOB_DB_PORT, BOB_DB_NAME y BOB_PROXY_HOPS.
+    env_file:
+      - ${BOB_RAIZ:-/opt/bob}/config/caja.env
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+      BOB_CAJA: "1"
+      NODE_OPTIONS: "--max-old-space-size=${BOB_WEB_HEAP_MB:-768}"
+    volumes:
+      - ${BOB_RAIZ:-/opt/bob}/secrets/app.env:/run/secrets/bob/app.env:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        # Sin medir: lab-02 los fija con medir-caja.sh antes de Febor (D77 §7).
+        limits: { cpus: "${BOB_WEB_CPUS:-1.0}", memory: "${BOB_WEB_MEMORIA:-1g}", pids: 256 }
+    labels:
+      bob.vecina: "bob"
+      traefik.enable: "true"
+      traefik.docker.network: "bzzz-edge"
+      traefik.http.routers.bob.rule: "Host(`${BOB_HOST:?falta BOB_HOST en /opt/bob/.env}`)"
+      traefik.http.routers.bob.entrypoints: "websecure"
+      traefik.http.routers.bob.tls.certresolver: "le"
+      traefik.http.routers.bob.priority: "10"
+      traefik.http.routers.bob.middlewares: "puerta-apps@file,cabeceras@file"
+      traefik.http.routers.bob-login.rule: "Host(`${BOB_HOST}`) && PathPrefix(`/login`)"
+      traefik.http.routers.bob-login.entrypoints: "websecure"
+      traefik.http.routers.bob-login.tls.certresolver: "le"
+      traefik.http.routers.bob-login.priority: "20"
+      traefik.http.routers.bob-login.service: "bob"
+      traefik.http.routers.bob-login.middlewares: "puerta-apps@file,login-ritmo@file,cabeceras@file"
+      traefik.http.services.bob.loadbalancer.server.port: "3000"
+    networks: [vecina, entrada]
+
+  # EL FEEDER (D77 77.3). Al lado de la app, solo en la red de la vecina: escribe
+  # en `bob` como bob_feeder y lee de BzzzBX por bzzz-vecinos con mTLS. Sin
+  # etiquetas de Traefik y sin bzzz-edge.
+  # NO ARRANCA TODAVÍA: el adaptador (tarea 3.7 de BOb-engine) y las vistas de
+  # bzzz-vecinos para BOb (P-F1) no existen. Por eso va en el perfil `feeder`.
+  # Los nombres de las variables los fija el adaptador.
+  bob-feeder:
+    <<: *endurecido
+    profiles: [feeder]
+    image: ${BOB_FEEDER_IMAGEN:-sin-imagen-del-feeder}
+    container_name: bob-feeder
+    tmpfs: ["/tmp:size=32m"]
+    env_file:
+      - ${BOB_RAIZ:-/opt/bob}/config/caja.env
+    environment:
+      BOB_SECRETS_FILE: /run/secrets/bob/feeder.env
+      BOB_VECINOS_URL: "https://bzzz-vecinos:8443"
+      BOB_VECINOS_CERT: /run/secrets/bob/vecinos.crt
+      BOB_VECINOS_CLAVE: /run/secrets/bob/vecinos.key
+      BOB_VECINOS_CA: /run/secrets/bob/vecinos-ca.crt
+    volumes:
+      - ${BOB_RAIZ:-/opt/bob}/secrets/feeder.env:/run/secrets/bob/feeder.env:ro
+      - ${BOB_RAIZ:-/opt/bob}/secrets/vecinos.crt:/run/secrets/bob/vecinos.crt:ro
+      - ${BOB_RAIZ:-/opt/bob}/secrets/vecinos.key:/run/secrets/bob/vecinos.key:ro
+      - ${BOB_RAIZ:-/opt/bob}/secrets/vecinos-ca.crt:/run/secrets/bob/vecinos-ca.crt:ro
+    deploy:
+      resources:
+        limits: { cpus: "${BOB_FEEDER_CPUS:-0.5}", memory: "${BOB_FEEDER_MEMORIA:-512m}", pids: 128 }
+    labels:
+      bob.vecina: "bob"
+    networks: [vecina]
+
+networks:
+  vecina:
+    name: bzzz-vecina-bob
+    external: true
+  entrada:
+    name: bzzz-edge
+    external: true

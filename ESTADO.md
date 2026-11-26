@@ -6,6 +6,12 @@
 - Capa de datos de bob-web sobre el esquema `bob` de BOb-engine, como `bob_app`, con el `org_id` de la caja y sin la service role (requisito §4.2, puntos 1 a 5, de los insumos de Bzzz «lo mínimo de la etapa 4»). Todo fusionado en `main`: PR #30, #32, #34 (P-1), #35 (P-4), #36 (umbrales) y #31 (imagen). Lo que queda es probarlo en una caja real.
 
 ## Hecho
+- **BOb al lado de la caja (Bzzz D77)**, en `deploy/caja/`, sin fusionar: compose para `/opt/bob` (`bob-web` y `bob-feeder`, este en el perfil `feeder`), `deploy.sh`, `rollback.sh` y `comprobar-aislamiento.sh`. Runbook en `docs/caja/instalar-y-volver-atras.md`. Lo probó el banco local `deploy/caja/banco/banco.sh`, con `supabase/postgres:17.6.1.136`, GoTrue y Traefik v3.7.18, y todo lo esperado pasó:
+  - instalar A, actualizar a B, `rollback.sh` a A y otra vez a B;
+  - una imagen que no queda sana vuelve sola;
+  - una imagen con la atestación de otra no empieza;
+  - `--migrar` aplica como `bob_migrador`, y una migración que crea en `public` falla sin cambiar la imagen;
+  - el chequeo de aislamiento se vio fallar cuatro veces: un intruso con la service role, una red de más, el modo estricto y la service role en el fichero montado. Después de la decisión (A), un quinto: otro `bob-*` en la red de entrada. Al volver a correr el banco salió una carrera: un contenedor ajeno borrado entre `docker ps` y `docker inspect` dejaba el chequeo «no medible» y tumbaba la vuelta atrás. Arreglado: lo que ya no existe se ignora.
 - Inventario de todo lo que tocaba la service role, PostgREST o las tablas de la demo, en tres categorías y con dueño: `docs/bob-schema-data-layer/inventario.md`.
 - Modo caja (`BOB_CAJA=1`): configuración en tiempo de ejecución, login de `bob_app` desde `/run/secrets/bob/app.env`, arranque rechazado con service role, `JWT_SECRET`, credenciales en el entorno o configuración incompleta (visto fallar con `next dev`).
 - Sesión contra el GoTrue de la caja en su raíz, en cada petición: GoTrue caído = 503 (visto con un GoTrue falso parado), token rechazado = `/login`. Lista de rutas servidas (`lib/bob/surface.ts`); lo demás, 404.
@@ -39,10 +45,24 @@
   No bloquea la construcción; solo cambia qué consumidores prueba el DONE.
 
 ## Siguiente paso
+- **D77, la red de entrada: decidido.** Henry eligió el 2026-11-25 «(A) bzzz-edge como excepción». `bob-web` va en `bzzz-edge` y el chequeo acepta esa red solo para él; falla con cualquier otra red con salida o con otro `bob-*` en `bzzz-edge`. El feeder no tiene salida. **Cerrar la salida de `bzzz-edge` queda para D59.**
+- **Antes de instalarlo en una caja:**
+  - el alta de la vecina y `generar-secretos-vecina.sh` (sesión de Bzzz);
+  - sacar `compose/l7-bob.yml` (77.4);
+  - confirmar los nombres de `migrador.env` (`BOB_MIGRADOR_USUARIO` y `BOB_MIGRADOR_CLAVE`) y los ficheros del feeder.
+  - **la imagen del feeder no la construye ni la firma nadie**: `construir-imagen-bob.sh` de Bzzz solo hace bob-web, y por P-H8 el guion del feeder va en Bzzz. `deploy.sh --feeder` ya exige tar de una imagen `bob-feeder:<12 hex>` y atestación que case.
+- **Riesgos de v1 aceptados, anotados en el runbook:**
+  - cualquiera en `bzzz-edge` llega a `bob-web:3000` sin la puerta y puede falsear `X-Forwarded-For` (ligado a D59);
+  - tras una migración, la vuelta atrás pone la imagen vieja sobre el esquema nuevo;
+  - los `.sql` de `--migrar` no van ligados al commit atestado.
 - Probar en una caja real con la imagen de `main`. La lista de verificación está en las notas compartidas de la sesión (`bob-web-real-box-checklist.md`). Lo primero que vigilar: la primera conexión a la base, que en local tardó ~15 s y dio un 503 hasta reintentar.
 
 ## Notas de sesión
 <!-- AAAA-MM-DD: una o dos líneas -->
+- 2026-11-25 (revisión de #55): el tar se lee y se atesta antes de cargarlo (una imagen, sin etiquetas ajenas); un fallo de seguridad para todo; las redes permitidas salen de D77, fijas en el chequeo; lo de la caja no se cambia desde el entorno salvo en el banco; la puerta por Traefik es obligatoria; migraciones a la base de `caja.env`; la lista de secretos es la de `FORBIDDEN_IN_BOX`.
+- 2026-11-25 (segunda revisión de #55): «todo parado» también para por id cualquier `bob-*` descubierto; si la anterior tampoco queda sana, para todo; las claves de Traefik se comparan en minúsculas; el tar y la atestación se copian a `/opt/bob/entrega` (root) antes de mirarlos; la identidad de la imagen es el sha256 de la config leído del tar (no `.Id`, que con containerd es el digest del índice), y si `index.json` apunta a un índice se sigue su único linux/amd64; la atestación tiene que nombrar el `servicio`; el banco exige además una marca que crea `banco.sh` y puede imitar containerd (`BANCO_CONTAINERD=1`). El constructor de Bzzz que firma la config es bzzz#454.
+- 2026-11-25 (prioridad de Henry: «para bob el lunes 30 noviembre», «produccion», «vamos solo con Bob y bzzz»): `deploy/caja/PRIMERA-PUESTA-FEBOR.md`, la secuencia de comandos de la primera puesta en Febor con su vuelta atrás. La vuelta atrás saca la config de la imagen con `id-de-imagen.sh` de Bzzz (#454), el mismo que usa el comprobador; el banco corre contra el head de #454. Tercera revisión: `deploy.sh` y `rollback.sh` exigen root (salvo el banco); la atestación guardada lleva nombre único; `id_del_tar` despacha por `mediaType` y rechaza blobs híbridos. Pendiente antes del lunes: que Henry mire con `docker info` qué almacén tienen lab-02, model-01 y Febor; si alguno es containerd, probar esa rama de verdad en lab-02 el viernes. Cuarta revisión: `BOB_ESPERA_SALUD` sin ceros delante (el octal abortaba a mitad del cambio); «todo parado» se comprueba volviendo a descubrir y, si algo sigue, la línea lo dice; `deploy.sh` y `rollback.sh` miran cada entrada de `secrets/` (sin enlaces ni directorios, 600, `migrador.env` de root y el resto de 65534) y que `/opt/bob` sea de root; el chequeo de aislamiento falla con un directorio o un enlace montado; el runbook de Febor trae los comandos exactos de los secretos (`generar-secretos-vecina.sh bob` y `DIR_SECRETOS=/opt/bob/secrets RED=bzzz-vecina-bob generar-secretos-bob.sh`), `BZZZ_HOST_BOB` y el portal. Precondición: #450 de Bzzz aún no está en `main`.
+- 2026-11-25: paquete de BOb al lado de la caja (D77). Probado en el banco local, sin tocar ninguna caja. Henry eligió (A): `bzzz-edge` como excepción solo de bob-web; cerrar su salida queda para D59.
 - 2026-11-23: PR #48 (codificación de salida del simulador) fusionado con CI en verde. El comentario de cabecera de `lib/bob/simulator-sinks.test.ts` en el PR #43 ya no depende del orden en que entren #43 y #48.
 - 2026-11-21 (cierre): #34, #35, #36 y #31 fusionados. #35 entró sin `4bd24a4`; viajó en #36, retargeteado a `main`. Caso viewer de los umbrales probado en caja local (papel cambiado a viewer y devuelto a admin; login temporal borrado).
 - 2026-11-21 (P-4): simulador probado en modo caja local (GoTrue falso, login temporal `bob_web_e2e` ya borrado): las tres pantallas leen `bob`, Este Mes pide `range=month&tz=300`, y una lectura fallida deja «—» con aviso en rojo. Fuera de la caja la API da 404 y la simulación sigue.
