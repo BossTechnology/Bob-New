@@ -28,6 +28,7 @@ export const SECRETS_FILE = '/run/secrets/bob/app.env'
 // What a box must never hand to BOb in its environment (P5 §3.4, insumos §5.1).
 // A credential in the environment is readable through the Docker API (§5.1).
 //
+// PW or PWD not followed by a letter (DB_PW, PGPW, dbPwd, MIGRADOR_PW1), except the shell's PWD and OLDPWD.
 // PRIVATE only as a private key's name (PRIVATE, *_PRIVATE_PEM…): Next sets NEXT_PRIVATE_* in its own
 // process, and a bare PRIVATE stopped bob-web (seen with scripts/ci/check-box-headers.mjs).
 //
@@ -36,7 +37,7 @@ export const SECRETS_FILE = '/run/secrets/bob/app.env'
 // writes MIGRADOR_CLAVE; a list of BOB_MIGRADOR_* names missed it). Case does
 // not matter. deploy/caja/comprobar-aislamiento.sh uses the same pattern;
 // lib/bob/caja-compose.test.ts fails if the two drift apart.
-export const SECRET_NAME = /PASS|_PWD|PW(?:_|$)|CLAVE|CONTRASE|SECRET|TOKEN|LLAVE|KEY|CREDENTIAL|CREDENCIAL|SERVICE_ROLE|DATABASE_URL|DSN|AUTH|PRIVAT[EA](?:_?(?:PEM|KEY|CERT|DER)|$)|SIGNING|SALT/i
+export const SECRET_NAME = /^(?!(?:OLD)?PWD$).*?PWD?(?![A-Za-z])|PASS|CLAVE|CONTRASE|SECRET|TOKEN|LLAVE|KEY|CREDENTIAL|CREDENCIAL|SERVICE_ROLE|DATABASE_URL|DSN|AUTH|PRIVAT[EA](?:_?(?:PEM|KEY|CERT|DER)|$)|SIGNING|SALT/i
 
 // The few names the pattern does not see: never in the box either.
 export const FORBIDDEN_IN_BOX = [

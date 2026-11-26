@@ -135,7 +135,7 @@ test('a URL with a port and an @ in its path is not a password', () => {
 })
 
 test('the name pattern also catches PW, AUTH, PRIVATE, SIGNING and SALT', () => {
-  for (const k of ['DB_PW', 'PGPW', 'BOB_APP_PW', 'PW', 'BASIC_AUTH', 'AUTH', 'PRIVATE', 'PRIVATE_PEM', 'SVC_PRIVATE_KEY', 'SIGNING_PEM', 'SALT',
+  for (const k of ['DB_PW', 'PGPW', 'BOB_APP_PW', 'PW', 'BASIC_AUTH', 'AUTH', 'PRIVATE', 'PRIVATE_PEM', 'SVC_PRIVATE_KEY', 'dbPwd', 'bobAppPwd', 'MIGRADOR_PW1', 'dbPw', 'SIGNING_PEM', 'SALT',
     'bob_salt']) refused({ [k]: 'x' }, k)
 })
 

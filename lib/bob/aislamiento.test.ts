@@ -120,3 +120,21 @@ test('the own-login exemption holds only for that container, only in secrets/', 
   // The feeder's login is not bob-web's.
   caught({ files: { 'secrets/app.env': LOGIN + 'BOB_FEEDER_CLAVE=hunter2\n' } }, /BOB_FEEDER_CLAVE/)
 })
+
+// Second review of #59: a line with «=» was only read as KEY=VALUE, and the JWT checks had no case of their own.
+test('a mounted line with = is also read whole', { skip }, () => {
+  caught({ files: { 'secrets/app.env': LOGIN + 'postgresql://bob_migrador:hunter2@h/db?sslmode=require\n' } }, /contraseña/)
+  caught({ files: { 'secrets/app.env': LOGIN + '{"url":"postgres://bob_migrador:hunter2@h/db?ssl=1"}\n' } }, /contraseña/)
+  caught({ files: { 'secrets/app.env': LOGIN + 'h:5432:postgres:bob_migrador:hun=ter2\n' } }, /pgpass/, 'hun=ter2')
+})
+
+const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString('base64url')
+const JWT_SR = `${b64({ alg: 'HS256' })}.${b64({ role: 'service_role' })}.hunter2`
+
+test('a service-role JWT is caught in the env, under any name', { skip }, () => {
+  caught({ env: [`BOB_ALGO=${JWT_SR}`] }, /BOB_ALGO es un JWT con role=service_role/)
+})
+
+test('a service-role JWT is caught in a mounted file, under any name', { skip }, () => {
+  caught({ files: { 'secrets/app.env': LOGIN + `BOB_ALGO=${JWT_SR}\n` } }, /trae un JWT con role=service_role/)
+})

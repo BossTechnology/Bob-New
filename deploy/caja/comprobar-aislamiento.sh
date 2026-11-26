@@ -71,7 +71,7 @@ SALIDA = set() if estricta == "1" else {("bob-web", entrada)}
 # SECRET_NAME, FORBIDDEN_IN_BOX, URL_WITH_PASSWORD y PARAM_WITH_PASSWORD, copia literal de lib/bob/runtime.ts. lib/bob/caja-compose.test.ts
 # falla si se separan.
 # --- FORBIDDEN_IN_BOX ---
-SECRET_NAME = re.compile(r"PASS|_PWD|PW(?:_|$)|CLAVE|CONTRASE|SECRET|TOKEN|LLAVE|KEY|CREDENTIAL|CREDENCIAL|SERVICE_ROLE|DATABASE_URL|DSN|AUTH|PRIVAT[EA](?:_?(?:PEM|KEY|CERT|DER)|$)|SIGNING|SALT", re.I)
+SECRET_NAME = re.compile(r"^(?!(?:OLD)?PWD$).*?PWD?(?![A-Za-z])|PASS|CLAVE|CONTRASE|SECRET|TOKEN|LLAVE|KEY|CREDENTIAL|CREDENCIAL|SERVICE_ROLE|DATABASE_URL|DSN|AUTH|PRIVAT[EA](?:_?(?:PEM|KEY|CERT|DER)|$)|SIGNING|SALT", re.I)
 FORBIDDEN_IN_BOX = [
     "TWILIO_ACCOUNT_SID", "SLACK_WEBHOOK_URL",
 ]
@@ -195,16 +195,13 @@ for c in conts:
             for linea in texto.splitlines():
                 if not linea.strip() or linea.lstrip().startswith("#"):
                     continue
-                if "=" not in linea:
-                    por = linea_secreta(linea)
-                    if por:
-                        f("secreto", f"{src} {por}")
-                    continue
-                k, _, v = linea.partition("=")
+                # Toda línea se lee entera: una URL suelta, un JSON o un pgpass también pueden llevar «=». Una KEY=VALUE
+                # se mira antes por su nombre (el fallo la nombra). El login propio no se lee: es lo que el fichero trae.
+                k, igual, v = linea.partition("=")
                 k = re.sub(r"^export\s+", "", k.strip()); v = v.strip().strip("'\"")
-                if k in propia:
+                if igual and k in propia:
                     continue
-                por = secreto(k, v)
+                por = (secreto(k, v) if igual else None) or linea_secreta(linea)
                 if por:
                     f("secreto", f"{src} {por}")
             if jwt_service_role(texto):
