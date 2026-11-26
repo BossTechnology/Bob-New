@@ -37,7 +37,7 @@ Se apunta antes de empezar. El resto de la secuencia es igual en las tres.
 | `<dominio base>` (`generar-config-portal.sh`) | `<dominio base de lab-02>` | `<dominio base de model-01>` | `<dominio base de Febor>` |
 | `<uuid de la org>` (`BOB_ORG_ID`) | `<uuid de la org de lab-02>` | `<uuid de la org de model-01>` | `<uuid de la org de Febor>` |
 | Herramientas del servidor (B0) | instaladas el 25 nov: CLI de Supabase 2.120.0 y `postgresql-client-16`; `git`, `setpriv` y `flock` ya estaban | ni CLI ni psql (medido el 25 nov): se instalan como en B0; `git`, `setpriv` y `flock` ya están | ni CLI ni psql (medido el 25 nov); `git`, `setpriv` y `flock` ya están. **Se instalan dentro de la ventana (B0b), no antes:** apt y needrestart pueden reiniciar servicios |
-| Pendiente del servidor (B0b) | apt dejó diferido `systemctl restart docker.service`, y un kernel nuevo sin arrancar (149 → 151) | lo mismo: Docker diferido y kernel 147 → 151 | «System restart required», swap al 27 % y 2 procesos zombi (medido el 25 nov): el reinicio de B0b |
+| Pendiente del servidor (B0b) | apt dejó diferido `systemctl restart docker.service`; kernel 147 → 151, **ya reiniciado a 151** (medido el 26 nov): en B0b solo se comprueba | lo mismo: Docker diferido y kernel 147 → 151, aún sin reiniciar | kernel `7.0.0-1014-gcp` corriendo con `7.0.0-1018-gcp` instalado y `/var/run/reboot-required` presente (medido el 26 nov; no es 147 → 151); además «System restart required», swap al 27 % y 2 procesos zombi (25 nov): el reinicio de B0b |
 | Almacén de imágenes de Docker | **containerd** (medido el 25 nov: `29.7.2 overlayfs [["driver-type","io.containerd.snapshotter.v1"]]`): B12 y B13 llevan la parte de containerd | **containerd** (medido el 25 nov: Docker 29.6.1, `overlayfs` con `io.containerd.snapshotter.v1`): lo mismo que lab-02 | **containerd** (medido el 25 nov: Docker 29.7.2, `overlayfs` con `io.containerd.snapshotter.v1`): lo mismo que lab-02 |
 | El BOb viejo (`bzzz-bob`) | no corre (medido el 25 nov): B2 no aplica, pero el primer alta sigue necesitando `--reiniciar` (B6) | no corre (medido el 25 nov): B2 no aplica; el primer alta necesita `--reiniciar` (B6) | no hay (medido el 25 nov): `docker ps -a | grep -i bob` vacío y sin `compose/l7-bob.yml`, al contrario de lo que suponía la auditoría (B4). B2 y B14 no aplican; el primer alta necesita `--reiniciar` (B6) |
 | La cadena de BOb en la base | ya está, aplicada en `5e5b9be` | no está (medido el 25 nov): sin esquema `bob` y sin `supabase_migrations.schema_migrations`, así que sin historia del CLI. B5 (`cadena`) la crea | no está (medido el 25 nov): sin esquema `bob` y sin `supabase_migrations.schema_migrations`. B5 (`cadena`) la crea |
@@ -188,6 +188,15 @@ ssh bzzz-lab-02 mkdir -p entrega-bob/antes && scp /tmp/bob-entrega-antes/bob-web
 
 ### B0. Sondas, antes de la ventana (solo leen)
 
+Primero, que el alias SSH apunta a la VM correcta. Es lo primero porque todo lo demás se mide sobre lo que responda
+ese alias. El hostname esperado de cada caja lo tiene Henry (es dato del cliente y no se escribe en el repo):
+
+```bash
+test "$(hostname)" = '<hostname esperado de la caja>' && echo "alias OK" || echo "ALIAS NO COINCIDE: parar"
+```
+
+Tiene que decir `alias OK`. Si no, se para: el alias apunta a otra VM y nada de lo que sigue vale hasta corregirlo.
+
 ```bash
 docker info -f '{{.ServerVersion}} {{.Driver}} {{json .DriverStatus}}'
 ```
@@ -292,12 +301,17 @@ sudo docker exec bzzz-supabase-db psql -X -tA -U supabase_admin -d postgres -c "
 
 ### B0b. Docker y kernel pendientes: al abrir la ventana, antes de nada más
 
-**En Febor, primero lo que falte de B0** (el CLI de Supabase, `postgresql-client-16` y la telemetría apagada), aquí y no
-antes: apt y needrestart pueden reiniciar servicios. Después, el reinicio de abajo. Febor dijo el 25 nov «System restart
+**En Febor, el orden es este y no otro** (Febor no tiene ni `supabase` ni `psql`, medido el 26 nov): 1) instalar el CLI
+de Supabase 2.120.0, verificando `checksums.txt`, y `postgresql-client-16`; 2) apagar la telemetría del CLI (todo ello
+como en B0); 3) **y solo después**, reiniciar al kernel nuevo. Se instala antes de reiniciar, y dentro de la ventana,
+porque apt y needrestart pueden reiniciar servicios, y un reinicio hecho antes dejaría la caja reiniciada sin las
+herramientas, o reiniciaría servicios a destiempo en una caja de producción. Febor dijo el 25 nov «System restart
 required», con el swap al 27 % y 2 procesos zombi, y el reinicio los limpia.
 
 Al instalar el CLI y psql, apt dejó diferido el reinicio de Docker (`systemctl restart docker.service`) y un kernel nuevo
-sin arrancar: lab-02 de 149 a 151, model-01 de 147 a 151. **Nada de esto se hace fuera de una ventana de
+sin arrancar. Cada caja tiene lo suyo (medido el 26 nov): lab-02 de 147 a 151, y ya está reiniciada a 151; model-01 de
+147 a 151, pendiente; Febor corre `7.0.0-1014-gcp` con `7.0.0-1018-gcp` instalado y `/var/run/reboot-required`
+presente (aquí el kernel nuevo es el 1018, no el 151). **Nada de esto se hace fuera de una ventana de
 mantenimiento:** reiniciar Docker para todos los contenedores de la caja, y reiniciar el servidor también. Se hace al
 empezar la ventana de cada ensayo, antes de B1, para que el ensayo corra sobre la caja como quedará.
 
