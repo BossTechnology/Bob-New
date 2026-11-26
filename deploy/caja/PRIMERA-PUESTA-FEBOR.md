@@ -36,12 +36,12 @@ Se apunta antes de empezar. El resto de la secuencia es igual en las tres.
 | `<host de BOb>` (`BOB_HOST` y `BZZZ_HOST_BOB`) | `<host de BOb de lab-02>` | `<host de BOb de model-01>` | `<host de BOb de Febor>` |
 | `<dominio base>` (`generar-config-portal.sh`) | `<dominio base de lab-02>` | `<dominio base de model-01>` | `<dominio base de Febor>` |
 | `<uuid de la org>` (`BOB_ORG_ID`) | `<uuid de la org de lab-02>` | `<uuid de la org de model-01>` | `<uuid de la org de Febor>` |
-| Herramientas del servidor (B0) | instaladas el 25 nov: CLI de Supabase 2.120.0 y `postgresql-client-16`; `git`, `setpriv` y `flock` ya estaban | ni CLI ni psql (medido el 25 nov): se instalan como en B0; `git`, `setpriv` y `flock` ya están | sin medir: B0 |
-| Pendiente del servidor (B0b) | apt dejó diferido `systemctl restart docker.service`, y un kernel nuevo sin arrancar (149 → 151) | lo mismo: Docker diferido y kernel 147 → 151 | sin medir: B0 |
-| Almacén de imágenes de Docker | **containerd** (medido el 25 nov: `29.7.2 overlayfs [["driver-type","io.containerd.snapshotter.v1"]]`): B12 y B13 llevan la parte de containerd | **containerd** (medido el 25 nov: Docker 29.6.1, `overlayfs` con `io.containerd.snapshotter.v1`): lo mismo que lab-02 | sin medir: B0 |
-| El BOb viejo (`bzzz-bob`) | no corre (medido el 25 nov): B2 no aplica, pero el primer alta sigue necesitando `--reiniciar` (B6) | no corre (medido el 25 nov): B2 no aplica; el primer alta necesita `--reiniciar` (B6) | corre: B2 es obligatorio |
-| La cadena de BOb en la base | ya está, aplicada en `5e5b9be` | no está (medido el 25 nov): sin esquema `bob` y sin `supabase_migrations.schema_migrations`, así que sin historia del CLI. B5 (`cadena`) la crea | no se sabe: lo dice la sonda de B0 |
-| `<base>` de `instalacion-firmada` | la huella de `5e5b9be` | **la base vacía** (BossTechnology/BOb-engine#54) | según la sonda de B0: la huella del commit que corre, o la base vacía |
+| Herramientas del servidor (B0) | instaladas el 25 nov: CLI de Supabase 2.120.0 y `postgresql-client-16`; `git`, `setpriv` y `flock` ya estaban | ni CLI ni psql (medido el 25 nov): se instalan como en B0; `git`, `setpriv` y `flock` ya están | ni CLI ni psql (medido el 25 nov); `git`, `setpriv` y `flock` ya están. **Se instalan dentro de la ventana (B0b), no antes:** apt y needrestart pueden reiniciar servicios |
+| Pendiente del servidor (B0b) | apt dejó diferido `systemctl restart docker.service`, y un kernel nuevo sin arrancar (149 → 151) | lo mismo: Docker diferido y kernel 147 → 151 | «System restart required», swap al 27 % y 2 procesos zombi (medido el 25 nov): el reinicio de B0b |
+| Almacén de imágenes de Docker | **containerd** (medido el 25 nov: `29.7.2 overlayfs [["driver-type","io.containerd.snapshotter.v1"]]`): B12 y B13 llevan la parte de containerd | **containerd** (medido el 25 nov: Docker 29.6.1, `overlayfs` con `io.containerd.snapshotter.v1`): lo mismo que lab-02 | **containerd** (medido el 25 nov: Docker 29.7.2, `overlayfs` con `io.containerd.snapshotter.v1`): lo mismo que lab-02 |
+| El BOb viejo (`bzzz-bob`) | no corre (medido el 25 nov): B2 no aplica, pero el primer alta sigue necesitando `--reiniciar` (B6) | no corre (medido el 25 nov): B2 no aplica; el primer alta necesita `--reiniciar` (B6) | no corre con ese nombre (medido el 25 nov), al contrario de lo que suponía la auditoría. Si la sonda de B0 con `docker ps -a` tampoco ve otro BOb, B2 no aplica. Mirar si queda `compose/l7-bob.yml` (B0): si queda, se borra en B14 |
+| La cadena de BOb en la base | ya está, aplicada en `5e5b9be` | no está (medido el 25 nov): sin esquema `bob` y sin `supabase_migrations.schema_migrations`, así que sin historia del CLI. B5 (`cadena`) la crea | no está (medido el 25 nov): sin esquema `bob` y sin `supabase_migrations.schema_migrations`. B5 (`cadena`) la crea |
+| `<base>` de `instalacion-firmada` | la huella de `5e5b9be` | **la base vacía** (BossTechnology/BOb-engine#54) | **la base vacía** (BossTechnology/BOb-engine#54), la misma que model-01: comparten aprobación (A5) |
 | Quién | Henry, con quien ayude | Henry, con quien ayude | **solo Henry** |
 
 **La base vacía** es para una caja sin BOb: no hay commit del que sacar la huella. Henry decidió «Defined empty base»
@@ -110,8 +110,8 @@ FIRMA_LLAVE=<llave de instalación> bash scripts/firmar-instalacion.sh <C_ENG> -
 ```
 
 El guion enseña el diff y el log entre las dos revisiones. Escribir `firmo` y tocar la llave. Guardar
-`<base>-<nueva>.aprobacion` y su `.sig`. lab-02 lleva una (base `5e5b9be`). model-01 y Febor llevan la suya cuando la
-sonda de B0 diga su base, y comparten aprobación si la base es la misma.
+`<base>-<nueva>.aprobacion` y su `.sig`. lab-02 lleva una (base `5e5b9be`). model-01 y Febor parten las dos de la base vacía (BOb-engine#54) y comparten la
+suya.
 
 **A6. Lo que se lleva a cada caja.** Los tres ficheros de A4, la aprobación de A5 y dos copias de código: el paquete
 de Bob-New en `<C_WEB>` y un clon de BOb-engine en `<C_ENG>`. Ambas desde git, no desde el árbol de trabajo.
@@ -150,13 +150,25 @@ Dice qué almacén usa Docker, y con él qué es el id de una imagen:
 - `overlayfs` con `io.containerd.snapshotter.v1` (lab-02): el de containerd. El `.Id` de la imagen y el `.Image` del
   contenedor son el digest del índice o del manifiesto, no el de la configuración. Ver «La rama de containerd» en B13.
 
-Apuntar lo que da en cada caja. Si model-01 o Febor dan containerd, se hace allí también la parte de containerd de B13.
+Apuntar lo que da en cada caja. Las tres dieron containerd el 25 nov: la parte de containerd de B13 va en las tres.
 
 ```bash
 docker ps --format '{{.Names}}' --filter name=bzzz-bob
 ```
 
-Si sale `bzzz-bob`, B2 es obligatorio antes del alta.
+Si sale `bzzz-bob`, B2 es obligatorio antes del alta. Por si corre con otro nombre, también los parados:
+
+```bash
+docker ps -a --format '{{.Names}} {{.Status}} {{.Image}}' | grep -i bob
+```
+
+Y si en `/opt/bzzz` sigue el fichero del BOb viejo (en Febor está por mirar):
+
+```bash
+ls -l /opt/bzzz/compose/l7-bob.yml
+```
+
+Si existe y no corre nada de él, B2 no hace falta y el fichero se borra en B14.
 
 ```bash
 dig +short <host de BOb>
@@ -172,7 +184,8 @@ supabase --version; ls /usr/lib/postgresql/*/bin/psql; command -v git setpriv fl
 Lo esperado: el CLI de Supabase en `2.120.0`, la que fija el CI de BOb-engine, dentro del `PATH` fijo de
 `firma-instalacion` (`/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/sbin:/usr/local/bin`); un psql 16 o más nuevo en
 `/usr/lib/postgresql/<v>/bin/`; `git`, `setpriv` y `flock`; y un tmpfs en `/dev/shm`. Lo que falte se instala antes
-de la ventana (H5). En lab-02 no había ni el CLI ni psql. Así se instalaron el 25 nov:
+de la ventana (H5) en lab-02 y model-01. **En Febor, dentro de la ventana, en B0b:** apt y needrestart pueden
+reiniciar servicios de una caja en producción. En lab-02 no había ni el CLI ni psql. Así se instalaron el 25 nov:
 
 ```bash
 sudo apt-get install -y postgresql-client-16
@@ -221,6 +234,10 @@ sudo docker exec bzzz-supabase-db psql -X -tA -U supabase_admin -d postgres -c "
   casa con ningún commit, se para aquí y Henry decide.
 
 ### B0b. Docker y kernel pendientes: al abrir la ventana, antes de nada más
+
+**En Febor, primero lo que falte de B0** (el CLI de Supabase, `postgresql-client-16` y la telemetría apagada), aquí y no
+antes: apt y needrestart pueden reiniciar servicios. Después, el reinicio de abajo. Febor dijo el 25 nov «System restart
+required», con el swap al 27 % y 2 procesos zombi, y el reinicio los limpia.
 
 Al instalar el CLI y psql, apt dejó diferido el reinicio de Docker (`systemctl restart docker.service`) y un kernel nuevo
 sin arrancar: lab-02 de 149 a 151, model-01 de 147 a 151. **Nada de esto se hace fuera de una ventana de
@@ -638,7 +655,7 @@ Lo esperado: `desplegada` dos veces y después `vuelta-atras` dos veces, todo co
 `atestación de la anterior: atestada` por stderr: esa es la configuración sacada con `docker save`. Al final tiene que
 correr `<C_WEB>` (`docker inspect -f '{{.Image}}' bob-web` = su `<objetivo>`).
 
-Si algo de esto falla en lab-02, model-01 y Febor no siguen hasta arreglarlo, si dan containerd en B0.
+Las tres cajas dan containerd. Si algo de esto falla en lab-02, model-01 y Febor no siguen hasta arreglarlo.
 
 ### B14. Quitar `l7-bob.yml`
 
