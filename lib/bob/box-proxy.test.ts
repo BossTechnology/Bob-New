@@ -130,6 +130,16 @@ test('/entrar passes straight through: never a 3xx, never a session, identity or
   }
 })
 
+// Review of #63: the way back names the same host the write guard checks
+// (Host, which Traefik keeps), never one a header from the client claims.
+test('the way back to BOb is the Host the request came to, not X-Forwarded-Host', async () => {
+  const r = await boxProxy(new NextRequest('http://box.test/bob/quality', {
+    headers: { host: 'bob.box.example', 'x-forwarded-host': 'evil.example' },
+  }), noSession())
+  assert.equal(r.status, 307)
+  assert.equal(r.headers.get('location'), 'https://portal.test/?volver=https%3A%2F%2Fbob.box.example%2Fbob%2Fquality')
+})
+
 test('without BOB_PORTAL_URL a page without a session is a 503, not a loop to nowhere', async () => {
   const r = await boxProxy(req('/bob/quality'), noSession({ portalUrl: () => { throw new Error('unset') } }))
   assert.equal(r.status, 503)

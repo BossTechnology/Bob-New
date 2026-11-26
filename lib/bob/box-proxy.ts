@@ -85,7 +85,8 @@ function toPortal(request: NextRequest, deps: BoxProxyDeps, back: string): NextR
       + `<p><a href="${portal}/">Entrar por el portal de BzzzBX</a></p>`,
       { status: 401, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } })
   }
-  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? request.nextUrl.host
+  // The same host the write guard checks: Host, as Traefik keeps it.
+  const host = request.headers.get('host') ?? request.nextUrl.host
   const r = NextResponse.redirect(portalLoginUrl(portal, host, back))
   r.cookies.set(PORTAL_COOKIE, '1', portalMark())
   return r
