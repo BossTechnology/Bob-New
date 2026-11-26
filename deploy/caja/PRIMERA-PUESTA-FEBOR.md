@@ -37,7 +37,7 @@ Se apunta antes de empezar. El resto de la secuencia es igual en las tres.
 | `<dominio base>` (`generar-config-portal.sh`) | `<dominio base de lab-02>` | `<dominio base de model-01>` | `<dominio base de Febor>` |
 | `<uuid de la org>` (`BOB_ORG_ID`) | `<uuid de la org de lab-02>` | `<uuid de la org de model-01>` | `<uuid de la org de Febor>` |
 | Herramientas del servidor (B0) | instaladas el 25 nov: CLI de Supabase 2.120.0 y `postgresql-client-16`; `git`, `setpriv` y `flock` ya estaban | ni CLI ni psql (medido el 25 nov): se instalan como en B0; `git`, `setpriv` y `flock` ya están | ni CLI ni psql (medido el 25 nov); `git`, `setpriv` y `flock` ya están. **Se instalan dentro de la ventana (B0b), no antes:** apt y needrestart pueden reiniciar servicios |
-| Pendiente del servidor (B0b) | apt dejó diferido `systemctl restart docker.service`; kernel 147 → 151, **ya reiniciado a 151** (medido el 26 nov): en B0b solo se comprueba | lo mismo: Docker diferido y kernel 147 → 151, aún sin reiniciar | kernel `7.0.0-1014-gcp` corriendo con `7.0.0-1018-gcp` instalado y `/var/run/reboot-required` presente (medido el 26 nov; no es 147 → 151); además «System restart required», swap al 27 % y 2 procesos zombi (25 nov): el reinicio de B0b |
+| Pendiente del servidor (B0b) | apt dejó diferido `systemctl restart docker.service`; el kernel **ya está en `6.8.0-151`** (medido el 26 nov): en B0b solo se comprueba | lo mismo: Docker diferido y kernel 147 → 151, aún sin reiniciar | kernel `7.0.0-1014-gcp` corriendo con `7.0.0-1018-gcp` instalado y `/var/run/reboot-required` presente (medido el 26 nov; no es 147 → 151); además «System restart required», swap al 27 % y 2 procesos zombi (25 nov): el reinicio de B0b |
 | Almacén de imágenes de Docker | **containerd** (medido el 25 nov: `29.7.2 overlayfs [["driver-type","io.containerd.snapshotter.v1"]]`): B12 y B13 llevan la parte de containerd | **containerd** (medido el 25 nov: Docker 29.6.1, `overlayfs` con `io.containerd.snapshotter.v1`): lo mismo que lab-02 | **containerd** (medido el 25 nov: Docker 29.7.2, `overlayfs` con `io.containerd.snapshotter.v1`): lo mismo que lab-02 |
 | El BOb viejo (`bzzz-bob`) | no corre (medido el 25 nov): B2 no aplica, pero el primer alta sigue necesitando `--reiniciar` (B6) | no corre (medido el 25 nov): B2 no aplica; el primer alta necesita `--reiniciar` (B6) | no hay (medido el 25 nov): `docker ps -a | grep -i bob` vacío y sin `compose/l7-bob.yml`, al contrario de lo que suponía la auditoría (B4). B2 y B14 no aplican; el primer alta necesita `--reiniciar` (B6) |
 | La cadena de BOb en la base | ya está, aplicada en `5e5b9be` | no está (medido el 25 nov): sin esquema `bob` y sin `supabase_migrations.schema_migrations`, así que sin historia del CLI. B5 (`cadena`) la crea | no está (medido el 25 nov): sin esquema `bob` y sin `supabase_migrations.schema_migrations`. B5 (`cadena`) la crea |
@@ -69,6 +69,8 @@ nada comprueba en la base de datos que de verdad no hay BOb. Si `cadena` falla a
 | BOb-engine | por abrir | la llave de Henry en `supabase/provision/firmantes_instalacion` **[llave-fido]** | **pendiente** (#51 ya está en `main`) |
 
 ## A. Una vez, en el portátil
+
+**Antes de nada, la sonda del alias de B0** (primera de B0): A ya usa `ssh bzzz-<caja>` y `scp`.
 
 **A1. La llave de imagen.** **[llave-img] [pendiente: PR de Bzzz por abrir]** La línea pública de la llave SSH con la
 que se firma va en `config/bob/firmantes_imagen` de Bzzz, por PR. Tiene que estar en `main` y llegar a cada caja con
@@ -188,11 +190,13 @@ ssh bzzz-lab-02 mkdir -p entrega-bob/antes && scp /tmp/bob-entrega-antes/bob-web
 
 ### B0. Sondas, antes de la ventana (solo leen)
 
-Primero, que el alias SSH apunta a la VM correcta. Es lo primero porque todo lo demás se mide sobre lo que responda
-ese alias. El hostname esperado de cada caja lo tiene Henry (es dato del cliente y no se escribe en el repo):
+Primero, que el alias SSH apunta a la VM correcta. **Se corre antes de A**, antes del primer `ssh` o `scp` de la
+sección A, porque todo lo demás se mide y se envía a lo que responda ese alias. Desde el portátil. El hostname esperado
+de cada caja lo tiene Henry (es dato del cliente y no se escribe en el repo), y se compara con el `hostname` corto
+(`hostname -s`):
 
 ```bash
-test "$(hostname)" = '<hostname esperado de la caja>' && echo "alias OK" || echo "ALIAS NO COINCIDE: parar"
+test "$(ssh bzzz-<caja> hostname -s)" = '<hostname corto esperado de la caja>' && echo "alias OK" || echo "ALIAS NO COINCIDE: parar"
 ```
 
 Tiene que decir `alias OK`. Si no, se para: el alias apunta a otra VM y nada de lo que sigue vale hasta corregirlo.
@@ -299,7 +303,7 @@ sudo docker exec bzzz-supabase-db psql -X -tA -U supabase_admin -d postgres -c "
 - `t` y una lista: buscar en BOb-engine el commit cuyas migraciones son exactamente esas. Su huella es `<base>`. Si no
   casa con ningún commit, se para aquí y Henry decide.
 
-### B0b. Docker y kernel pendientes: al abrir la ventana, antes de nada más
+### B0b. Docker y kernel pendientes: al abrir la ventana, antes de nada más (en Febor: primero las instalaciones, después el reinicio)
 
 **En Febor, el orden es este y no otro** (Febor no tiene ni `supabase` ni `psql`, medido el 26 nov): 1) instalar el CLI
 de Supabase 2.120.0, verificando `checksums.txt`, y `postgresql-client-16`; 2) apagar la telemetría del CLI (todo ello
@@ -308,12 +312,13 @@ porque apt y needrestart pueden reiniciar servicios, y un reinicio hecho antes d
 herramientas, o reiniciaría servicios a destiempo en una caja de producción. Febor dijo el 25 nov «System restart
 required», con el swap al 27 % y 2 procesos zombi, y el reinicio los limpia.
 
-Al instalar el CLI y psql, apt dejó diferido el reinicio de Docker (`systemctl restart docker.service`) y un kernel nuevo
-sin arrancar. Cada caja tiene lo suyo (medido el 26 nov): lab-02 de 147 a 151, y ya está reiniciada a 151; model-01 de
-147 a 151, pendiente; Febor corre `7.0.0-1014-gcp` con `7.0.0-1018-gcp` instalado y `/var/run/reboot-required`
-presente (aquí el kernel nuevo es el 1018, no el 151). **Nada de esto se hace fuera de una ventana de
-mantenimiento:** reiniciar Docker para todos los contenedores de la caja, y reiniciar el servidor también. Se hace al
-empezar la ventana de cada ensayo, antes de B1, para que el ensayo corra sobre la caja como quedará.
+**En lab-02 y model-01** (no en Febor), al instalar el CLI y psql apt dejó diferido el reinicio de Docker
+(`systemctl restart docker.service`) y, en model-01, un kernel nuevo sin arrancar (147 → 151). lab-02 ya corre
+`6.8.0-151` (medido el 26 nov). **En Febor** no pasó esto: corre `7.0.0-1014-gcp` con `7.0.0-1018-gcp` instalado y
+`/var/run/reboot-required` presente (el kernel nuevo es el 1018, no el 151), y el reinicio va después de las
+instalaciones, como arriba. **Nada de esto se hace fuera de una ventana de mantenimiento:** reiniciar Docker para
+todos los contenedores de la caja, y reiniciar el servidor también. Se hace al empezar la ventana de cada ensayo, antes
+de B1, para que el ensayo corra sobre la caja como quedará.
 
 Mirar qué queda pendiente:
 
@@ -345,30 +350,39 @@ no empieza sobre una caja rota.
 ### B1. Bzzz a `main`, con `generar-secretos.sh` primero (H2)
 
 Enviar el árbol de `main` de Bzzz como siempre (`docs/OPERACION_actualizar.md`, la lista blanca de `lista-de-envio.sh`),
-**a una carpeta nueva con el SHA**, `/data/bzzz/misc/actualizaciones/main-<sha7>/`, no a `nuevo/`: esa carpeta ya existe
-en las cajas con un árbol viejo dentro y `rsync` no borra nada, así que lo viejo se mezclaría con lo nuevo. `<árbol>`
-es esa carpeta, y es la ruta de todo B1. Si el `rsync` usa un ssh que no lee `~/.ssh/config`, añadir
-`-e /usr/bin/ssh`.
+**a una carpeta nueva con el SHA**, no a `nuevo/`: esa carpeta ya existe en las cajas con un árbol viejo dentro y
+`rsync` no borra nada, así que lo viejo se mezclaría con lo nuevo. `<árbol>` es
+`/data/bzzz/misc/actualizaciones/main-<sha7>`, y es la ruta de todo B1. Desde el checkout de Bzzz en `main`:
+
+```bash
+git ls-files | scripts/lista-de-envio.sh > /tmp/bzzz-envio.txt
+```
+
+```bash
+rsync -a -e /usr/bin/ssh --files-from=/tmp/bzzz-envio.txt ./ bzzz-<caja>:<árbol>/
+```
+
+(`-e /usr/bin/ssh` por si el ssh que toma `rsync` no lee `~/.ssh/config`.)
 
 Con #449, ClickHouse monta en toda caja los usuarios de `bzzz-vecinos`, y `actualizar.sh` no lo recrea sin sus hashes
 en `clickhouse.env`. Por eso, **antes** de `--aplicar`, el `generar-secretos.sh` del árbol nuevo. No pisa nada de lo
 que ya existe:
 
 ```bash
-sudo /data/bzzz/misc/actualizaciones/main-<sha7>/scripts/generar-secretos.sh
+sudo bash <árbol>/scripts/generar-secretos.sh
 ```
 
 ```bash
-cd /opt/bzzz && bash /data/bzzz/misc/actualizaciones/main-<sha7>/scripts/actualizar.sh --plan /data/bzzz/misc/actualizaciones/main-<sha7>
+cd /opt/bzzz && bash <árbol>/scripts/actualizar.sh --plan <árbol>
 ```
 
 Se corre el `actualizar.sh` **del árbol enviado**, no el instalado en `/opt/bzzz/scripts`: el instalado no conoce las
 rutas nuevas (`vecinos/`, `conectores/acciones/`, `config/caja/fuera-del-repo.txt`, `config/salida/…`) y en lab-02 dio
-19 «desconocido»; el del árbol enviado dio 0 (`docs/OPERACION_actualizar.md` de Bzzz, líneas 178-180). Ninguna ruta
+19 «desconocido»; el del árbol enviado dio 0 (`docs/OPERACION_actualizar.md` de Bzzz, sección «El procedimiento»; el 19 → 0 se midió en lab-02 el 26 nov). Ninguna ruta
 `desconocido`. `compose/l7-bob.yml` sale en amarillo como SOBRA si la caja lo trae: se queda hasta B14.
 
 ```bash
-cd /opt/bzzz && bash /data/bzzz/misc/actualizaciones/main-<sha7>/scripts/actualizar.sh --aplicar /data/bzzz/misc/actualizaciones/main-<sha7>; echo "rc=$?"
+cd /opt/bzzz && bash <árbol>/scripts/actualizar.sh --aplicar <árbol>; echo "rc=$?"
 ```
 
 Lo esperado: `rc=0` («ACTUALIZACIÓN OK»), o `rc=3` con el paso de SigNoz que nombra. Luego mirar que llegó lo de BOb:
