@@ -27,3 +27,4 @@ Una línea por cambio entregado, en lenguaje de usuario.
 - Nuevas vistas `/bob/interactions` y `/bob/quality` sobre las proyecciones reales, y `/api/bob/*` con las tres pantallas en JSON.
 - Nueva vista local `/bob/performance`: la matriz de Performance de la demo sobre las proyecciones reales de BOb, leídas como `bob_app`, con «sin fila», cero y «no configurado» a la vista (BOB-7, Slice 2).
 - El panel AutoBotz del simulador deja de guardar en la base: sigue funcionando con su seed en memoria (BOB-4, ruling 1).
+- Runbook de la primera puesta (`deploy/caja/PRIMERA-PUESTA-FEBOR.md`) para las tres cajas (lab-02, model-01 y Febor): Bzzz a `main` con `generar-secretos.sh` primero, el BOb viejo abajo antes del alta, la protección de BOb-engine, `cadena`, el alta con `--reiniciar`, `resto`, el portal con la puerta recreada, DNS y certificado como requisito, y qué cambia en cada caja.
