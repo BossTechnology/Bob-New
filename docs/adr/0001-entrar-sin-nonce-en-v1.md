@@ -1,7 +1,8 @@
 # 0001 — /entrar acepta el token del portal sin nonce en v1
 
 - **Fecha:** 2026-11-26
-- **Estado:** propuesta (pendiente de la firma de Henry)
+- **Estado:** aceptada, firmada por Henry Garzon el 2026-11-26
+- **Firma:** Henry Garzon, 2026-11-26: «Firmo ADR 0001».
 
 ## Contexto
 En la caja, BOb ya no tiene login propio. El portal de BzzzBX le pasa la sesión
