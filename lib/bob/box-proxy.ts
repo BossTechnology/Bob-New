@@ -7,8 +7,9 @@
 // - no identity configuration, GoTrue down or the role lookup failing: 503
 //   (not /login: that would loop against the same dead GoTrue);
 // - GoTrue's 401: /login for pages, 401 for the API;
-// - no row in bob.users, or inactive: 403 on /bob/*, /api/bob/* and
-//   /api/config/* (Henry, 2026-11-21);
+// - no row in bob.users: a viewer seat on the first visit (Henry,
+//   2026-11-26, «Alta sola, como viewer»); an inactive row: 403 on /bob/*,
+//   /api/bob/* and /api/config/* (Henry, 2026-11-21);
 // - a write from another origin: 403; with a body that is not JSON: 415
 //   (request-guard.ts).
 import { NextResponse, type NextRequest } from 'next/server.js'
@@ -18,13 +19,16 @@ import { boxOrgId, gotrueUrl } from './runtime.ts'
 import { resolveSession, type CookieJar, type CookieOptions, type SessionState } from './session.ts'
 import { logSecurity } from './security-log.ts'
 import { Attempts } from './login.ts'
-import { boxRole, type Role } from './roles.ts'
+import { boxRoleOrSeat, type Role } from './roles.ts'
+import type { GoTrueUser } from './gotrue.ts'
 import { withSecurityHeaders } from './security-headers.ts'
 
 export type BoxProxyDeps = {
   gotrueUrl: () => string
   resolveSession: (jar: CookieJar, base: string) => Promise<SessionState>
-  role: (userId: string) => Promise<Role | null>
+  // Takes a viewer seat on a first visit (roles.ts): only ever the account
+  // GoTrue answered for this request.
+  role: (user: GoTrueUser) => Promise<Role | null>
   apiBudget?: Attempts
   pageBudget?: Attempts
   throttleLogged?: Attempts
@@ -42,7 +46,7 @@ const THROTTLE_LOGGED = new Attempts(1, 60_000)
 const DEFAULT_DEPS: BoxProxyDeps = {
   gotrueUrl,
   resolveSession,
-  role: (userId) => boxRole(boxOrgId(), userId),
+  role: (user) => boxRoleOrSeat(boxOrgId(), user),
   apiBudget: API_BUDGET,
   pageBudget: PAGE_BUDGET,
   throttleLogged: THROTTLE_LOGGED,
@@ -57,10 +61,11 @@ export const needsRole = (path: string) =>
 const plain = (status: number, body: string) =>
   new NextResponse(body, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } })
 
-async function roleResponse(request: NextRequest, deps: BoxProxyDeps, userId: string, isApi: boolean) {
+async function roleResponse(request: NextRequest, deps: BoxProxyDeps, user: GoTrueUser, isApi: boolean) {
+  const userId = user.id
   let role: Role | null
   try {
-    role = await deps.role(userId)
+    role = await deps.role(user)
   } catch (e) {
     console.error('box proxy: role lookup failed', e instanceof Error ? e.message : e)
     return isApi
@@ -127,7 +132,7 @@ async function decide(request: NextRequest, deps: BoxProxyDeps): Promise<NextRes
       ? NextResponse.json({ ok: false, error: 'Rate limit exceeded' }, { status: 429 })
       : plain(429, 'Demasiadas solicitudes. Espera un momento y vuelve a cargar.')
   } else if (needsRole(path)) {
-    response = await roleResponse(request, deps, s.user.id, isApi)
+    response = await roleResponse(request, deps, s.user, isApi)
   } else {
     response = NextResponse.next({ request })
   }

@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs'
 import { NextRequest } from 'next/server.js'
 import { Attempts } from './login.ts'
 import { boxProxy, type BoxProxyDeps } from './box-proxy.ts'
-import type { SessionState } from './session.ts'
+import { ACCESS_COOKIE, resolveSession, type SessionState } from './session.ts'
 
 // proxy.ts must export `config` as a literal (Next reads it statically), so
 // the test reads the literal rather than importing the file.
@@ -58,7 +58,7 @@ test('no identity configuration or GoTrue down is a 503; no session is the login
   assert.match(page.headers.get('location') ?? '', /\/login$/)
 })
 
-test('Henry, 2026-11-21: an account with no row in bob.users, or inactive, is a 403', async () => {
+test('Henry, 2026-11-21: an account with no role (inactive, another organization, no seat) is a 403', async () => {
   const noRow = deps({ role: async () => null })
   for (const p of ['/bob/performance', '/bob/quality', '/api/bob/interactions', '/api/config/thresholds',
     '/api/config/responses/x']) {
@@ -66,6 +66,38 @@ test('Henry, 2026-11-21: an account with no row in bob.users, or inactive, is a 
   }
   // Signing out, refreshing and asking who one is do not need a role.
   for (const p of ['/auth/me', '/auth/logout', '/auth/refresh']) assert.ok(passes(await boxProxy(req(p), noRow)), p)
+})
+
+// Henry, 2026-11-26 («Alta sola, como viewer»): the role lookup may take a
+// viewer seat, so it must only ever see the account GoTrue answered for the
+// session, and never run without one.
+test('the role lookup gets the account GoTrue answered, and nothing else', async () => {
+  const seen: unknown[] = []
+  const d = deps({ role: async (u) => { seen.push(u); return 'viewer' } })
+  const forged = new NextRequest('http://box.test/bob/quality', {
+    headers: { 'x-forwarded-user': 'bbbbbbbb-1111-4000-8000-000000000002', 'x-user-email': 'evil@example.com' } })
+  assert.ok(passes(await boxProxy(forged, d)))
+  assert.deepEqual(seen, [{ id: 'aaaaaaaa-1111-4000-8000-000000000001', email: 'user@example.com' }])
+})
+
+test('no session, or GoTrue refusing or down, never reaches the role lookup (no seat)', async () => {
+  for (const state of [{ kind: 'none' }, { kind: 'unavailable' }] as SessionState[]) {
+    const d = deps({ resolveSession: async () => state, role: async () => { throw new Error('must not be called') } })
+    for (const p of ['/bob/quality', '/api/bob/quality', '/api/config/thresholds']) {
+      assert.ok(!passes(await boxProxy(req(p), d)), `${p} ${state.kind}`)
+    }
+  }
+})
+
+test('a forged token in the session cookie is refused by GoTrue and takes no seat', async () => {
+  const gotrue401 = (async () => new Response('{}', { status: 401 })) as typeof fetch
+  const d = deps({
+    resolveSession: (jar, base) => resolveSession(jar, base, gotrue401),
+    role: async () => { throw new Error('must not be called') },
+  })
+  const forged = new NextRequest('http://box.test/api/bob/quality', {
+    headers: { cookie: `${ACCESS_COOKIE}=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.forged` } })
+  assert.equal((await boxProxy(forged, d)).status, 401)
 })
 
 test('an account with a role passes; a failed role lookup is a 503, not a pass', async () => {

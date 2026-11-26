@@ -94,6 +94,17 @@ La reconciliación de fantasmas no se programa en BOb (pasa al feeder).
   admin, analyst y viewer (`service`, `demo`). **Cerrado** por BOb-engine #34 (2026-11-21):
   `bob_app` lee los usuarios de su organización (`app_reads_org_users`), así que un admin activo
   de la caja entra con su papel.
+  **Cambiado** por Henry el 2026-11-26, para una cuenta **sin fila**. Sus palabras: «para entrar al bob
+  deben tener el login de bzzzbx si esta loguea al bzzzbx puede entrar al bob … se quita el login de
+  bob asi debe funcionar en todas las cajas», y la opción «Alta sola, como viewer». La primera vez
+  que una sesión válida llega a una ruta con papel, `box-proxy` crea su fila como viewer activo de
+  la organización de la caja. El id y el correo son los que GoTrue respondió en `getUser`, nunca un
+  claim ni una cabecera. La fila la crea `bob.claim_viewer_seat`, de BOb-engine #59 (opción «A:
+  función en el engine»): solo `bob_app` la ejecuta, y `bob_app` sigue sin INSERT sobre
+  `bob.users`. Siguen dando 403 una fila inactiva (no se reactiva), una fila de otra organización y
+  una cuenta sin correo. Admin y analyst se siguen dando a mano. Tests en vivo en
+  `lib/bob/roles.test.ts`; los casos del proxy (sin sesión y token falso, que no llegan a crear
+  fila) en `lib/bob/box-proxy.test.ts`.
 - **P-2 · «Sesiones».** Cerrado (Henry, 2026-11-21): se pinta «sin proyección» hasta que el
   contrato la nombre. Ni `n` de `interaction_duration` ni `handled` de `proj_actor_metrics`.
 - **P-3 · Slice 3.** Los estados de celda los resuelve BOb-engine en `bob.bob_cell_state` y los
