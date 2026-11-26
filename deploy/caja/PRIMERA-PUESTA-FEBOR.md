@@ -46,22 +46,26 @@ Se apunta antes de empezar. El resto de la secuencia es igual en las tres.
 | Quién | Henry, con quien ayude | Henry, con quien ayude | **solo Henry** |
 
 **La base vacía** es para una caja sin BOb: no hay commit del que sacar la huella. Henry decidió «Defined empty base»
-el 2026-11-25. **[pendiente: BossTechnology/BOb-engine#54, abierto]**. model-01 es una de esas cajas. Hasta que entre
-#54, una caja sin BOb no tiene `<base>`, y desde B3 no se sigue.
+el 2026-11-25. **[pendiente: BossTechnology/BOb-engine#54, abierto; esta guía sigue su interfaz en `4f3ba34`]**.
+model-01 y Febor son de esas cajas. Su `<base>` es el sha256 de nada, que ningún árbol tiene
+(`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`; `firma-instalacion.sh vacia`). La aprobación se
+firma desde ella (A5) y `instalacion-firmada` la lleva (B3). Desde la base vacía solo corre `cadena`, y antes de aplicar
+nada comprueba en la base de datos que de verdad no hay BOb. Si `cadena` falla a medias, se reintenta como dice C.
+Hasta que entre #54, una caja sin BOb no tiene `<base>`, y desde B3 no se sigue.
 
 ## Lo que tiene que estar fusionado
 
 | Repo | PR | Qué trae | Estado (25 nov) |
 |---|---|---|---|
 | Bzzz | #445, #449, #450, #454, #457, #458 | `l7-bob.yml` fuera; `bzzz-vecinos`; el alta de vecinas; la atestación por la config e `id-de-imagen.sh` | en `main` |
-| Bzzz | #460 | el bit de ejecución en los guiones de `scripts/` | **abierto**: hasta entonces, `bash scripts/…` en el portátil |
+| Bzzz | #460 | el bit de ejecución en los guiones de `scripts/` | en `main` |
 | Bzzz | por abrir | la llave pública de imagen en `config/bob/firmantes_imagen` **[llave-img]** | **pendiente** |
 | Bob-New | #55, #37 | el paquete de `/opt/bob`; las pantallas del Slice 3 | en `main` |
 | Bob-New | BossTechnology/Bob-New#56 | `deploy.sh` ya no migra; los chequeos de secretos descubren por patrón | **abierto** |
 | BOb-engine | #48, #52 | O-3 firmado (`cadena` y `resto`); el texto de P5 por D77 | en `main` |
 | BOb-engine | #51 | `verify-required` lo comprueba el guion, no `ssh-keygen` | **abierto** |
-| BOb-engine | #53 | `postgres.env` fuera de `secrets/` (B2), cómo llega root a la base (B3), requisitos de `firma-instalacion` (H5) | **abierto** |
-| BOb-engine | #54 | la base vacía (H4), para una caja donde BOb nunca se instaló (model-01) | **abierto** |
+| BOb-engine | #53 | `postgres.env` fuera de `secrets/` (B2), cómo llega root a la base (B3), requisitos de `firma-instalacion` (H5) | en `main` |
+| BOb-engine | #54 | la base vacía (H4), para una caja donde BOb nunca se instaló (model-01 y Febor), y el reintento de un `cadena` a medias | **abierto**; esta guía sigue `4f3ba34` |
 | BOb-engine | por abrir | la llave de Henry en `supabase/provision/firmantes_instalacion` **[llave-fido]** | **pendiente**, después de #51 |
 
 ## A. Una vez, en el portátil
@@ -82,7 +86,9 @@ ssh-keygen -lf <llave de instalación>.pub
 **A3. Los dos commits.** Apuntar los SHA completos, de 40 caracteres:
 - `<C_WEB>`: el de `main` de Bob-New que se construye. Va en `3a74911` o después, y con BossTechnology/Bob-New#56
   dentro;
-- `<C_ENG>`: el de `main` de BOb-engine que se instala. Lleva #51, la base vacía y la llave de A2.
+- `<C_ENG>`: el de `main` de BOb-engine que se instala. Lleva #51, la base vacía y la llave de A2;
+- solo para lab-02, `<C_WEB_ANTES>`: un commit anterior de `main` de Bob-New que ya tiene el paquete de la caja
+  (`f73be3e`, la fusión de #55, o después). Es la segunda imagen de la vuelta atrás con containerd (B13).
 
 ```bash
 git -C <checkout de Bob-New> rev-parse origin/main
@@ -93,7 +99,8 @@ git -C <checkout de BOb-engine> rev-parse origin/main
 ```
 
 **A4. Construir y firmar la imagen, una sola vez.** **[llave-img]** El mismo tar sirve para las tres cajas. Desde el
-checkout de Bzzz en `main`, con `bash` delante, porque el guion es 644 en git hasta Bzzz#460 (M3):
+checkout de Bzzz en `main`, con `bash` delante (M3). Con Bzzz#460 el guion ya es ejecutable, pero `bash` vale igual
+con un checkout más viejo:
 
 ```bash
 bash scripts/construir-imagen-bob.sh <checkout de Bob-New> <C_WEB> <llave SSH de imagen> /tmp/bob-entrega
@@ -102,17 +109,33 @@ bash scripts/construir-imagen-bob.sh <checkout de Bob-New> <C_WEB> <llave SSH de
 Lo esperado: rc 0 y tres ficheros en `/tmp/bob-entrega`: `bob-web-<12>.tar`, `bob-web-<12>.atestacion` y
 `bob-web-<12>.atestacion.sig`.
 
+Solo para lab-02, la segunda imagen, la de `<C_WEB_ANTES>`, en otra carpeta. A6 la lleva y B13 la usa:
+
+```bash
+bash scripts/construir-imagen-bob.sh <checkout de Bob-New> <C_WEB_ANTES> <llave SSH de imagen> /tmp/bob-entrega-antes
+```
+
 **A5. Firmar la instalación, una aprobación por cada `<base>` distinta.** **[llave-fido]** Desde un checkout limpio de
 `main` de BOb-engine, en `origin/main`. `FIRMA_LLAVE` es la llave de instalación de Henry, si no es la de por
 defecto:
 
+lab-02, desde el commit que tiene aplicado:
+
 ```bash
-FIRMA_LLAVE=<llave de instalación> bash scripts/firmar-instalacion.sh <C_ENG> --base <base de la caja>
+FIRMA_LLAVE=<llave de instalación> bash scripts/firmar-instalacion.sh <C_ENG> --base 5e5b9be
 ```
 
-El guion enseña el diff y el log entre las dos revisiones. Escribir `firmo` y tocar la llave. Guardar
-`<base>-<nueva>.aprobacion` y su `.sig`. lab-02 lleva una (base `5e5b9be`). model-01 y Febor parten las dos de la base vacía (BOb-engine#54) y comparten la
-suya.
+model-01 y Febor, desde la base vacía. **[pendiente: BossTechnology/BOb-engine#54]** Es una sola aprobación y vale
+para las dos:
+
+```bash
+FIRMA_LLAVE=<llave de instalación> bash scripts/firmar-instalacion.sh <C_ENG> --base vacia
+```
+
+El guion enseña el log y el diff entre las dos revisiones. Desde la base vacía todo es nuevo: el log es el de
+`<C_ENG>` entero y el diff sale de nada, así que es largo. Escribir `firmo` y tocar la llave. Guardar
+`<base>-<nueva>.aprobacion` y su `.sig`. `<base>` y `<nueva>` son huellas de 64 caracteres. Desde la base vacía,
+`<base>` es `e3b0c442…b855`.
 
 **A6. Lo que se lleva a cada caja.** Los tres ficheros de A4, la aprobación de A5 y dos copias de código: el paquete
 de Bob-New en `<C_WEB>` y un clon de BOb-engine en `<C_ENG>`. Ambas desde git, no desde el árbol de trabajo.
@@ -376,7 +399,23 @@ cd ~/bob-engine && scripts/firma-instalacion.sh huella 5e5b9be
 echo '<base>' | sudo tee /opt/bob/instalacion-firmada >/dev/null && sudo chmod 644 /opt/bob/instalacion-firmada
 ```
 
-En una caja sin BOb (model-01), `<base>` es la base vacía. **[pendiente: BossTechnology/BOb-engine#54]**
+En una caja sin BOb (model-01 y Febor), `<base>` es la base vacía. **[pendiente: BossTechnology/BOb-engine#54]** En
+vez de las dos órdenes de arriba:
+
+```bash
+cd ~/bob-engine && scripts/firma-instalacion.sh vacia | sudo tee /opt/bob/instalacion-firmada >/dev/null && sudo chmod 644 /opt/bob/instalacion-firmada
+```
+
+```bash
+cat /opt/bob/instalacion-firmada; ls /opt/bob/instalacion-en-curso /opt/bob/instalacion-aprobacion 2>&1
+```
+
+Lo esperado:
+- la primera línea es `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`;
+- los otros dos ficheros no existen.
+
+`instalacion-en-curso` e `instalacion-aprobacion` los escribe `caja`, nunca se escriben a mano. Si
+`instalacion-en-curso` ya existe, esta caja tiene un `cadena` a medias: se sigue por C, no por aquí.
 
 **Cómo llega root a la base (B3).** `bzzz-supabase-db` no publica ningún puerto, y su nombre no resuelve en el
 servidor. `POSTGRES_HOST` es su IP en `bzzz-app`:
@@ -403,9 +442,19 @@ en `/root/bob-install/` (BossTechnology/BOb-engine#53):
 sudo install -d -o root -g root -m 700 /root/bob-install && sudo install -o root -g root -m 600 /dev/null /root/bob-install/postgres.env
 ```
 
-Henry escribe en él una sola línea, `POSTGRES_PASSWORD=…`, con la contraseña de `postgres` de la caja. Sale de
-`/opt/bzzz/secrets/supabase.env`. La pasa con un editor como root. Nada de esta secuencia la imprime, y no se pega en
-ningún sitio.
+La línea `POSTGRES_PASSWORD=…` se copia de `/opt/bzzz/secrets/supabase.env` como root, con `umask 077`. Así la
+contraseña no pasa por un editor, por la pantalla ni por el portapapeles:
+
+```bash
+sudo sh -c 'umask 077; grep "^POSTGRES_PASSWORD=" /opt/bzzz/secrets/supabase.env > /root/bob-install/postgres.env'
+```
+
+```bash
+sudo grep -c '^POSTGRES_PASSWORD=.' /root/bob-install/postgres.env; sudo stat -c '%U %a' /root/bob-install/postgres.env
+```
+
+Lo esperado: `1` y `root 600`. Si da `0` o más de `1`, se para, y no se arregla a mano con un editor. Nada de esta
+secuencia imprime la contraseña.
 
 ### B5. `cadena`, como `postgres` **[llave-fido] [pendiente: BOb-engine#51 y la llave de A2]**
 
@@ -413,8 +462,21 @@ ningún sitio.
 sudo /opt/bob/bin/firma-instalacion caja ~/bob-engine <C_ENG> cadena POSTGRES_ENV=/root/bob-install/postgres.env POSTGRES_HOST=<IP de bzzz-supabase-db>
 ```
 
-Escribir `instalo` cuando lo pida. En lab-02 la cadena ya está y no debería aplicar nada. En una caja sin BOb crea
-`bob` y aplica la cadena firmada.
+Escribir `instalo` cuando lo pida.
+
+- **En lab-02** la cadena ya está, y lo esperado es que `db push --include-all` no aplique nada. Si aplica algo:
+  - se apuntan las versiones que nombra la salida;
+  - se para antes de B6, en lab-02, y model-01 no empieza;
+  - se avisa.
+
+  Lo aplicado no se deshace a mano: las migraciones no tienen vuelta atrás (C). Una versión que no esté en el diff
+  firmado en A5 es un incidente. Una que sí esté contradice lo medido en lab-02 (la cadena entera en `5e5b9be`), y
+  hay que entender por qué antes de firmar nada más.
+- **En model-01 y Febor**, desde la base vacía, la salida dice `= the empty base`. Antes de aplicar nada, `cadena`
+  comprueba que la base no tiene rastro de BOb: historia del CLI, roles o esquemas `bob_*`, o nombres que crean sus
+  migraciones. Si lo rechaza, la base no está vacía: se para, se vuelve a medir con la sonda de B0 y no se cambia
+  `instalacion-firmada` para saltárselo. Si pasa, crea `bob` y aplica la cadena firmada. Si falla a medias, C dice
+  cómo reintentar.
 
 ### B6. El alta de la vecina **[ventana]**
 
@@ -442,7 +504,7 @@ sudo /opt/bob/bin/firma-instalacion caja ~/bob-engine <C_ENG> resto POSTGRES_ENV
 ```
 
 Escribir `instalo`. Lo esperado: aplica, como `bob_migrador`, las migraciones de `<C_ENG>` que no están en la cadena.
-Hoy son las tres del Slice 3 y la de `organizations`:
+Hoy son tres: las dos del Slice 3 y la de `organizations`:
 - `20261121200000_slice3_catalog_and_feeder_map.sql`;
 - `20261121200100_slice3_cell_state.sql`;
 - `20261121200200_organizations_read_only_for_bob_app.sql`.
@@ -634,13 +696,8 @@ bash /opt/bzzz/scripts/comprobar-atestacion-bob.sh ~/entrega-bob/bob-web-<12>.at
 
 Tiene que dar `atestada: commit <C_WEB> de BossTechnology/Bob-New, firmada por …`.
 
-**La vuelta atrás con containerd, solo en lab-02.** Hace falta una segunda imagen atestada. En A4 se construye
-también la de un commit anterior de `main` con el paquete de la caja (`f73be3e`, la fusión de #55, o después),
-`<C_WEB_ANTES>`, en otra carpeta, y A6 la lleva a `~/entrega-bob/antes/`:
-
-```bash
-bash scripts/construir-imagen-bob.sh <checkout de Bob-New> <C_WEB_ANTES> <llave SSH de imagen> /tmp/bob-entrega-antes
-```
+**La vuelta atrás con containerd, solo en lab-02.** Hace falta una segunda imagen atestada: la de `<C_WEB_ANTES>`
+(A3), que A4 construyó y A6 llevó a `~/entrega-bob/antes/`.
 
 En lab-02, después de las comprobaciones de arriba, se pone primero la anterior, luego otra vez la de `<C_WEB>`, y se
 vuelve atrás dos veces:
@@ -684,6 +741,40 @@ sudo rm /root/bob-install/postgres.env
 
 ## C. Volver atrás en la primera puesta
 
+### Si `cadena` (B5) falla a medias desde la base vacía (model-01, Febor) **[pendiente: BossTechnology/BOb-engine#54]**
+
+`instalacion-firmada` sigue en la base vacía, y `caja` deja `/opt/bob/instalacion-en-curso`. No se toca a mano.
+Comprobarlo:
+
+```bash
+cat /opt/bob/instalacion-firmada /opt/bob/instalacion-en-curso
+```
+
+Lo esperado:
+- la primera línea es la base vacía, `e3b0c442…b855`;
+- la segunda es `e3b0c442…b855-<huella de C_ENG>`.
+
+El reintento es la misma orden de B5. Si el commit no cambia, vale la misma aprobación: sigue siendo de la base vacía
+a `<C_ENG>`. Si hay que arreglar algo en BOb-engine, hace falta un commit nuevo. Se vuelve a A5 con `--base vacia` para
+él. De A6 y B3 solo se rehacen el clon de `~/bob-engine` en ese commit y la aprobación nueva en
+`/opt/bob/aprobaciones/`, y la orden de abajo va con ese commit en vez de `<C_ENG>`.
+
+```bash
+sudo /opt/bob/bin/firma-instalacion caja ~/bob-engine <C_ENG> cadena POSTGRES_ENV=/root/bob-install/postgres.env POSTGRES_HOST=<IP de bzzz-supabase-db>
+```
+
+`caja` ve `instalacion-en-curso` y corre la cadena con `BOB_BASE_VACIA=reanuda`. Lo pone `caja` y no se pasa a mano.
+Acepta solo lo que deja una cadena a medias y rechaza lo demás:
+- historia del CLI solo dentro de la cadena;
+- ningún `bob.schema_migrations`;
+- ningún rol `bob_*` que pueda entrar.
+
+Si acaba bien, `caja` borra `instalacion-en-curso` y escribe `instalacion-firmada` e `instalacion-aprobacion`, y se
+sigue por B6. Si el reintento lo rechaza, se para. No se borra `instalacion-en-curso` ni se reescribe
+`instalacion-firmada` a mano para saltarse el chequeo.
+
+### Si falla el deploy
+
 En la primera puesta no hay imagen anterior: `rollback.sh` dice `no-empieza` y no toca nada. Volver atrás es dejar BOb
 fuera hasta arreglarlo. El BOb viejo de la caja no se vuelve a levantar.
 
@@ -704,6 +795,13 @@ docker ps -q --filter name=^/bob-; docker ps -q --filter label=com.docker.compos
 
 Si se hizo B10 y BOb se queda fuera más de un rato, quitar `BZZZ_HOST_BOB` de `/opt/bzzz/compose/.env`, regenerar el
 portal y recrear la puerta otra vez, para que la tarjeta no lleve a un BOb que no está.
+
+Si BOb se queda fuera y no se reintenta ahora, quitar también la copia de la contraseña de `postgres`. B14 no
+llega a correr, y la próxima instalación la vuelve a crear con B4:
+
+```bash
+sudo rm -f /root/bob-install/postgres.env
+```
 
 Lo que **no** se deshace aquí:
 - las migraciones de B5 y B7 (ver «Riesgos de v1» en `docs/caja/instalar-y-volver-atras.md`);
