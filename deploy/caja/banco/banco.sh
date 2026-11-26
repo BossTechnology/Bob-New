@@ -290,6 +290,9 @@ cierto "  tras los tres, corre B" '[ "$(corre)" = "$B" ]'
 echo "== sin migraciones"
 espera 2 "no-empieza: argumento desconocido «--migrar»" "deploy.sh ya no migra (van por firma-instalacion … resto)" -- dep b --migrar "$R/no-existe.sql"
 cierto "  y corre B" '[ "$(corre)" = "$B" ]'
+# Como dejaban la caja los deploys con --migrar: corre A y la anterior es B, sana. Lo que sigue (la vuelta atrás con
+# un secreto montado) necesita una anterior que quede sana para llegar al chequeo de aislamiento.
+espera 0 "desplegada:" "deploy de A (la anterior queda B, no la mala)" -- dep a
 
 echo "== el aislamiento, visto fallar"
 JWT="eyJhbGciOiJIUzI1NiJ9.$(printf '{"role":"service_role","iss":"banco"}' | openssl base64 -A | tr '+/' '-_' | tr -d '=').firma-de-banco"
