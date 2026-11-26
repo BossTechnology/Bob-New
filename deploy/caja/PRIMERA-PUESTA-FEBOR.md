@@ -39,9 +39,10 @@ Se apunta antes de empezar. El resto de la secuencia es igual en las tres.
 | Herramientas del servidor (B0) | instaladas el 25 nov: CLI de Supabase 2.120.0 y `postgresql-client-16`; `git`, `setpriv` y `flock` ya estaban | ni CLI ni psql (medido el 25 nov): se instalan como en B0; `git`, `setpriv` y `flock` ya están | ni CLI ni psql (medido el 25 nov); `git`, `setpriv` y `flock` ya están. **Se instalan dentro de la ventana (B0b), no antes:** apt y needrestart pueden reiniciar servicios |
 | Pendiente del servidor (B0b) | apt dejó diferido `systemctl restart docker.service`, y un kernel nuevo sin arrancar (149 → 151) | lo mismo: Docker diferido y kernel 147 → 151 | «System restart required», swap al 27 % y 2 procesos zombi (medido el 25 nov): el reinicio de B0b |
 | Almacén de imágenes de Docker | **containerd** (medido el 25 nov: `29.7.2 overlayfs [["driver-type","io.containerd.snapshotter.v1"]]`): B12 y B13 llevan la parte de containerd | **containerd** (medido el 25 nov: Docker 29.6.1, `overlayfs` con `io.containerd.snapshotter.v1`): lo mismo que lab-02 | **containerd** (medido el 25 nov: Docker 29.7.2, `overlayfs` con `io.containerd.snapshotter.v1`): lo mismo que lab-02 |
-| El BOb viejo (`bzzz-bob`) | no corre (medido el 25 nov): B2 no aplica, pero el primer alta sigue necesitando `--reiniciar` (B6) | no corre (medido el 25 nov): B2 no aplica; el primer alta necesita `--reiniciar` (B6) | no corre con ese nombre (medido el 25 nov), al contrario de lo que suponía la auditoría. Si la sonda de B0 con `docker ps -a` tampoco ve otro BOb, B2 no aplica. Mirar si queda `compose/l7-bob.yml` (B0): si queda, se borra en B14 |
+| El BOb viejo (`bzzz-bob`) | no corre (medido el 25 nov): B2 no aplica, pero el primer alta sigue necesitando `--reiniciar` (B6) | no corre (medido el 25 nov): B2 no aplica; el primer alta necesita `--reiniciar` (B6) | no hay (medido el 25 nov): `docker ps -a | grep -i bob` vacío y sin `compose/l7-bob.yml`, al contrario de lo que suponía la auditoría (B4). B2 y B14 no aplican; el primer alta necesita `--reiniciar` (B6) |
 | La cadena de BOb en la base | ya está, aplicada en `5e5b9be` | no está (medido el 25 nov): sin esquema `bob` y sin `supabase_migrations.schema_migrations`, así que sin historia del CLI. B5 (`cadena`) la crea | no está (medido el 25 nov): sin esquema `bob` y sin `supabase_migrations.schema_migrations`. B5 (`cadena`) la crea |
 | `<base>` de `instalacion-firmada` | la huella de `5e5b9be` | **la base vacía** (BossTechnology/BOb-engine#54) | **la base vacía** (BossTechnology/BOb-engine#54), la misma que model-01: comparten aprobación (A5) |
+| Dónde está Bzzz | `/opt/bzzz` | `/opt/bzzz` | `/opt/bzzz`, con el compose en `/opt/bzzz/compose` (medido el 25 nov: l1 a l5, y el `working_dir` de `bzzz-supabase-db` es ese) |
 | Quién | Henry, con quien ayude | Henry, con quien ayude | **solo Henry** |
 
 **La base vacía** es para una caja sin BOb: no hay commit del que sacar la huella. Henry decidió «Defined empty base»
@@ -162,7 +163,7 @@ Si sale `bzzz-bob`, B2 es obligatorio antes del alta. Por si corre con otro nomb
 docker ps -a --format '{{.Names}} {{.Status}} {{.Image}}' | grep -i bob
 ```
 
-Y si en `/opt/bzzz` sigue el fichero del BOb viejo (en Febor está por mirar):
+Y si en `/opt/bzzz` sigue el fichero del BOb viejo (en Febor no está: medido el 25 nov):
 
 ```bash
 ls -l /opt/bzzz/compose/l7-bob.yml
@@ -659,10 +660,11 @@ Las tres cajas dan containerd. Si algo de esto falla en lab-02, model-01 y Febor
 
 ### B14. Quitar `l7-bob.yml`
 
-Solo cuando B13 está bien y Henry da BOb por bueno en esta caja:
+Solo cuando B13 está bien y Henry da BOb por bueno en esta caja, y solo si el fichero existe (en Febor no existe: B14 no
+aplica allí):
 
 ```bash
-sudo rm /opt/bzzz/compose/l7-bob.yml
+[ -e /opt/bzzz/compose/l7-bob.yml ] && sudo rm /opt/bzzz/compose/l7-bob.yml
 ```
 
 Y la copia de la contraseña de `postgres`, que no hace falta hasta la próxima instalación (D la vuelve a crear con B4):
