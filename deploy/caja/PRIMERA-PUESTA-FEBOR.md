@@ -36,8 +36,9 @@ Se apunta antes de empezar. El resto de la secuencia es igual en las tres.
 | `<host de BOb>` (`BOB_HOST` y `BZZZ_HOST_BOB`) | `<host de BOb de lab-02>` | `<host de BOb de model-01>` | `<host de BOb de Febor>` |
 | `<dominio base>` (`generar-config-portal.sh`) | `<dominio base de lab-02>` | `<dominio base de model-01>` | `<dominio base de Febor>` |
 | `<uuid de la org>` (`BOB_ORG_ID`) | `<uuid de la org de lab-02>` | `<uuid de la org de model-01>` | `<uuid de la org de Febor>` |
+| Herramientas del servidor (B0) | instaladas el 25 nov: CLI de Supabase 2.120.0 y `postgresql-client-16`; `git`, `setpriv` y `flock` ya estaban | sin medir: B0 | sin medir: B0 |
 | Almacén de imágenes de Docker | **containerd** (medido el 25 nov: `29.7.2 overlayfs [["driver-type","io.containerd.snapshotter.v1"]]`): B12 y B13 llevan la parte de containerd | sin medir: B0 | sin medir: B0 |
-| El BOb viejo (`bzzz-bob`) | se desplegó aquí (`docs/OPERACION_bob.md` §0 de Bzzz): mirarlo en B0 | mirarlo en B0 | corre: B2 es obligatorio |
+| El BOb viejo (`bzzz-bob`) | no corre (medido el 25 nov): B2 no aplica, pero el primer alta sigue necesitando `--reiniciar` (B6) | mirarlo en B0 | corre: B2 es obligatorio |
 | La cadena de BOb en la base | ya está, aplicada en `5e5b9be` | no se sabe: lo dice la sonda de B0 | no se sabe: lo dice la sonda de B0 |
 | `<base>` de `instalacion-firmada` | la huella de `5e5b9be` | según la sonda: la huella del commit que corre, o la base vacía | igual que model-01 |
 | Quién | Henry, con quien ayude | Henry, con quien ayude | **solo Henry** |
@@ -170,7 +171,31 @@ supabase --version; ls /usr/lib/postgresql/*/bin/psql; command -v git setpriv fl
 Lo esperado: el CLI de Supabase en `2.120.0`, la que fija el CI de BOb-engine, dentro del `PATH` fijo de
 `firma-instalacion` (`/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/sbin:/usr/local/bin`); un psql 16 o más nuevo en
 `/usr/lib/postgresql/<v>/bin/`; `git`, `setpriv` y `flock`; y un tmpfs en `/dev/shm`. Lo que falte se instala antes
-de la ventana (H5).
+de la ventana (H5). En lab-02 no había ni el CLI ni psql. Así se instalaron el 25 nov:
+
+```bash
+sudo apt-get install -y postgresql-client-16
+```
+
+El CLI de Supabase, el `.deb` oficial de la versión exacta, comprobado contra el `checksums.txt` de esa misma
+release. El fichero se llama así, `checksums.txt`, no `supabase_<v>_checksums.txt`:
+
+```bash
+cd /tmp && curl -fsSLO https://github.com/supabase/cli/releases/download/v2.120.0/supabase_2.120.0_linux_amd64.deb && curl -fsSLO https://github.com/supabase/cli/releases/download/v2.120.0/checksums.txt
+```
+
+```bash
+cd /tmp && sha256sum -c --ignore-missing checksums.txt
+```
+
+Tiene que decir `supabase_2.120.0_linux_amd64.deb: OK`. Si no, no se instala.
+
+```bash
+sudo dpkg -i /tmp/supabase_2.120.0_linux_amd64.deb && supabase --version
+```
+
+Tiene que dar `2.120.0`. **No actualizar a la v3 que sugiere el CLI:** `firma-instalacion` usa la versión que fija el
+CI de BOb-engine (`SUPABASE_CLI_VERSION`), y hoy es 2.120.0.
 
 En model-01 y en Febor, si ya existe `bob` y qué cadena tiene la base. La sonda lee solo versiones, ninguna fila de
 cliente:
