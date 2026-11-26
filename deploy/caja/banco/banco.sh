@@ -5,7 +5,7 @@
 # Imita la caja con lo mínimo que hace falta para que el paquete se pruebe de verdad:
 #   - las redes con sus nombres de caja: bzzz-vecina-bob (internal) y bzzz-edge (con salida);
 #   - la base de la caja (supabase/postgres:17.6.1.136, la misma imagen) con bob_app (CONNECTION LIMIT 10) y
-#     bob_migrador, y el GoTrue de Supabase, con los alias bzzz-supabase-db y bzzz-supabase-auth;
+#     bob_migrador (con el migrador.env del alta, que este paquete no lee), y el GoTrue de Supabase, con los alias bzzz-supabase-db y bzzz-supabase-auth;
 #   - un Traefik con la versión de la caja, el proveedor de Docker y los middlewares con sus nombres de caja. La
 #     puerta (puerta-apps) es un forwardAuth a un contenedor que niega (401) sin la cabecera de sesión del banco;
 #   - imágenes etiquetadas como las deja construir-imagen-bob.sh (bob-web:<12 hex>) y atestadas con el comprobador
@@ -143,7 +143,9 @@ BOB_GOTRUE_URL=http://bzzz-supabase-auth:9999
 BOB_DB_HOST=bzzz-supabase-db
 EOF
 printf 'BOB_APP_USUARIO=bob_app\nBOB_APP_CLAVE=%s\n' "$APPPW" > "$R/secrets/app.env"
-printf 'BOB_MIGRADOR_USUARIO=bob_migrador\nBOB_MIGRADOR_CLAVE=%s\n' "$MIGPW" > "$R/secrets/migrador.env"
+# Como lo deja el alta de Bzzz (generar-secretos-vecina.sh bob): de root en la caja, lo lee `firma-instalacion … resto`
+# de BOb-engine y nada de este paquete. Aquí está para que deploy.sh lo vea en secrets/ y lo acepte.
+printf 'MIGRADOR_USUARIO=bob_migrador\nMIGRADOR_CLAVE=%s\nMIGRADOR_HOST=bzzz-supabase-db\nMIGRADOR_RED=%s\n' "$MIGPW" "$RV" > "$R/secrets/migrador.env"
 chmod 600 "$R/secrets/"*.env
 cp "$R/secrets/app.env" "$R/app.env.limpio"
 
@@ -285,14 +287,12 @@ cierto "  $AJENA sigue apuntando a su imagen" '[ "$(id_de $AJENA)" = "$Z" ]'
 espera 2 "no-empieza: el tar no se acepta:" "un tar con dos imágenes" -- dep dos
 cierto "  tras los tres, corre B" '[ "$(corre)" = "$B" ]'
 
-echo "== migraciones"
-printf 'CREATE TABLE bob.banco_migracion (id int primary key);\n' > "$R/0001_buena.sql"
-printf 'CREATE TABLE public.banco_fuera (id int);\n' > "$R/0002_fuera_de_bob.sql"
-espera 0 "desplegada:" "deploy de A con --migrar una buena" -- dep a --migrar "$R/0001_buena.sql"
-n=$(docker exec $P-db psql -tA -U supabase_admin -h 127.0.0.1 -d postgres -c "select tableowner from pg_tables where schemaname='bob' and tablename='banco_migracion'")
-cierto "la migración quedó con dueño bob_migrador" '[ "$n" = bob_migrador ]'
-espera 1 "fallo:" "--migrar una que crea en public (bob_migrador no puede)" -- dep b --migrar "$R/0002_fuera_de_bob.sql"
-cierto "la migración fallida no cambió la imagen: corre A" '[ "$(corre)" = "$A" ]'
+echo "== sin migraciones"
+espera 2 "no-empieza: argumento desconocido «--migrar»" "deploy.sh ya no migra (van por firma-instalacion … resto)" -- dep b --migrar "$R/no-existe.sql"
+cierto "  y corre B" '[ "$(corre)" = "$B" ]'
+# Como dejaban la caja los deploys con --migrar: corre A y la anterior es B, sana. Lo que sigue (la vuelta atrás con
+# un secreto montado) necesita una anterior que quede sana para llegar al chequeo de aislamiento.
+espera 0 "desplegada:" "deploy de A (la anterior queda B, no la mala)" -- dep a
 
 echo "== el aislamiento, visto fallar"
 JWT="eyJhbGciOiJIUzI1NiJ9.$(printf '{"role":"service_role","iss":"banco"}' | openssl base64 -A | tr '+/' '-_' | tr -d '=').firma-de-banco"
@@ -300,6 +300,16 @@ docker run -d --name bob-intruso -e SUPABASE_SERVICE_ROLE_KEY="$JWT" "$IMG" node
 espera 1 "no-aislada:" "un bob-intruso con la service role, sin declarar y en bridge" -- "$AIS"
 grep -q 'bob-intruso: secreto' "$R/ultimo.err" && grep -q 'bob-intruso: declarado' "$R/ultimo.err" && grep -q 'bob-intruso: salida' "$R/ultimo.err" \
   && ok "  nombra secreto, declarado y salida" || mal "  no nombra los tres motivos"
+docker rm -f bob-intruso >/dev/null
+# Descubre, no enumera: MIGRADOR_CLAVE (la del alta de Bzzz) no está en ninguna lista y tiene que caer por el patrón.
+docker run -d --name bob-intruso --network $RV --label bob.vecina=bob -e MIGRADOR_CLAVE=banco "$IMG" node -e 'setInterval(()=>{},1e6)' >/dev/null
+espera 1 "no-aislada:" "un bob-* con MIGRADOR_CLAVE en el entorno" -- "$AIS"
+grep -q 'bob-intruso: secreto: el entorno trae MIGRADOR_CLAVE' "$R/ultimo.err" && ok "  nombra MIGRADOR_CLAVE" || mal "  no nombra MIGRADOR_CLAVE"
+docker rm -f bob-intruso >/dev/null
+docker run -d --name bob-intruso --network $RV --label bob.vecina=bob -e BOB_ALGO_URL="postgresql://bob_migrador:banco@bzzz-supabase-db/postgres" "$IMG" node -e 'setInterval(()=>{},1e6)' >/dev/null
+espera 1 "no-aislada:" "un bob-* con una URL con contraseña en el entorno" -- "$AIS"
+grep -q 'bob-intruso: secreto: en el entorno, BOB_ALGO_URL lleva una contraseña' "$R/ultimo.err" && ! grep -q 'bob_migrador:banco' "$R/ultimo.err" \
+  && ok "  nombra la variable y no dice la contraseña" || mal "  no nombra BOB_ALGO_URL, o dice la contraseña"
 docker rm -f bob-intruso >/dev/null
 docker run -d --name bob-intruso --network $RE --label bob.vecina=bob "$IMG" node -e 'setInterval(()=>{},1e6)' >/dev/null
 espera 1 "no-aislada:" "otro bob-* en bzzz-edge (la excepción es solo de bob-web)" -- "$AIS"
@@ -322,6 +332,12 @@ grep -q 'bob-web: secreto: .*app.env trae SUPABASE_SERVICE_ROLE_KEY' "$R/ultimo.
 cierto "  bob-web quedó parado" '! en_marcha'
 cp "$R/app.env.limpio" "$R/secrets/app.env"; chmod 600 "$R/secrets/app.env"
 espera 0 "desplegada:" "deploy de A con app.env limpio" -- dep a
+printf 'MIGRADOR_CLAVE=banco\n' >> "$R/secrets/app.env"
+espera 1 "fallo:" "rollback.sh con MIGRADOR_CLAVE en el app.env montado" -- "$RB"
+grep -q 'bob-web: secreto: .*app.env trae MIGRADOR_CLAVE' "$R/ultimo.err" && ok "  paró por MIGRADOR_CLAVE" || mal "  no paró por MIGRADOR_CLAVE"
+cierto "  bob-web quedó parado" '! en_marcha'
+cp "$R/app.env.limpio" "$R/secrets/app.env"; chmod 600 "$R/secrets/app.env"
+espera 0 "desplegada:" "deploy de A con app.env limpio otra vez" -- dep a
 puerta_que_no_cierra; sleep 3
 espera 1 "fallo:" "deploy de B con Traefik sin la puerta delante (200 sin sesión)" -- dep b
 grep -q 'puerta-apps@file NO está delante' "$R/ultimo.err" && ok "  paró por la puerta" || mal "  no paró por la puerta"

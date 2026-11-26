@@ -5,8 +5,10 @@
 //   host are read here, at run time, from variables with no NEXT_PUBLIC_ prefix;
 // - the bob_app login is read from a mounted file (/run/secrets/bob/app.env),
 //   never from the container's environment;
-// - the service role, JWT_SECRET, the migration credential and the outbound
-//   keys must not be present at all. assertBoxEnv() refuses to start if they are.
+// - no password, key or token may be in the environment at all: the service
+//   role, JWT_SECRET, the migration credential, the outbound keys. They are
+//   found by name pattern, not by a list (a new name is caught without anyone
+//   adding it). assertBoxEnv() refuses to start if one is there.
 //
 // Without BOB_CAJA the app is the Vercel demo, and BOB_DATABASE_URL (local
 // stack, preview) is the only BOb connection setting.
@@ -23,15 +25,40 @@ export const isBox = (env: Env = process.env) => env.BOB_CAJA === '1'
 
 export const SECRETS_FILE = '/run/secrets/bob/app.env'
 
-// Names only: what a box must never hand to BOb (P5 §3.4, insumos §5.1).
+// What a box must never hand to BOb in its environment (P5 §3.4, insumos §5.1).
+// A credential in the environment is readable through the Docker API (§5.1).
+//
+// SECRET_NAME discovers: any variable whose name says password, key, token,
+// secret or credential, in English or Spanish, whatever its prefix (Bzzz's alta
+// writes MIGRADOR_CLAVE; a list of BOB_MIGRADOR_* names missed it). Case does
+// not matter. deploy/caja/comprobar-aislamiento.sh uses the same pattern;
+// lib/bob/caja-compose.test.ts fails if the two drift apart.
+export const SECRET_NAME = /PASS|_PWD|CLAVE|CONTRASE|SECRET|TOKEN|LLAVE|KEY|CREDENTIAL|CREDENCIAL|SERVICE_ROLE|DATABASE_URL|DSN/i
+
+// The few names the pattern does not see: never in the box either.
 export const FORBIDDEN_IN_BOX = [
-  'SUPABASE_SERVICE_ROLE_KEY', 'SERVICE_ROLE_KEY', 'JWT_SECRET', 'GOTRUE_JWT_SECRET',
-  'POSTGRES_PASSWORD', 'BOB_MIGRADOR_USUARIO', 'BOB_MIGRADOR_CLAVE',
-  // A credential in the environment is readable through the Docker API (§5.1).
-  'BOB_DATABASE_URL', 'BOB_APP_CLAVE',
-  'ANTHROPIC_API_KEY', 'TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'RESEND_API_KEY',
-  'SLACK_WEBHOOK_URL', 'CRON_SECRET', 'INTERNAL_SERVICE_API_KEY',
+  'TWILIO_ACCOUNT_SID', 'SLACK_WEBHOOK_URL',
 ] as const
+
+// A secret-named variable may hold the path of a file: one mounted here (the
+// feeder's BOB_VECINOS_CLAVE), or any absolute path under a *_FILE name (the
+// Docker convention, BOB_SECRETS_FILE). The path is not the secret, the file is,
+// and the isolation check reads mounted files.
+export const MOUNTED_SECRETS = '/run/secrets/bob/'
+const isPath = (v: string) => /^\/[^\s]*$/.test(v) && !v.split('/').includes('..')
+const isFileRef = (name: string, v: string) =>
+  isPath(v) && (v.startsWith(MOUNTED_SECRETS) || /_FILE$/i.test(name))
+
+// scheme://user:password@host: a credential carried in a value, whatever the name.
+export const URL_WITH_PASSWORD = /[a-z][a-z0-9+.-]*:\/\/[^\s/:@]*:[^\s/@]+@/i
+
+// Why a variable must not be in the box's environment, or null. Never echoes the value.
+export function forbiddenEnv(name: string, value: string): string | null {
+  if ((FORBIDDEN_IN_BOX as readonly string[]).includes(name)) return 'no debe estar en la caja'
+  if (SECRET_NAME.test(name) && !isFileRef(name, value)) return 'parece una contraseña o una llave y no debe estar en la caja'
+  if (URL_WITH_PASSWORD.test(value)) return 'lleva una contraseña dentro de una URL y no debe estar en la caja'
+  return null
+}
 
 // KEY=VALUE lines; blank lines and # comments ignored; optional quotes.
 export function parseEnvFile(text: string): Record<string, string> {
@@ -110,7 +137,11 @@ export function proxyHops(env: Env = process.env): number {
 
 export function boxEnvProblems(env: Env = process.env, read: Reader = defaultRead): string[] {
   const problems: string[] = []
-  for (const k of FORBIDDEN_IN_BOX) if (env[k]) problems.push(`${k} no debe estar en la caja`)
+  for (const [k, v] of Object.entries(env)) {
+    if (!v) continue
+    const why = forbiddenEnv(k, v)
+    if (why) problems.push(`${k} ${why}`)
+  }
   const checks: [string, () => unknown][] = [
     ['BOB_ORG_ID', () => boxOrgId(env)],
     ['BOB_GOTRUE_URL', () => gotrueUrl(env)],
