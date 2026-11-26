@@ -36,16 +36,16 @@ Se apunta antes de empezar. El resto de la secuencia es igual en las tres.
 | `<host de BOb>` (`BOB_HOST` y `BZZZ_HOST_BOB`) | `<host de BOb de lab-02>` | `<host de BOb de model-01>` | `<host de BOb de Febor>` |
 | `<dominio base>` (`generar-config-portal.sh`) | `<dominio base de lab-02>` | `<dominio base de model-01>` | `<dominio base de Febor>` |
 | `<uuid de la org>` (`BOB_ORG_ID`) | `<uuid de la org de lab-02>` | `<uuid de la org de model-01>` | `<uuid de la org de Febor>` |
-| Herramientas del servidor (B0) | instaladas el 25 nov: CLI de Supabase 2.120.0 y `postgresql-client-16`; `git`, `setpriv` y `flock` ya estaban | sin medir: B0 | sin medir: B0 |
-| Almacén de imágenes de Docker | **containerd** (medido el 25 nov: `29.7.2 overlayfs [["driver-type","io.containerd.snapshotter.v1"]]`): B12 y B13 llevan la parte de containerd | sin medir: B0 | sin medir: B0 |
-| El BOb viejo (`bzzz-bob`) | no corre (medido el 25 nov): B2 no aplica, pero el primer alta sigue necesitando `--reiniciar` (B6) | mirarlo en B0 | corre: B2 es obligatorio |
-| La cadena de BOb en la base | ya está, aplicada en `5e5b9be` | no se sabe: lo dice la sonda de B0 | no se sabe: lo dice la sonda de B0 |
-| `<base>` de `instalacion-firmada` | la huella de `5e5b9be` | según la sonda: la huella del commit que corre, o la base vacía | igual que model-01 |
+| Herramientas del servidor (B0) | instaladas el 25 nov: CLI de Supabase 2.120.0 y `postgresql-client-16`; `git`, `setpriv` y `flock` ya estaban | ni CLI ni psql (medido el 25 nov): se instalan como en B0; `git`, `setpriv` y `flock` ya están | sin medir: B0 |
+| Almacén de imágenes de Docker | **containerd** (medido el 25 nov: `29.7.2 overlayfs [["driver-type","io.containerd.snapshotter.v1"]]`): B12 y B13 llevan la parte de containerd | **containerd** (medido el 25 nov: Docker 29.6.1, `overlayfs` con `io.containerd.snapshotter.v1`): lo mismo que lab-02 | sin medir: B0 |
+| El BOb viejo (`bzzz-bob`) | no corre (medido el 25 nov): B2 no aplica, pero el primer alta sigue necesitando `--reiniciar` (B6) | no corre (medido el 25 nov): B2 no aplica; el primer alta necesita `--reiniciar` (B6) | corre: B2 es obligatorio |
+| La cadena de BOb en la base | ya está, aplicada en `5e5b9be` | no está (medido el 25 nov): sin esquema `bob` y sin `supabase_migrations.schema_migrations`, así que sin historia del CLI. B5 (`cadena`) la crea | no se sabe: lo dice la sonda de B0 |
+| `<base>` de `instalacion-firmada` | la huella de `5e5b9be` | **la base vacía** (BossTechnology/BOb-engine#54) | según la sonda de B0: la huella del commit que corre, o la base vacía |
 | Quién | Henry, con quien ayude | Henry, con quien ayude | **solo Henry** |
 
 **La base vacía** es para una caja sin BOb: no hay commit del que sacar la huella. Henry decidió «Defined empty base»
-el 2026-11-25. **[pendiente: BOb-engine, después de BossTechnology/BOb-engine#51; el TODO está en
-BossTechnology/BOb-engine#53]**. Hasta que entre, una caja sin BOb no tiene `<base>`, y desde B3 no se sigue.
+el 2026-11-25. **[pendiente: BossTechnology/BOb-engine#54, abierto]**. model-01 es una de esas cajas. Hasta que entre
+#54, una caja sin BOb no tiene `<base>`, y desde B3 no se sigue.
 
 ## Lo que tiene que estar fusionado
 
@@ -59,7 +59,7 @@ BossTechnology/BOb-engine#53]**. Hasta que entre, una caja sin BOb no tiene `<ba
 | BOb-engine | #48, #52 | O-3 firmado (`cadena` y `resto`); el texto de P5 por D77 | en `main` |
 | BOb-engine | #51 | `verify-required` lo comprueba el guion, no `ssh-keygen` | **abierto** |
 | BOb-engine | #53 | `postgres.env` fuera de `secrets/` (B2), cómo llega root a la base (B3), requisitos de `firma-instalacion` (H5) | **abierto** |
-| BOb-engine | por abrir | la base vacía (H4) | **pendiente**, después de #51 |
+| BOb-engine | #54 | la base vacía (H4), para una caja donde BOb nunca se instaló (model-01) | **abierto** |
 | BOb-engine | por abrir | la llave de Henry en `supabase/provision/firmantes_instalacion` **[llave-fido]** | **pendiente**, después de #51 |
 
 ## A. Una vez, en el portátil
@@ -204,7 +204,9 @@ cliente:
 sudo docker exec bzzz-supabase-db psql -X -tA -U supabase_admin -d postgres -c "select to_regnamespace('bob') is not null" -c "select version from supabase_migrations.schema_migrations order by version"
 ```
 
-- `f` y ninguna versión de BOb: la caja no tiene BOb, y `<base>` es la base vacía.
+- `f`, y la segunda consulta falla con `relation "supabase_migrations.schema_migrations" does not exist`: la caja no
+  tiene BOb ni historia del CLI (model-01). `<base>` es la base vacía, y B5 (`cadena`) va primero.
+- `f` y ninguna versión de BOb: lo mismo, la base vacía.
 - `t` y una lista: buscar en BOb-engine el commit cuyas migraciones son exactamente esas. Su huella es `<base>`. Si no
   casa con ningún commit, se para aquí y Henry decide.
 
@@ -303,7 +305,7 @@ cd ~/bob-engine && scripts/firma-instalacion.sh huella 5e5b9be
 echo '<base>' | sudo tee /opt/bob/instalacion-firmada >/dev/null && sudo chmod 644 /opt/bob/instalacion-firmada
 ```
 
-En una caja sin BOb, `<base>` es la base vacía. **[pendiente: base vacía, BOb-engine después de #51]**
+En una caja sin BOb (model-01), `<base>` es la base vacía. **[pendiente: BossTechnology/BOb-engine#54]**
 
 **Cómo llega root a la base (B3).** `bzzz-supabase-db` no publica ningún puerto, y su nombre no resuelve en el
 servidor. `POSTGRES_HOST` es su IP en `bzzz-app`:
