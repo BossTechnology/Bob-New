@@ -97,7 +97,12 @@ test('Interactions: no interaction_duration row reads as no_row, not 0', { skip 
 
 test('Slice 3: every matrix cell with a metric carries the state bob_cell_rollup gave it', { skip }, async () => {
   const read = await readPerformance(TENANT_A, WINDOW, pool!)
-  if (read.cells === null) return // this BOb-engine has no Slice 3 yet
+  // CI pins a BOb-engine with Slice 3 and sets BOB_REQUIRE_SLICE3=1: there a
+  // missing rollup is a failure, not a skip. Elsewhere, an older engine skips.
+  if (read.cells === null) {
+    assert.notEqual(process.env.BOB_REQUIRE_SLICE3, '1', 'BOB_REQUIRE_SLICE3=1 but bob.bob_cell_rollup was not found')
+    return
+  }
   assert.ok(read.cells.length > 0)
   const m = buildMatrix(read.counts, read.responseTimes, read.selected, read.cells)
   for (const row of [...m.rows, ...m.labelFailures]) {

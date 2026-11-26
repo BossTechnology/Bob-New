@@ -3,6 +3,7 @@
 Una línea por cambio entregado, en lenguaje de usuario.
 
 ## Sin publicar
+- CI: el job en vivo corre contra el Slice 3 ya fusionado en BOb-engine (`51f991b`) y falla si no encuentra el rollup de celdas, en vez de saltarse la prueba.
 - Rendimiento, Interacciones, Calidad y el simulador pintan el estado de cada celda que resuelve BOb (Slice 3): «No aplica», «No configurado» con su motivo, «Pendiente», «—» (no observado) o la cifra; el motivo completo y la cobertura van en el título. Sin el Slice 3 en la base, se pintan como antes.
 - Modo caja: hay un botón «Cerrar sesión» en las pantallas `/bob` y en el simulador; cierra solo la sesión de este equipo, borra las cookies (también las de antes del prefijo `__Host-`) y la caché de la página. El formulario de inicio de sesión deja ver la contraseña escrita.
 - Modo caja: borrar un canal y desconectar sus reglas es una sola transacción; una ventana pico vacía ya no impide guardar el umbral, y una a medio llenar se rechaza. Cada cuenta tiene un límite de peticiones por minuto en la API (120) y en las pantallas `/bob` (60).
