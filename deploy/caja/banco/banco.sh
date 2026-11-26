@@ -141,6 +141,7 @@ cat > "$R/config/caja.env" <<EOF
 BOB_ORG_ID=00000000-0000-4000-8000-00000000b0b0
 BOB_GOTRUE_URL=http://bzzz-supabase-auth:9999
 BOB_DB_HOST=bzzz-supabase-db
+BOB_PORTAL_URL=https://portal.banco.example
 EOF
 printf 'BOB_APP_USUARIO=bob_app\nBOB_APP_CLAVE=%s\n' "$APPPW" > "$R/secrets/app.env"
 # Como lo deja el alta de Bzzz (generar-secretos-vecina.sh bob): de root en la caja, lo lee `firma-instalacion … resto`

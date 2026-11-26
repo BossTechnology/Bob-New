@@ -6,25 +6,34 @@
 //   _next/static, review of PR #30 point 4);
 // - no identity configuration, GoTrue down or the role lookup failing: 503
 //   (not /login: that would loop against the same dead GoTrue);
-// - GoTrue's 401: /login for pages, 401 for the API;
-// - no row in bob.users, or inactive: 403 on /bob/*, /api/bob/* and
-//   /api/config/* (Henry, 2026-11-21);
+// - no session (Henry, 2026-11-26, «se quita el login de bob»): pages go to
+//   the BzzzBX portal once and come back through /entrar (portal.ts); back
+//   without a session, a page with a link and no second trip; /login goes to
+//   the portal too. The API answers 401;
+// - no row in bob.users: a viewer seat on the first visit (Henry,
+//   2026-11-26, «Alta sola, como viewer»); an inactive row: 403 on /bob/*,
+//   /api/bob/* and /api/config/* (Henry, 2026-11-21);
 // - a write from another origin: 403; with a body that is not JSON: 415
 //   (request-guard.ts).
 import { NextResponse, type NextRequest } from 'next/server.js'
 import { boxAccess } from './surface.ts'
 import { refuseWrite } from './request-guard.ts'
-import { boxOrgId, gotrueUrl } from './runtime.ts'
+import { boxOrgId, gotrueUrl, portalUrl } from './runtime.ts'
+import { PORTAL_COOKIE, portalLoginUrl, portalMark } from './portal.ts'
 import { resolveSession, type CookieJar, type CookieOptions, type SessionState } from './session.ts'
 import { logSecurity } from './security-log.ts'
 import { Attempts } from './login.ts'
-import { boxRole, type Role } from './roles.ts'
+import { boxRoleOrSeat, type Role } from './roles.ts'
+import type { GoTrueUser } from './gotrue.ts'
 import { withSecurityHeaders } from './security-headers.ts'
 
 export type BoxProxyDeps = {
   gotrueUrl: () => string
+  portalUrl: () => string
   resolveSession: (jar: CookieJar, base: string) => Promise<SessionState>
-  role: (userId: string) => Promise<Role | null>
+  // Takes a viewer seat on a first visit (roles.ts): only ever the account
+  // GoTrue answered for this request.
+  role: (user: GoTrueUser) => Promise<Role | null>
   apiBudget?: Attempts
   pageBudget?: Attempts
   throttleLogged?: Attempts
@@ -41,8 +50,9 @@ const THROTTLE_LOGGED = new Attempts(1, 60_000)
 
 const DEFAULT_DEPS: BoxProxyDeps = {
   gotrueUrl,
+  portalUrl: () => portalUrl(),
   resolveSession,
-  role: (userId) => boxRole(boxOrgId(), userId),
+  role: (user) => boxRoleOrSeat(boxOrgId(), user),
   apiBudget: API_BUDGET,
   pageBudget: PAGE_BUDGET,
   throttleLogged: THROTTLE_LOGGED,
@@ -57,10 +67,36 @@ export const needsRole = (path: string) =>
 const plain = (status: number, body: string) =>
   new NextResponse(body, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } })
 
-async function roleResponse(request: NextRequest, deps: BoxProxyDeps, userId: string, isApi: boolean) {
+// Where the person goes without a session: the portal, once. The mark says a
+// trip is under way; back with it and still no session, the trip failed, and
+// another one would only repeat it.
+function toPortal(request: NextRequest, deps: BoxProxyDeps, back: string): NextResponse {
+  let portal: string
+  try {
+    portal = deps.portalUrl()
+  } catch {
+    return plain(503, 'BOb no tiene configurado el portal de la caja.')
+  }
+  if (request.cookies.get(PORTAL_COOKIE)?.value) {
+    logSecurity('portal.no_session_back', { path: request.nextUrl.pathname })
+    return new NextResponse(
+      '<!doctype html><meta charset="utf-8"><title>BOb</title>'
+      + '<p>BOb no recibió la sesión de BzzzBX.</p>'
+      + `<p><a href="${portal}/">Entrar por el portal de BzzzBX</a></p>`,
+      { status: 401, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } })
+  }
+  // The same host the write guard checks: Host, as Traefik keeps it.
+  const host = request.headers.get('host') ?? request.nextUrl.host
+  const r = NextResponse.redirect(portalLoginUrl(portal, host, back))
+  r.cookies.set(PORTAL_COOKIE, '1', portalMark())
+  return r
+}
+
+async function roleResponse(request: NextRequest, deps: BoxProxyDeps, user: GoTrueUser, isApi: boolean) {
+  const userId = user.id
   let role: Role | null
   try {
-    role = await deps.role(userId)
+    role = await deps.role(user)
   } catch (e) {
     console.error('box proxy: role lookup failed', e instanceof Error ? e.message : e)
     return isApi
@@ -86,6 +122,10 @@ export async function boxProxy(request: NextRequest, deps: BoxProxyDeps = DEFAUL
 
 async function decide(request: NextRequest, deps: BoxProxyDeps): Promise<NextResponse> {
   const path = request.nextUrl.pathname
+  // The portal's token is in /entrar's fragment, and a browser carries the
+  // fragment over any 3xx it follows: /entrar is answered before anything
+  // that could send it elsewhere (session, identity, role, the portal).
+  if (path === '/entrar' && (request.method === 'GET' || request.method === 'HEAD')) return NextResponse.next({ request })
   const access = boxAccess(path)
   if (access === 'off') return plain(404, 'Not found')
   const refused = refuseWrite(request.method, request.headers, request.headers.get('host') ?? request.nextUrl.host)
@@ -93,6 +133,7 @@ async function decide(request: NextRequest, deps: BoxProxyDeps): Promise<NextRes
     logSecurity('access.write_refused', { status: refused.status, method: request.method, path })
     return NextResponse.json({ ok: false, error: refused.error }, { status: refused.status })
   }
+  if (path === '/login') return toPortal(request, deps, '/bob/performance')
   if (access === 'public') return NextResponse.next({ request })
 
   let base: string
@@ -117,7 +158,7 @@ async function decide(request: NextRequest, deps: BoxProxyDeps): Promise<NextRes
   } else if (s.kind === 'none') {
     response = isApi
       ? NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
-      : NextResponse.redirect(new URL('/login', request.url))
+      : toPortal(request, deps, request.nextUrl.pathname + request.nextUrl.search)
   } else if (needsRole(path) && overBudget(deps, s.user.id, isApi)) {
     const kind = isApi ? 'api' : 'page'
     if (deps.throttleLogged?.take(`${s.user.id}|${kind}`) ?? true) {
@@ -127,7 +168,7 @@ async function decide(request: NextRequest, deps: BoxProxyDeps): Promise<NextRes
       ? NextResponse.json({ ok: false, error: 'Rate limit exceeded' }, { status: 429 })
       : plain(429, 'Demasiadas solicitudes. Espera un momento y vuelve a cargar.')
   } else if (needsRole(path)) {
-    response = await roleResponse(request, deps, s.user.id, isApi)
+    response = await roleResponse(request, deps, s.user, isApi)
   } else {
     response = NextResponse.next({ request })
   }

@@ -27,7 +27,8 @@ export async function requireBoxAuth(allowedRoles: string[]) {
   if (s.kind === 'unavailable') throw new ApiError(503, 'Identity unavailable')
   if (s.kind === 'none') throw new ApiError(401, 'Unauthorized')
   const org_id = boxOrgId()
-  // No row in bob.users, or inactive: 403 (Henry, 2026-11-21; P-1).
+  // Inactive, another organization's, or no seat taken: 403 (Henry, 2026-11-21;
+  // P-1). A first visit took its viewer seat in the proxy (Henry, 2026-11-26).
   const role = await boxRole(org_id, s.user.id)
   if (!role) {
     logSecurity('access.no_role', { user: s.user.id })

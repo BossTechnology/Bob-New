@@ -681,8 +681,11 @@ La configuración, sin secretos. `BOB_HOST` es el host que publica Traefik:
 printf 'BOB_HOST=%s\n' '<host de BOb>' | sudo tee /opt/bob/.env >/dev/null
 ```
 
+`BOB_PORTAL_URL` es el origen https del portal de esta caja (`https://` y `BZZZ_HOST_PORTAL`, sin ruta). BOb ya no
+tiene login propio en la caja: sin sesión manda allí (Henry, 2026-11-26). Sin ella, bob-web no arranca:
+
 ```bash
-printf 'BOB_ORG_ID=%s\nBOB_GOTRUE_URL=http://bzzz-supabase-auth:9999\nBOB_DB_HOST=bzzz-supabase-db\n' '<uuid de la org>' | sudo tee /opt/bob/config/caja.env >/dev/null
+printf 'BOB_ORG_ID=%s\nBOB_GOTRUE_URL=http://bzzz-supabase-auth:9999\nBOB_DB_HOST=bzzz-supabase-db\nBOB_PORTAL_URL=https://%s\n' '<uuid de la org>' '<host del portal>' | sudo tee /opt/bob/config/caja.env >/dev/null
 ```
 
 ### B10. El portal y la puerta, apuntando a BOb (H1)
@@ -750,11 +753,15 @@ curl -sk -o /dev/null -w '%{http_code}\n' --resolve '<host de BOb>:443:127.0.0.1
 
 Lo esperado: 302, 303, 307 o 401, es decir, que contesta la puerta. Un 200 sin sesión es un fallo de seguridad: ir a C.
 
-En el navegador, `https://<host de BOb>` con un certificado válido (no el de Traefik por defecto), entrando con una
-cuenta que tenga fila activa en `bob.users`. La lista de lo que hay que mirar es `bob-web-real-box-checklist`:
+En el navegador, `https://<host de BOb>` con un certificado válido (no el de Traefik por defecto). BOb no pide clave:
+sin sesión va al portal, se entra allí con la cuenta de BzzzBX, y el portal vuelve a BOb por `/entrar` (Bzzz #470, que
+va con esta imagen). La primera vez, una cuenta sin fila en `bob.users` queda como viewer de la organización. La lista
+de lo que hay que mirar es `bob-web-real-box-checklist`:
 - la salud en menos de 2 s;
-- 401 sin sesión;
-- 403 sin fila;
+- sin sesión, al portal y de vuelta a la misma página de BOb, sin bucle;
+- una cuenta nueva entra como viewer (una fila nueva en `bob.users`, papel `viewer`);
+- 403 con una fila inactiva;
+- «Cerrar sesión» en BOb deja también el portal sin sesión;
 - el simulador sin cifras inventadas;
 - y ahora también las celdas del Slice 3 con su estado, no «Estados del Slice 3 pendientes».
 

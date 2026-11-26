@@ -143,6 +143,21 @@ export function gotrueUrl(env: Env = process.env): string {
   return u.replace(/\/+$/, '')
 }
 
+// The BzzzBX portal of this box (Henry, 2026-11-26: «se quita el login de
+// bob»). BOb has no login of its own in the box: without a session it sends
+// the person here, and the portal hands the token back to /entrar. An https
+// origin, nothing more: no path, query, fragment or credentials.
+export function portalUrl(env: Env = process.env): string {
+  const raw = env.BOB_PORTAL_URL
+  let u: URL
+  try { u = new URL(raw ?? '') } catch { throw new BobConfigError('BOB_PORTAL_URL no está definida o no es una URL https') }
+  const bare = u.pathname === '/' && !u.search && !u.hash && !u.username && !u.password
+  if (u.protocol !== 'https:' || !bare || !/^https:\/\/[^/?#@\s]+\/?$/.test(raw ?? '')) {
+    throw new BobConfigError('BOB_PORTAL_URL debe ser el origen https del portal, sin ruta')
+  }
+  return u.origin
+}
+
 // Every problem at once, by name, never by value. Empty means it may start.
 // How many proxies in front of bob-web append to X-Forwarded-For. In a box it
 // is Traefik alone: 1. The client address is the entry the outermost trusted
@@ -163,6 +178,7 @@ export function boxEnvProblems(env: Env = process.env, read: Reader = defaultRea
   const checks: [string, () => unknown][] = [
     ['BOB_ORG_ID', () => boxOrgId(env)],
     ['BOB_GOTRUE_URL', () => gotrueUrl(env)],
+    ['BOB_PORTAL_URL', () => portalUrl(env)],
     ['BOB_DB_HOST', () => dbTarget(env, read)],
     ['BOB_PROXY_HOPS', () => proxyHops(env)],
   ]

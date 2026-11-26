@@ -33,10 +33,13 @@ test('category (i) needs a session', () => {
   ]) assert.equal(boxAccess(p), 'session', p)
 })
 
-test('only the login and the healthcheck are public', () => {
-  for (const p of ['/login', '/auth/login', '/api/health', '/_next/static/x.js']) {
+// Henry, 2026-11-26: BOb's own password login goes (/auth/login is off). /login
+// only sends to the portal, and /entrar with /auth/portal take its token back.
+test('only the way to and from the portal and the healthcheck are public', () => {
+  for (const p of ['/login', '/entrar', '/auth/portal', '/api/health', '/_next/static/x.js']) {
     assert.equal(boxAccess(p), 'public', p)
   }
+  assert.equal(boxAccess('/auth/login'), 'off')
   assert.equal(boxAccess('/api/healthz'), 'off')
   assert.equal(boxAccess('/bobx'), 'off')
 })
@@ -66,8 +69,9 @@ test('every route in app/ resolves to one access, and new ones default to off', 
     '/api/config/textrules', '/api/config/textrules/x',
     '/api/config/thresholds', '/api/config/thresholds/x',
     '/api/health',
-    '/auth/login', '/auth/logout', '/auth/me', '/auth/refresh',
+    '/auth/logout', '/auth/me', '/auth/portal', '/auth/refresh',
     '/bob/interactions', '/bob/performance', '/bob/quality',
+    '/entrar',
     '/login',
   ])
 })

@@ -3,6 +3,7 @@
 > Actualizar al cerrar cada sesión. Es lo primero que lee la siguiente.
 
 ## Tarea actual
+- **Entrar a BOb con la sesión de BzzzBX** (rama `claude/bob-sesion-bzzzbx-2c103f`, sin fusionar; Henry, 2026-11-26: «Alta sola, como viewer», «/login de BOb al portal», «H1: el portal pasa el token»). La primera visita sin fila crea un viewer con `bob.claim_viewer_seat` (BOb-engine #59). Sin sesión, la página va al portal y vuelve por `/entrar`, con el token del fragmento comprobado con GoTrue (Bzzz #470). No hay bucle y no se guarda refresh token. Visto en rojo antes de cada cambio, y `npm test` en verde con los tests en vivo. **Pendiente:** Henry fusiona BOb-engine #59, Bzzz #470 y este PR; después mover `BOB_ENGINE_REF` al commit de fusión de #59; imagen nueva con atestación; `BOB_PORTAL_URL` en el `caja.env` de cada caja; firma nueva de O-3 para las tres cajas. No medido: una caja de verdad, ni un navegador con el portal real.
 - Capa de datos de bob-web sobre el esquema `bob` de BOb-engine, como `bob_app`, con el `org_id` de la caja y sin la service role (requisito §4.2, puntos 1 a 5, de los insumos de Bzzz «lo mínimo de la etapa 4»). Todo fusionado en `main`: PR #30, #32, #34 (P-1), #35 (P-4), #36 (umbrales) y #31 (imagen). Lo que queda es probarlo en una caja real.
 
 ## Hecho

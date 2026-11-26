@@ -38,6 +38,7 @@ const server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'star
     BOB_CAJA: '1',
     BOB_ORG_ID: 'aaaaaaaa-0000-4000-8000-000000000001',
     BOB_GOTRUE_URL: 'http://127.0.0.1:9',
+    BOB_PORTAL_URL: 'https://portal.example',
     BOB_DB_HOST: '127.0.0.1',
     BOB_DB_PORT: '9',
     BOB_SECRETS_FILE: secrets,
@@ -60,7 +61,9 @@ async function up() {
 const problems = []
 const check = (label, res, data) => {
   const got = (h) => res.headers.get(h)
-  for (const [h, v] of Object.entries(expected)) {
+  // /entrar holds the portal's token in its URL until it clears it: no Referer at all (lib/bob/portal.ts).
+  const want = label.split(/[ ?]/)[0] === '/entrar' ? { ...expected, 'Referrer-Policy': 'no-referrer' } : expected
+  for (const [h, v] of Object.entries(want)) {
     if (got(h) !== v) problems.push(`${label} (${res.status}): ${h} is ${JSON.stringify(got(h))}`)
   }
   if (got('x-powered-by')) problems.push(`${label}: X-Powered-By is sent`)
@@ -87,6 +90,12 @@ try {
       if (down.status !== 503) problems.push(`${path}: identity down, but answered ${down.status}`)
       statuses['503 identity down'] = (statuses['503 identity down'] ?? 0) + 1
     }
+  }
+  // The portal's token rides in /entrar's fragment, and a browser carries the
+  // fragment over a 3xx: /entrar is a 200 itself, session cookie or not.
+  for (const headers of [{}, SESSION_COOKIE, { cookie: '__Host-bob-portal=1' }]) {
+    const res = await fetch(`${BASE}/entrar`, { redirect: 'manual', headers })
+    if (res.status !== 200) problems.push(`/entrar ${JSON.stringify(headers)}: answered ${res.status}, not 200`)
   }
   console.log('answers by status:', JSON.stringify(statuses))
 } catch (e) {

@@ -9,6 +9,7 @@ import type { SessionState } from './session.ts'
 const USER = { kind: 'user', user: { id: 'aaaaaaaa-1111-4000-8000-000000000001', email: 'user@example.com' } } as SessionState
 const deps = (o: Partial<BoxProxyDeps> = {}): BoxProxyDeps => ({
   gotrueUrl: () => 'http://gotrue.test',
+  portalUrl: () => 'https://portal.test',
   resolveSession: async () => USER,
   role: async () => 'viewer',
   ...o,

@@ -8,7 +8,7 @@ const ORG = 'aaaaaaaa-0000-4000-8000-000000000001'
 const SECRETS = 'BOB_APP_USUARIO=bob_app_login\nBOB_APP_CLAVE="s3cret"\n'
 const box = (extra: Record<string, string> = {}) => ({
   BOB_CAJA: '1', BOB_ORG_ID: ORG, BOB_GOTRUE_URL: 'http://bzzz-supabase-auth:9999/',
-  BOB_DB_HOST: 'bzzz-supabase-db', ...extra,
+  BOB_DB_HOST: 'bzzz-supabase-db', BOB_PORTAL_URL: 'https://portal.example', ...extra,
 })
 const files = (map: Record<string, string>) => (p: string) => {
   if (!(p in map)) throw new Error('ENOENT')
@@ -100,7 +100,8 @@ test('a key-named variable that only points at a mounted file is not a secret', 
 
 test('the box refuses to start with missing configuration, and names every gap', () => {
   const problems = boxEnvProblems({ BOB_CAJA: '1' }, files({}))
-  assert.equal(problems.length, 3)
+  // BOB_ORG_ID, BOB_GOTRUE_URL, BOB_PORTAL_URL and the database.
+  assert.equal(problems.length, 4)
   assert.throws(() => assertBoxEnv({ BOB_CAJA: '1' }, files({})), BobConfigError)
 })
 

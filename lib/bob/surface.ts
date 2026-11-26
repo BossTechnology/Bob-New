@@ -3,13 +3,17 @@
 // says it reads `bob` as bob_app. docs/bob-schema-data-layer/inventario.md has
 // the whole inventory, with the owner of everything that is off.
 //
-// - public: no session (the login itself and the container's healthcheck);
+// - public: no session (the way to and from the portal, and the container's
+//   healthcheck);
 // - session: a live GoTrue session, checked on every request;
 // - off: everything else, including what Henry turned off for v1 (/api/ai,
 //   Twilio, Resend, the crons) and what has no equivalent in `bob` yet.
 export type Access = 'public' | 'session' | 'off'
 
-const PUBLIC: string[] = ['/login', '/auth/login', '/api/health']
+// /login only sends to the BzzzBX portal; /entrar and /auth/portal take its
+// token back (portal.ts). BOb's own password login (/auth/login) is off in the
+// box: Henry, 2026-11-26, «se quita el login de bob».
+const PUBLIC: string[] = ['/login', '/entrar', '/auth/portal', '/api/health']
 
 // Exact paths, or a prefix ending in '/' that also matches its own path
 // without the slash.
