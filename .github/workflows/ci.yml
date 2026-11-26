@@ -15,8 +15,9 @@ concurrency:
 
 env:
   # The BOb-engine commit whose schema `bob` and fixture the live tests read.
-  # Bump it by hand when the contract moves.
-  BOB_ENGINE_REF: 6be2909525d4403390280bff5416c47edc46e9be
+  # Bump it by hand when the contract moves. The merge of BOb-engine #40
+  # (Slice 3) on main.
+  BOB_ENGINE_REF: 51f991b9a98c7e95a587a8f2795ab4dcf27d1cad
   # Same CLI version as BOb-engine's own CI.
   SUPABASE_CLI_VERSION: 2.120.0
 
@@ -95,5 +96,7 @@ jobs:
       - name: All tests, live ones included (a missing database fails)
         env:
           BOB_REQUIRE_LIVE: '1'
+          # The pinned engine has Slice 3: the rollup path must run, not skip.
+          BOB_REQUIRE_SLICE3: '1'
           BOB_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: npm test

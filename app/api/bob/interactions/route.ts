@@ -9,8 +9,8 @@ export function GET(request: Request) {
   return screenJson(request, async (orgId, q) => {
     const r = await readInteractions(orgId, q)
     return {
-      window: r.window, watermark: r.watermark, channels: r.channels, cellStateView: r.cellStateView,
-      screen: buildInteractions(r.durations, r.selected),
+      window: r.window, watermark: r.watermark, channels: r.channels, cellStates: r.cells !== null,
+      screen: buildInteractions(r.durations, r.selected, r.cells),
     }
   })
 }

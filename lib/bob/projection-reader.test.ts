@@ -74,13 +74,55 @@ test('rows the feeder wrote as zeros read as zero, not no_row', { skip }, async 
 
 test('Interactions: no interaction_duration row reads as no_row, not 0', { skip }, async () => {
   const read = await readInteractions(TENANT_A, WINDOW, pool!)
-  assert.deepEqual(read.durations, [])
-  const s = buildInteractions(read.durations, read.selected)
-  assert.equal(s.avgDuration.kind, 'no_row')
-  assert.equal(s.closed.kind, 'no_row')
-  for (const c of s.byChannel) assert.equal(c.avgDuration.kind, 'no_row')
-  assert.equal(s.sessions.kind, 'not_projection')
   assert.equal(read.channels.length, 3)
+  const s = buildInteractions(read.durations, read.selected, read.cells)
+  assert.equal(s.sessions.kind, 'not_projection')
+  if (read.cells === null) {
+    // Before Slice 3 the reference feeder wrote no proj_durations at all.
+    assert.deepEqual(read.durations, [])
+    assert.equal(s.avgDuration.kind, 'no_row')
+    assert.equal(s.closed.kind, 'no_row')
+    for (const c of s.byChannel) assert.equal(c.avgDuration.kind, 'no_row')
+    return
+  }
+  // With Slice 3 it writes interaction_duration at the close (F-39). A channel
+  // with no row is still never a 0: it carries the state the database gave it.
+  for (const c of s.byChannel) {
+    if (c.avgDuration.kind === 'no_row') assert.notEqual(c.avgDuration.state?.state, undefined, c.channel.name)
+    if (c.avgDuration.kind === 'no_row' && c.avgDuration.state?.state === 'observed') {
+      assert.ok(c.avgDuration.state.reasons.length > 0, c.channel.name)
+    }
+  }
+})
+
+test('Slice 3: every matrix cell with a metric carries the state bob_cell_rollup gave it', { skip }, async () => {
+  const read = await readPerformance(TENANT_A, WINDOW, pool!)
+  // CI pins a BOb-engine with Slice 3 and sets BOB_REQUIRE_SLICE3=1: there a
+  // missing rollup is a failure, not a skip. Elsewhere, an older engine skips.
+  if (read.cells === null) {
+    assert.notEqual(process.env.BOB_REQUIRE_SLICE3, '1', 'BOB_REQUIRE_SLICE3=1 but bob.bob_cell_rollup was not found')
+    return
+  }
+  assert.ok(read.cells.length > 0)
+  const m = buildMatrix(read.counts, read.responseTimes, read.selected, read.cells)
+  for (const row of [...m.rows, ...m.labelFailures]) {
+    if (row.spec.id === 'available') continue // live state, not a rollup cell
+    for (const a of m.actors) {
+      const c = row.cells[a]
+      assert.ok(c.state, `${row.spec.id}/${a} has no state`)
+      // A cell with no row is never painted as a figure unless the database
+      // says it is a zero by declaration (F-32).
+      if (c.kind === 'no_row' && c.state!.state === 'observed') {
+        assert.deepEqual(c.state!.reasons, ['actor_not_present'], `${row.spec.id}/${a}`)
+      }
+    }
+  }
+  // Response quality has no definition until D-15: not configured, with why.
+  const q = m.rows.find((r) => r.spec.id === 'quality')!
+  assert.equal(q.cells.user.state?.state, 'not_configured')
+  assert.ok(q.cells.user.state?.reasons.includes('no_definition:D-15'))
+  // Resolved never attributes to the customer (F-33).
+  assert.equal(m.rows.find((r) => r.spec.id === 'resolved')!.cells.user.state?.state, 'not_applicable')
 })
 
 test('Quality: ORGA reads its rows by state; MECA has none and is no_row', { skip }, async () => {
@@ -109,9 +151,9 @@ test('Quality: the claim scopes sentiment to the tenant', { skip }, async () => 
   assert.equal(a.sentiment.some((s) => s.state === 's4'), false)
 })
 
-test('the Slice 3 view is looked for, not assumed', { skip }, async () => {
+test('the Slice 3 rollup is looked for, not assumed', { skip }, async () => {
   const read = await readInteractions(TENANT_A, WINDOW, pool!)
-  assert.equal(typeof read.cellStateView, 'boolean')
+  assert.ok(read.cells === null || Array.isArray(read.cells))
 })
 
 test('writes as bob_app are refused under a read transaction and allowed under a write one', { skip }, async () => {

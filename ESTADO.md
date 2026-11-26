@@ -31,18 +31,22 @@
 - **P-3 · Slice 3.** La spec ya está fusionada en BOb-engine (PRs #27, #28, #30 y #32), pero no es `bob.v_cell_state`:
   - es la función `bob_cell_state(org, channels[], from, to)`, invoker, bajo RLS (R4);
   - al lado van `bob_cell_rollup`, con cobertura, y `v_ai_cell_state`, una vista definer para BObee (R6).
-  
-  La construcción es el PR #40 de BOb-engine (rama `slice-3-absent-not-zero`). Está abierto y no se fusiona hasta que Federico acepte la 0.6; antes falta corregir los ceros que el alimentador escribe para métricas que no cuenta. El enganche de `lib/bob/cell-state.ts` tiene que llamar a esa función.
-- **Matriz de Performance** (`/bob/performance`, PR #29, fusionado): pasarla a los estados del Slice 3. En curso en el PR #37 de bob-web (borrador, rama `slice-3-cell-states`), que se fusiona después del PR #40 de BOb-engine. Con eso entran los seis estados, los motivos y los marcadores D-18/D-19; hoy calcula «no configurado» solo con `channel_capabilities` e `idle_bound_seconds`.
+
+  La construcción es el PR #40 de BOb-engine (rama `slice-3-absent-not-zero`). Fusionado en `main` de BOb-engine el 25 nov (`51f991b`) por decisión de Henry, como «0.6 propuesto, aceptado por Henry»; los ceros que el alimentador escribía para métricas que no cuenta ya se corrigieron (`74823ee`).
+
+  Lado bob-web: PR #37 (borrador, rama `slice-3-cell-states`). Rendimiento, Interacciones, Calidad y `/api/bob/*` leen los estados de `bob.bob_cell_rollup`; en una base sin Slice 3 todo se pinta como antes. Se fusiona después del PR #40. Probado en local el 22 nov contra `2647fce` del #40 (hasta su head actual, `7542401`, solo cambiaron docs): 115/115 en vivo, ninguno omitido. Corregido en `1265420`: una celda observada sin fila se pinta «0», no una duración de cero (en las duraciones el `value` del rollup es el número de muestras).
+  - El CI de bob-web fija `BOB_ENGINE_REF` en la fusión del #40 en `main` (`51f991b`). Con `BOB_REQUIRE_SLICE3=1`, el job en vivo falla si no encuentra `bob_cell_rollup` en vez de saltarse la prueba.
+  - BOb-engine#43 (guard de tenancy para tablas con clave `id`) va después del #40. Ya tiene el #40 dentro (`71033dc`): sin conflictos y con los 4 checks en verde.
+  - El total de cada fila de la matriz no tiene rollup propio (`bob_cell_rollup` es por actor): hoy se pinta observado si algún actor lo está y, si no, el primer estado en el orden del §2. Pedir a BOb-engine un rollup sobre actores para que esa regla tampoco viva en TypeScript.
 - Las acciones de respuesta necesitan el binding de AutoBotz (Slice 6, PR #26 de BOb-engine); en la caja responden 409.
 - `npm run build` se corta una vez con `SecurityFatalError` (Next 16.4.2). Ya estaba en `main`.
 
 ## Bloqueado
-- BOB-7 (Relevo), turno de Federico: ¿son cuatro o siete los consumidores del Slice 3? El Word dice cuatro en el §2 y siete en el §3. El 21-11 se le dejó la lista para que la confirme:
-  - los cuatro del §2;
-  - tres inferidos: los drill-downs del Slice 7, el conteo de fallas del clasificador del Slice 4 y la fila de afirmaciones sin fundamento del Slice 5.
-  
-  No bloquea la construcción; solo cambia qué consumidores prueba el DONE.
+- Nada. El PR #37 deja de ser borrador y se fusiona con el OK de Henry. La aceptación de la 0.6 por Federico sigue pendiente; lo que él cambie llega como migración en BOb-engine.
+
+Resuelto el 23-11 (respuestas oficiales de Federico en Relevo):
+- BOB-7: los consumidores del Slice 3 son siete, y los tres inferidos eran correctos: los cuatro del §2, los drill-downs del Slice 7, el conteo de fallas del clasificador del Slice 4 y la fila de afirmaciones sin fundamento del Slice 5. Las reglas siguen siendo cuatro (FR-32, UI-03, PR-10, SR-2). El «siete» y el «nueve reglas» del Word no tenían fuente; el documento llevará la lista, no la cuenta. En la spec, los siete son por dónde se ejercita la implementación, no siete reglas más.
+- F-41 (BOB-6): `member_refs_seen` informa `first_seen` y `last_seen` dentro del frame pedido; el CHECK se queda. F-41 aceptada; el barrido es diario, fuera del pico de cada organización, y ningún horario es una constante en el código.
 
 ## Siguiente paso
 - **D77, la red de entrada: decidido.** Henry eligió el 2026-11-25 «(A) bzzz-edge como excepción». `bob-web` va en `bzzz-edge` y el chequeo acepta esa red solo para él; falla con cualquier otra red con salida o con otro `bob-*` en `bzzz-edge`. El feeder no tiene salida. **Cerrar la salida de `bzzz-edge` queda para D59.**

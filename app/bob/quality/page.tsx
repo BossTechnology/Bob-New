@@ -32,7 +32,7 @@ export default async function QualityPage({ searchParams }: { searchParams: Sear
     return <ReadError label="CALIDAD · proyecciones"
       message={e instanceof BobConfigError ? e.message : 'No se pudieron leer las proyecciones.'} />
   }
-  const s = buildQuality(read.sentiment, read.counts, read.selected)
+  const s = buildQuality(read.sentiment, read.counts, read.selected, read.cells)
   const { from, to } = read.window
 
   return (
@@ -68,7 +68,7 @@ export default async function QualityPage({ searchParams }: { searchParams: Sear
         hay filas y suman cero · % = parte de las lecturas de esa fuente · <sup>*</sup> incluye buckets sin sellar ·
         ORGA y MECA no se mezclan: la mezcla depende del peso mecánico configurado y se calcula al leer.
       </p>
-      <SliceThreeNote present={read.cellStateView} />
+      <SliceThreeNote present={read.cells !== null} />
     </main>
   )
 }

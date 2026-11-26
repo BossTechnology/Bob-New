@@ -31,7 +31,7 @@ export default async function InteractionsPage({ searchParams }: { searchParams:
     return <ReadError label="INTERACCIONES · proyecciones"
       message={e instanceof BobConfigError ? e.message : 'No se pudieron leer las proyecciones.'} />
   }
-  const s = buildInteractions(read.durations, read.selected)
+  const s = buildInteractions(read.durations, read.selected, read.cells)
   const { from, to } = read.window
 
   return (
@@ -78,7 +78,7 @@ export default async function InteractionsPage({ searchParams }: { searchParams:
           ))}
         </tbody>
       </table>
-      <SliceThreeNote present={read.cellStateView} />
+      <SliceThreeNote present={read.cells !== null} />
     </main>
   )
 }

@@ -92,6 +92,14 @@ test('a refused save says why', () => {
   assert.match(saveFailureText(503), /no disponible/)
 })
 
+test('observed with no row is a plain 0, never a zero-length time', () => {
+  // For durations the rollup's value is the sample count n (F-32), not ms.
+  const state = { state: 'observed', reasons: ['actor_not_present'], provisional: false, value: 0 }
+  const asTime = (ms: number) => `${(ms / 1000).toFixed(1)} s`
+  assert.equal(cellText({ kind: 'no_row', state }, asTime).text, '0')
+  assert.equal(cellText({ kind: 'no_row', state: { ...state, value: null } }, asTime).text, '0')
+})
+
 // The page fails closed: the simulator (and its stored configuration) runs
 // only when the server says, in JSON, that it is not a box.
 test('only a server that says it is not a box gets the demo', async () => {
