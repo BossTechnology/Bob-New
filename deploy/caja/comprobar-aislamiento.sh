@@ -22,7 +22,7 @@
 #              router HTTP sin puerta-apps@file como primer middleware
 #   secreto    su entorno trae algo de FORBIDDEN_IN_BOX (lib/bob/runtime.ts) o un JWT con role=service_role; o un
 #              fichero montado trae la service role, JWT_SECRET, POSTGRES_PASSWORD o la credencial de migración
-#   montaje    monta algo fuera de /opt/bob/config y /opt/bob/secrets, o un volumen
+#   montaje    monta algo fuera de /opt/bob/config y /opt/bob/secrets, un volumen, un directorio o un enlace
 #   puertos    publica un puerto en el host
 #
 # CONTRATO (como los guiones de la caja): UNA línea por stdout y el rc. El detalle, por stderr.
@@ -147,6 +147,13 @@ for c in conts:
             f("montaje", f"monta un {m.get('Type')} ({m.get('Name') or src})"); continue
         if not src.startswith(PERMITIDOS):
             f("montaje", f"monta {src}, fuera de {raiz}/config y {raiz}/secrets")
+        # Solo ficheros sueltos: un directorio montado no se puede revisar entero aquí, y un enlace apunta a otro sitio.
+        if os.path.islink(src):
+            f("montaje", f"monta {src}, que es un enlace"); continue
+        if os.path.isdir(src):
+            f("montaje", f"monta el directorio {src}: BOb solo monta ficheros"); continue
+        if not os.path.exists(src):
+            no_medible.append(f"{n}: no encuentro {src} en este servidor"); continue
         if os.path.isfile(src):
             try:
                 texto = open(src, errors="replace").read(1 << 20)

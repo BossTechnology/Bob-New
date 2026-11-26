@@ -29,6 +29,8 @@ esac
 componente "$COMP"
 for c in docker python3 curl; do command -v "$c" >/dev/null || no_empieza "falta $c"; done
 [ -f "$BOB_ENV" ] || no_empieza "no está $BOB_ENV"
+[ -f "$BOB_RAIZ/secrets/app.env" ] || no_empieza "falta $BOB_RAIZ/secrets/app.env"
+comprobar_raiz_y_secretos
 [ "$COMP" = web ] && fijar_url_salud
 
 ANT=$(leer "${CLAVE}_IMAGEN_ANTERIOR"); ANT_AT=$(leer "${CLAVE}_ATESTACION_ANTERIOR")
@@ -51,7 +53,7 @@ poner "$ANT" "$ANT_AT"; RC=$?
 case "$RC" in
   0) echo "vuelta-atras: corre $ANT ($SERVICIO)"; exit 0 ;;
   3) echo "fallo: $ANT no es segura (aislamiento roto o sin la puerta delante); todo lo de BOb queda parado"; exit 1 ;;
+  4) echo "fallo: $ANT no es segura (aislamiento roto o sin la puerta delante) y NO se pudo parar todo lo de BOb (siguen: $PARAR_RESTOS): pararlo a mano"; exit 1 ;;
 esac
-parar_todo
-echo "fallo: $ANT puesta en $BOB_ENV pero no quedó sana; todo lo de BOb queda parado; la de antes ($ACT) es ahora la anterior: rollback.sh otra vez la devuelve"
+fallo_y_parar "$ANT puesta en $BOB_ENV pero no quedó sana; la de antes ($ACT) es ahora la anterior: rollback.sh otra vez la devuelve"
 exit 1

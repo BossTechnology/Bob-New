@@ -51,20 +51,18 @@ for c in docker python3 curl; do command -v "$c" >/dev/null || no_empieza "falta
 CAJA_ENV=$BOB_RAIZ/config/caja.env
 [ -f "$CAJA_ENV" ] || no_empieza "no está $CAJA_ENV"
 for s in app.env $( [ "$COMP" = feeder ] && echo feeder.env ) $( [ "${#MIGR[@]}" -gt 0 ] && echo migrador.env ); do
-  f=$BOB_RAIZ/secrets/$s
-  [ -f "$f" ] || no_empieza "falta $f (lo deja generar-secretos-vecina.sh de Bzzz)"
-  m=$(stat -c %a "$f" 2>/dev/null || stat -f %Lp "$f")
-  [ "$m" = 600 ] || [ "$m" = 400 ] || no_empieza "$f tiene permisos $m: tiene que ser 600"
+  [ -f "$BOB_RAIZ/secrets/$s" ] || no_empieza "falta $BOB_RAIZ/secrets/$s (migrador.env: generar-secretos-vecina.sh bob; app.env: generar-secretos-bob.sh, de Bzzz)"
 done
+comprobar_raiz_y_secretos
 [ "$COMP" = web ] && fijar_url_salud
 
 say "== 0. copiar lo recibido a una carpeta de root"
 P=$(carpeta_privada) || no_empieza "no puedo crear la carpeta privada en $BOB_RAIZ/entrega"
 trap 'rm -rf "$P"' EXIT
-NOMBRE_AT=$(basename "$AT")
-cp "$TAR" "$P/imagen.tar" && cp "$AT" "$P/$NOMBRE_AT" && cp "$AT.sig" "$P/$NOMBRE_AT.sig" \
+# Nombres fijos en la copia: el nombre que traía el fichero no decide nada de lo que sigue.
+cp "$TAR" "$P/imagen.tar" && cp "$AT" "$P/atestacion" && cp "$AT.sig" "$P/atestacion.sig" \
   || no_empieza "no pude copiar el tar y la atestación a $P"
-TAR=$P/imagen.tar; AT=$P/$NOMBRE_AT
+TAR=$P/imagen.tar; AT=$P/atestacion
 
 say "== 1. leer el tar sin cargarlo"
 SAL=$(id_del_tar "$TAR") || no_empieza "el tar no se acepta: $SAL"
@@ -115,7 +113,12 @@ else
 fi
 
 say "== 5. poner $ID"
-ANT_ID=$(docker inspect -f '{{.Image}}' "$SERVICIO" 2>/dev/null || true)
+# Sin contenedor es la primera instalación; cualquier otro error de docker no se toma por eso.
+ANT_ID=$(docker inspect -f '{{.Image}}' "$SERVICIO" 2>"$P/err.inspect"); RC=$?
+if [ "$RC" != 0 ]; then
+  grep -qi 'no such' "$P/err.inspect" || no_empieza "docker inspect $SERVICIO falló: $(head -c 160 "$P/err.inspect")"
+  ANT_ID=
+fi
 ANT_AT=$(leer "${CLAVE}_ATESTACION")
 if es_id "$ANT_ID" && [ "$ANT_ID" != "$REF" ]; then
   escribir "${CLAVE}_IMAGEN_ANTERIOR" "$ANT_ID" "${CLAVE}_ATESTACION_ANTERIOR" "$ANT_AT"
@@ -133,6 +136,7 @@ poner "$REF" "$GUARDADA"; RC=$?
 case "$RC" in
   0) echo "desplegada: $ID ($SERVICIO)"; exit 0 ;;
   3) echo "fallo: $ID no es segura (aislamiento roto o sin la puerta delante); todo lo de BOb queda parado"; exit 1 ;;
+  4) echo "fallo: $ID no es segura (aislamiento roto o sin la puerta delante) y NO se pudo parar todo lo de BOb (siguen: $PARAR_RESTOS): pararlo a mano"; exit 1 ;;
 esac
 
 say "== 7. la nueva no quedó sana: vuelta atrás"
@@ -155,6 +159,7 @@ poner "$ANT_ID" "$ANT_AT"; RC=$?
 case "$RC" in
   0) echo "vuelta-atras: $ID no quedó sana; corre otra vez $ANT_ID" ;;
   3) echo "fallo: $ID no quedó sana y la anterior $ANT_ID no es segura; todo lo de BOb queda parado" ;;
-  *) parar_todo; echo "fallo: $ID no quedó sana y la vuelta a $ANT_ID tampoco; todo lo de BOb queda parado" ;;
+  4) echo "fallo: $ID no quedó sana y la anterior $ANT_ID no es segura; NO se pudo parar todo lo de BOb (siguen: $PARAR_RESTOS): pararlo a mano" ;;
+  *) fallo_y_parar "$ID no quedó sana y la vuelta a $ANT_ID tampoco" ;;
 esac
 exit 1

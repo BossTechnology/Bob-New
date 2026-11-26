@@ -49,6 +49,8 @@ limpiar() {
   rm -rf "$R"
 }
 trap limpiar EXIT
+# Interrumpido o matado también limpia: sin esto, un kill deja las redes y bloquea los bancos de otros.
+trap 'exit 130' INT TERM HUP
 
 FALLOS=0
 ok()  { printf 'ok    %s\n' "$*"; }
@@ -219,6 +221,25 @@ espera 2 "no-empieza: BOB_RAIZ" "BOB_BANCO=1 sin la marca del banco" -- env -u B
 printf 'banco-bobcaja /otra\n' > "$R/marca-falsa"
 espera 2 "no-empieza: BOB_RAIZ" "BOB_BANCO=1 con una marca que no es de esta carpeta" -- env BOB_BANCO_MARCA="$R/marca-falsa" "$D" --imagen "$R/entrega/a.tar" --atestacion "$R/entrega/a.atestacion"
 espera 2 "no-medible:" "BOB_SALIDA_ACEPTADA ya no existe" -- env BOB_SALIDA_ACEPTADA=bob-web=bzzz-data "$AIS"
+A_DEP=(--imagen "$R/entrega/a.tar" --atestacion "$R/entrega/a.atestacion")
+if [ "$(id -u)" != 0 ]; then
+  espera 2 "no-empieza: hay que correrlo como root" "deploy sin nada del banco y sin ser root (llega a la guarda de root)" -- \
+    env -u BOB_BANCO -u BOB_BANCO_MARCA -u BOB_RAIZ -u BOB_COMPROBAR_ATESTACION -u BOB_FIRMANTES -u BOB_URL_SALUD -u BOB_URL_SALUD_RESOLVER "$D" "${A_DEP[@]}"
+  espera 2 "no-empieza: hay que correrlo como root" "rollback sin nada del banco y sin ser root" -- \
+    env -u BOB_BANCO -u BOB_BANCO_MARCA -u BOB_RAIZ -u BOB_COMPROBAR_ATESTACION -u BOB_FIRMANTES -u BOB_URL_SALUD -u BOB_URL_SALUD_RESOLVER "$RB"
+fi
+espera 2 "no-empieza: BOB_ESPERA_SALUD" "BOB_ESPERA_SALUD=08 (octal en \$(( )))" -- env BOB_ESPERA_SALUD=08 "$D" "${A_DEP[@]}"
+espera 2 "no-empieza: BOB_ESPERA_SALUD" "BOB_ESPERA_SALUD=0" -- env BOB_ESPERA_SALUD=0 "$D" "${A_DEP[@]}"
+espera 2 "no-empieza: BOB_ESPERA_SALUD" "BOB_ESPERA_SALUD=3m" -- env BOB_ESPERA_SALUD=3m "$D" "${A_DEP[@]}"
+ln -s app.env "$R/secrets/vecinos.key"
+espera 2 "no-empieza: secrets/vecinos.key no es un fichero normal" "un enlace en secrets/ (se mira todo secrets/, no solo tres)" -- "$D" "${A_DEP[@]}"
+rm "$R/secrets/vecinos.key"; mkdir "$R/secrets/raro"
+espera 2 "no-empieza: secrets/raro no es un fichero normal" "un directorio en secrets/" -- "$D" "${A_DEP[@]}"
+rmdir "$R/secrets/raro"; chmod 644 "$R/secrets/app.env"
+espera 2 "no-empieza: secrets/app.env tiene permisos 644" "app.env legible por otros" -- "$D" "${A_DEP[@]}"
+chmod 600 "$R/secrets/app.env"; chmod 777 "$R/secrets"
+espera 2 "no-empieza: $R/secrets tiene permisos 777" "secrets/ escribible por otros" -- "$D" "${A_DEP[@]}"
+chmod 700 "$R/secrets"
 
 echo "== el paquete"
 espera 2 "no-medible:" "aislamiento sin ningún bob-* (vacío no es aislado)" -- "$AIS"
@@ -246,7 +267,8 @@ espera 2 "no-empieza: la imagen no está atestada: no-atestada: la atestación e
 del_tar() { ( . "$CAJA/lib.sh"; componente web; id_del_tar "$1" ); }
 cierto "id_del_tar sigue un índice hasta su manifiesto linux/amd64 (config = A)" '[ "$(del_tar "$R/entrega/indice.tar" | cut -d" " -f1)" = "$A" ]'
 cierto "id_del_tar rechaza un índice con dos linux/amd64" '! del_tar "$R/entrega/indice-doble.tar" >/dev/null'
-cierto "id_del_tar rechaza un blob que es índice y manifiesto a la vez" 'del_tar "$R/entrega/indice-hibrido.tar" | grep -q "ni un índice ni un manifiesto limpio"'
+# Sin tubería: con pipefail, el rc 1 de del_tar haría fallar el caso aunque el mensaje sea el bueno.
+cierto "id_del_tar rechaza un blob que es índice y manifiesto a la vez" '[[ "$(del_tar "$R/entrega/indice-hibrido.tar")" == *"ni un índice ni un manifiesto limpio"* ]]'
 cierto "id_del_tar sigue leyendo bien un tar sin índice anidado (config = A)" '[ "$(del_tar "$R/entrega/a.tar" | cut -d" " -f1)" = "$A" ]'
 cierto "  no se cargó: la imagen sigue sin estar en el disco" '[ -z "$(id_de "$SIN")" ]'
 espera 2 "no-empieza: el tar no se acepta: nombra etiquetas" "un tar de una imagen que solo lleva la etiqueta $AJENA" -- dep ajena

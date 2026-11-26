@@ -14,7 +14,8 @@ say() { printf '%s\n' "$*" >&2; }
 no_empieza() { echo "no-empieza: $1"; exit 2; }
 
 BOB_ESPERA_SALUD=${BOB_ESPERA_SALUD:-180}
-[[ "$BOB_ESPERA_SALUD" =~ ^[0-9]+$ ]] || no_empieza "BOB_ESPERA_SALUD tiene que ser un número de segundos («$BOB_ESPERA_SALUD»)"
+# Sin ceros delante: «08» pasaría un ^[0-9]+$ y luego $(( )) lo leería como octal y abortaría a mitad del cambio.
+[[ "$BOB_ESPERA_SALUD" =~ ^[1-9][0-9]{0,4}$ ]] || no_empieza "BOB_ESPERA_SALUD tiene que ser un número de segundos («$BOB_ESPERA_SALUD»)"
 # En una caja corre como root: la carpeta de entrega, los secretos y .env son de root. Solo el banco corre sin serlo.
 [ "$(id -u)" = 0 ] || bob_banco || no_empieza "hay que correrlo como root"
 
@@ -93,9 +94,14 @@ except KeyError:
 if len(idx.get("manifests", [])) > 1:
     no(f"index.json trae {len(idx['manifests'])} imágenes; tiene que traer una")
 for d in idx.get("manifests", []):
-    n = (d.get("annotations") or {}).get("io.containerd.image.name")
+    an = d.get("annotations") or {}
+    n = an.get("io.containerd.image.name")
     if n and not nombre.match(n):
         malas.append(n)
+    # org.opencontainers.image.ref.name: la etiqueta sola («<12 hex>») o el nombre entero.
+    rn = an.get("org.opencontainers.image.ref.name")
+    if rn and not (re.fullmatch(r"[0-9a-f]{12}", rn) or nombre.match(rn)):
+        malas.append(rn)
     # index.json apunta a un manifiesto o a un índice (multiplataforma, o con atestaciones de buildx). De un índice
     # se sigue el único manifiesto linux/amd64. Cada blob tiene que casar con su digest.
     # Se despacha por mediaType: el del descriptor y el del blob tienen que coincidir, y un blob que es a la vez
@@ -113,9 +119,12 @@ for d in idx.get("manifests", []):
         if "sha256:" + hashlib.sha256(b).hexdigest() != dg:
             no(f"el blob {dg} no casa con su digest")
         j = json.loads(b)
-        mt = j.get("mediaType") or desc.get("mediaType")
-        if desc.get("mediaType") and j.get("mediaType") and desc["mediaType"] != j["mediaType"]:
-            no(f"el blob {dg} dice ser {j['mediaType']} y su descriptor {desc['mediaType']}")
+        # El descriptor tiene que decir qué es (OCI lo exige); el blob puede no repetirlo, pero si lo dice, lo mismo.
+        mt = desc.get("mediaType")
+        if not mt:
+            no(f"el descriptor de {dg} no dice su mediaType")
+        if "mediaType" in j and j["mediaType"] != mt:
+            no(f"el blob {dg} dice ser {j['mediaType']} y su descriptor {mt}")
         if mt in INDICES and "manifests" in j and "config" not in j and "layers" not in j:
             return "indice", j
         if mt in MANIFIESTOS and "config" in j and "manifests" not in j:
@@ -239,29 +248,75 @@ salud_por_traefik() {
 # Para todo lo de BOb. Lo que se usa cuando el aislamiento falla: un fallo de seguridad no se queda sirviendo.
 # Para por id todo lo que descubre comprobar-aislamiento.sh (nombre bob-*, proyecto de compose bob o etiqueta
 # bob.vecina), no solo los servicios del compose: un bob-intruso también se para.
+# Después de parar, se vuelve a descubrir: si algo sigue en marcha (o docker no contesta), rc 2 y PARAR_RESTOS dice
+# qué. Quien llama no puede decir «todo parado» sin un 0 de aquí.
+bob_en_marcha() {
+  { docker ps -q --no-trunc --filter 'name=^/bob-' &&
+    docker ps -q --no-trunc --filter "label=com.docker.compose.project=$BOB_PROYECTO" &&
+    docker ps -q --no-trunc --filter label=bob.vecina; } | sort -u
+}
 parar_todo() {
   say "  se para todo lo de BOb"
+  PARAR_RESTOS=
   docker compose -p "$BOB_PROYECTO" -f "$BOB_COMPOSE" --env-file "$BOB_ENV" --profile feeder stop >&2 || true
   local ids
-  ids=$( { docker ps -q --no-trunc --filter 'name=^/bob-'
-           docker ps -q --no-trunc --filter "label=com.docker.compose.project=$BOB_PROYECTO"
-           docker ps -q --no-trunc --filter label=bob.vecina; } 2>/dev/null | sort -u)
+  ids=$(bob_en_marcha 2>/dev/null) || true
   [ -z "$ids" ] || docker stop $ids >&2 || true
+  if ! ids=$(bob_en_marcha 2>/dev/null); then
+    PARAR_RESTOS="docker ps no contesta"; say "  no sé si quedó parado: $PARAR_RESTOS"; return 2
+  fi
+  if [ -n "$ids" ]; then
+    PARAR_RESTOS=$(docker inspect -f '{{.Name}}' $ids 2>/dev/null | tr -d / | tr '\n' ' ')
+    PARAR_RESTOS=${PARAR_RESTOS:-$ids}; say "  siguen en marcha: $PARAR_RESTOS"; return 2
+  fi
+  return 0
+}
+# La línea final de un fallo que para todo: dice si de verdad quedó parado.
+fallo_y_parar() {
+  if parar_todo; then echo "fallo: $1; todo lo de BOb queda parado"
+  else echo "fallo: $1; NO se pudo parar todo lo de BOb (siguen: $PARAR_RESTOS): pararlo a mano"; fi
+}
+
+# /opt/bob y secrets/: de root y sin escritura para otros; en secrets/, cada entrada un fichero normal (sin enlaces
+# ni directorios), 600 o 400, y del usuario que lo lee: migrador.env de root (lo lee deploy.sh) y el resto de 65534
+# (bob-web y el feeder corren con ese usuario: un 600 de root no lo podrían leer). En el banco, del que lo corre.
+modo_de() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }
+dueno_de() { stat -c %u "$1" 2>/dev/null || stat -f %u "$1"; }
+comprobar_raiz_y_secretos() {
+  local raiz=$BOB_RAIZ d f n m u root=0 app=65534
+  bob_banco && { root=$(id -u); app=$(id -u); }
+  for d in "$raiz" "$raiz/secrets"; do
+    [ -d "$d" ] && [ ! -L "$d" ] || no_empieza "$d no es un directorio (o es un enlace)"
+    [ "$(dueno_de "$d")" = "$root" ] || no_empieza "$d no es de root (uid $(dueno_de "$d"))"
+    m=$(modo_de "$d"); [ $(( 8#$m & 022 )) = 0 ] || no_empieza "$d tiene permisos $m: otros pueden escribir"
+  done
+  for f in "$raiz/secrets"/* "$raiz/secrets"/.[!.]*; do
+    [ -e "$f" ] || [ -L "$f" ] || continue
+    n=$(basename "$f")
+    [ -f "$f" ] && [ ! -L "$f" ] || no_empieza "secrets/$n no es un fichero normal (enlace o directorio)"
+    m=$(modo_de "$f"); [ "$m" = 600 ] || [ "$m" = 400 ] || no_empieza "secrets/$n tiene permisos $m: tiene que ser 600"
+    u=$(dueno_de "$f")
+    case "$n" in
+      migrador.env) [ "$u" = "$root" ] || no_empieza "secrets/$n es del uid $u: tiene que ser de root" ;;
+      *)            [ "$u" = "$app" ]  || no_empieza "secrets/$n es del uid $u: tiene que ser del $app (el usuario de los contenedores)" ;;
+    esac
+  done
 }
 
 # Pone una imagen (ya atestada) en .env, levanta y comprueba.
 #   0 sano y aislado · 1 no quedó sano (sigue levantado) · 3 aislamiento roto o sin puerta (TODO lo de BOb parado)
+#   4 aislamiento roto o sin puerta y NO se pudo parar todo (PARAR_RESTOS dice qué sigue)
 poner() {
   local id=$1 at=$2 ais rc
   escribir "${CLAVE}_IMAGEN" "$id" "${CLAVE}_ATESTACION" "$at"
   compose up -d --no-build --pull never "$SERVICIO" >&2 || { say "  compose up falló"; return 1; }
   esperar_salud "$id" || return 1
   salud_por_traefik; rc=$?
-  [ "$rc" = 3 ] && { parar_todo; return 3; }
+  [ "$rc" = 3 ] && { parar_todo || return 4; return 3; }
   [ "$rc" = 0 ] || return 1
   ais=$("$BOB_AISLAMIENTO"); rc=$?
   say "  aislamiento: $ais"
   [ "$rc" = 0 ] && return 0
-  parar_todo
+  parar_todo || return 4
   return 3
 }
