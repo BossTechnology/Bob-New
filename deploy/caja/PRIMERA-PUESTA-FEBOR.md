@@ -36,6 +36,7 @@ Se apunta antes de empezar. El resto de la secuencia es igual en las tres.
 | `<host de BOb>` (`BOB_HOST` y `BZZZ_HOST_BOB`) | `<host de BOb de lab-02>` | `<host de BOb de model-01>` | `<host de BOb de Febor>` |
 | `<dominio base>` (`generar-config-portal.sh`) | `<dominio base de lab-02>` | `<dominio base de model-01>` | `<dominio base de Febor>` |
 | `<uuid de la org>` (`BOB_ORG_ID`) | `<uuid de la org de lab-02>` | `<uuid de la org de model-01>` | `<uuid de la org de Febor>` |
+| Almacén de imágenes de Docker | **containerd** (medido el 25 nov: `29.7.2 overlayfs [["driver-type","io.containerd.snapshotter.v1"]]`): B12 y B13 llevan la parte de containerd | sin medir: B0 | sin medir: B0 |
 | El BOb viejo (`bzzz-bob`) | se desplegó aquí (`docs/OPERACION_bob.md` §0 de Bzzz): mirarlo en B0 | mirarlo en B0 | corre: B2 es obligatorio |
 | La cadena de BOb en la base | ya está, aplicada en `5e5b9be` | no se sabe: lo dice la sonda de B0 | no se sabe: lo dice la sonda de B0 |
 | `<base>` de `instalacion-firmada` | la huella de `5e5b9be` | según la sonda: la huella del commit que corre, o la base vacía | igual que model-01 |
@@ -127,6 +128,12 @@ git -C <checkout de BOb-engine> bundle create /tmp/bob-engine.bundle main && scp
 
 `entrega-bob/` tiene que existir en el home de `bzzzops` antes del primer `scp` (`ssh bzzz-<caja> mkdir -p entrega-bob`).
 
+Solo para lab-02, la segunda imagen de la vuelta atrás con containerd (B13):
+
+```bash
+ssh bzzz-lab-02 mkdir -p entrega-bob/antes && scp /tmp/bob-entrega-antes/bob-web-<12 antes>.* bzzz-lab-02:entrega-bob/antes/
+```
+
 ## B. En cada caja, en este orden
 
 ### B0. Sondas, antes de la ventana (solo leen)
@@ -135,9 +142,13 @@ git -C <checkout de BOb-engine> bundle create /tmp/bob-engine.bundle main && scp
 docker info -f '{{.ServerVersion}} {{.Driver}} {{json .DriverStatus}}'
 ```
 
-Lo esperado: `overlay2`, sin `io.containerd.snapshotter`. Si alguna caja dice `io.containerd.snapshotter`, la rama de
-containerd de `deploy.sh` y `rollback.sh` se prueba DE VERDAD en lab-02 antes de seguir: un deploy, uno de una imagen
-que no queda sana y un `rollback.sh`. El banco solo la imita.
+Dice qué almacén usa Docker, y con él qué es el id de una imagen:
+- `overlay2` sin `io.containerd.snapshotter`: el almacén clásico. El `.Id` de una imagen es el sha256 de su
+  configuración, lo mismo que firma la atestación.
+- `overlayfs` con `io.containerd.snapshotter.v1` (lab-02): el de containerd. El `.Id` de la imagen y el `.Image` del
+  contenedor son el digest del índice o del manifiesto, no el de la configuración. Ver «La rama de containerd» en B13.
+
+Apuntar lo que da en cada caja. Si model-01 o Febor dan containerd, se hace allí también la parte de containerd de B13.
 
 ```bash
 docker ps --format '{{.Names}}' --filter name=bzzz-bob
@@ -472,6 +483,91 @@ cd /opt/bzzz && scripts/verify-deployment.sh
 ```
 
 Lo esperado: 0 fallos. Mira la puerta de BOb, su vecina y la redirección puerta → portal → BOb (por eso B10).
+
+#### La rama de containerd (lab-02, y cualquier caja que dé containerd en B0)
+
+**Qué cambia.** La identidad que firma la atestación (`imagen_id`) es siempre el sha256 de la **configuración** de la
+imagen, igual en los dos almacenes. Con containerd, lo que Docker enseña es otro número: el digest al que apunta el
+`index.json` del tar. Así lo resuelve el código de `main`, sin pasos distintos para Henry:
+- **Al construir:** `construir-imagen-bob.sh` (Bzzz) construye sin procedencia ni SBOM (`--provenance=false
+  --sbom=false`). Firma el id leído del tar con `id-de-imagen.sh --tar`, que comprueba el sha256 del propio fichero de
+  configuración. No usa `docker image inspect .Id`.
+- **Antes de cargar** (`deploy.sh`, pasos 1 y 2): lee del tar las dos cosas. La `config` es lo atestado. El `objetivo`
+  es el digest de `index.json`, siguiendo un índice hasta su único manifiesto linux/amd64, y será el `.Id` con
+  containerd. Comprueba la atestación contra la `config`.
+- **Después de cargar** (paso 3): busca cuál de las dos tiene Docker como `.Id`. Con containerd es el `objetivo`, y
+  ese es el que corre y el que se guarda en `/opt/bob/.env`.
+- **Al volver atrás** (`rollback.sh`, y `deploy.sh` cuando la nueva no queda sana): saca la configuración de la imagen
+  anterior con `id-de-imagen.sh`, que con containerd lee el `manifest.json` de un `docker save --platform` en flujo,
+  sin escribir en disco. Luego comprueba otra vez su atestación.
+- **En `verify-deployment.sh`:** pasa el `.Image` del contenedor a `comprobar-atestacion-bob.sh`, que lo normaliza
+  con `id-de-imagen.sh` antes de compararlo.
+
+**Lo que no está medido.** Esta rama solo la ha recorrido el banco local con `BANCO_CONTAINERD=1`, un `docker` falso
+que se porta como containerd. En una caja de verdad no se ha corrido nunca. En lab-02 se mira a mano, justo después de
+B12.
+
+La línea `config … · objetivo …` del paso 1 de `deploy.sh` (por stderr) da los dos números. Apuntarlos como
+`<config>` y `<objetivo>`. `<config>` tiene que ser el `imagen_id` de la atestación:
+
+```bash
+grep '^imagen_id=' ~/entrega-bob/bob-web-<12>.atestacion
+```
+
+Lo que corre es el `objetivo`, tanto en el contenedor como en `.env`:
+
+```bash
+docker inspect -f '{{.Image}}' bob-web; docker image inspect -f '{{.Id}}' "$(docker inspect -f '{{.Image}}' bob-web)"; sudo grep '^BOB_WEB_IMAGEN=' /opt/bob/.env
+```
+
+Las tres tienen que dar `<objetivo>`.
+
+`id-de-imagen.sh` saca de ahí la configuración:
+
+```bash
+bash /opt/bzzz/scripts/id-de-imagen.sh "$(docker inspect -f '{{.Image}}' bob-web)"
+```
+
+Tiene que dar `<config>`. Si da `no-medible`, la rama de containerd no sirve en esta caja: se para y se avisa.
+
+```bash
+bash /opt/bzzz/scripts/comprobar-atestacion-bob.sh ~/entrega-bob/bob-web-<12>.atestacion /opt/bzzz/config/bob/firmantes_imagen "$(docker inspect -f '{{.Image}}' bob-web)" bob-web
+```
+
+Tiene que dar `atestada: commit <C_WEB> de BossTechnology/Bob-New, firmada por …`.
+
+**La vuelta atrás con containerd, solo en lab-02.** Hace falta una segunda imagen atestada. En A4 se construye
+también la de un commit anterior de `main` con el paquete de la caja (`f73be3e`, la fusión de #55, o después),
+`<C_WEB_ANTES>`, en otra carpeta, y A6 la lleva a `~/entrega-bob/antes/`:
+
+```bash
+bash scripts/construir-imagen-bob.sh <checkout de Bob-New> <C_WEB_ANTES> <llave SSH de imagen> /tmp/bob-entrega-antes
+```
+
+En lab-02, después de las comprobaciones de arriba, se pone primero la anterior, luego otra vez la de `<C_WEB>`, y se
+vuelve atrás dos veces:
+
+```bash
+cd /opt/bob && sudo ./deploy.sh --imagen ~/entrega-bob/antes/bob-web-<12 antes>.tar --atestacion ~/entrega-bob/antes/bob-web-<12 antes>.atestacion; echo "rc=$?"
+```
+
+```bash
+cd /opt/bob && sudo ./deploy.sh --imagen ~/entrega-bob/bob-web-<12>.tar --atestacion ~/entrega-bob/bob-web-<12>.atestacion; echo "rc=$?"
+```
+
+```bash
+cd /opt/bob && sudo ./rollback.sh; echo "rc=$?"
+```
+
+```bash
+cd /opt/bob && sudo ./rollback.sh; echo "rc=$?"
+```
+
+Lo esperado: `desplegada` dos veces y después `vuelta-atras` dos veces, todo con `rc=0`. Cada `rollback.sh` dice
+`atestación de la anterior: atestada` por stderr: esa es la configuración sacada con `docker save`. Al final tiene que
+correr `<C_WEB>` (`docker inspect -f '{{.Image}}' bob-web` = su `<objetivo>`).
+
+Si algo de esto falla en lab-02, model-01 y Febor no siguen hasta arreglarlo, si dan containerd en B0.
 
 ### B14. Quitar `l7-bob.yml`
 
