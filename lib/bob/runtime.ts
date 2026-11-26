@@ -28,12 +28,16 @@ export const SECRETS_FILE = '/run/secrets/bob/app.env'
 // What a box must never hand to BOb in its environment (P5 §3.4, insumos §5.1).
 // A credential in the environment is readable through the Docker API (§5.1).
 //
+// PW or PWD not followed by a letter (DB_PW, PGPW, dbPwd, MIGRADOR_PW1), except the shell's PWD and OLDPWD.
+// PRIVATE only as a private key's name (PRIVATE, *_PRIVATE_PEM…): Next sets NEXT_PRIVATE_* in its own
+// process, and a bare PRIVATE stopped bob-web (seen with scripts/ci/check-box-headers.mjs).
+//
 // SECRET_NAME discovers: any variable whose name says password, key, token,
 // secret or credential, in English or Spanish, whatever its prefix (Bzzz's alta
 // writes MIGRADOR_CLAVE; a list of BOB_MIGRADOR_* names missed it). Case does
 // not matter. deploy/caja/comprobar-aislamiento.sh uses the same pattern;
 // lib/bob/caja-compose.test.ts fails if the two drift apart.
-export const SECRET_NAME = /PASS|_PWD|CLAVE|CONTRASE|SECRET|TOKEN|LLAVE|KEY|CREDENTIAL|CREDENCIAL|SERVICE_ROLE|DATABASE_URL|DSN/i
+export const SECRET_NAME = /^(?!(?:OLD)?PWD$).*?PWD?(?![A-Za-z])|PASS|CLAVE|CONTRASE|SECRET|TOKEN|LLAVE|KEY|CREDENTIAL|CREDENCIAL|SERVICE_ROLE|DATABASE_URL|DSN|AUTH|PRIVAT[EA](?:_?(?:PEM|KEY|CERT|DER)|$)|SIGNING|SALT/i
 
 // The few names the pattern does not see: never in the box either.
 export const FORBIDDEN_IN_BOX = [
@@ -46,17 +50,31 @@ export const FORBIDDEN_IN_BOX = [
 // and the isolation check reads mounted files.
 export const MOUNTED_SECRETS = '/run/secrets/bob/'
 const isPath = (v: string) => /^\/[^\s]*$/.test(v) && !v.split('/').includes('..')
-const isFileRef = (name: string, v: string) =>
-  isPath(v) && (v.startsWith(MOUNTED_SECRETS) || /_FILE$/i.test(name))
+// The file must be there: a value that only starts like a path is still a value.
+const isFileRef = (name: string, v: string, exists: (p: string) => boolean) =>
+  isPath(v) && (v.startsWith(MOUNTED_SECRETS) || /_FILE$/i.test(name)) && exists(v)
 
 // scheme://user:password@host: a credential carried in a value, whatever the name.
-export const URL_WITH_PASSWORD = /[a-z][a-z0-9+.-]*:\/\/[^\s/:@]*:[^\s/@]+@/i
+// The password may hold a /; a port followed by a path is not a password.
+export const URL_WITH_PASSWORD = /[a-z][a-z0-9+.-]*:\/\/[^\s/:@]*:(?!\d+(?:[/?#]|$))[^\s@]+@/i
+// password=… inside a value: a URL query, a libpq keyword string, an ODBC string.
+export const PARAM_WITH_PASSWORD = /(?:^|[\s?&;])[\w.-]*(?:pass|pwd|pw|clave|contrase|secret|token|llave|credential|credencial)[\w.-]*\s*=\s*[^\s&;]/i
+export const JWT = /eyJ[A-Za-z0-9_-]+\.([A-Za-z0-9_-]+)\.[A-Za-z0-9_-]*/g
+export function hasServiceRoleJwt(v: string): boolean {
+  for (const m of v.matchAll(JWT)) {
+    try {
+      if (JSON.parse(Buffer.from(m[1], 'base64url').toString('utf8'))?.role === 'service_role') return true
+    } catch { /* not a JWT */ }
+  }
+  return false
+}
 
 // Why a variable must not be in the box's environment, or null. Never echoes the value.
-export function forbiddenEnv(name: string, value: string): string | null {
-  if ((FORBIDDEN_IN_BOX as readonly string[]).includes(name)) return 'no debe estar en la caja'
-  if (SECRET_NAME.test(name) && !isFileRef(name, value)) return 'parece una contraseña o una llave y no debe estar en la caja'
-  if (URL_WITH_PASSWORD.test(value)) return 'lleva una contraseña dentro de una URL y no debe estar en la caja'
+export function forbiddenEnv(name: string, value: string, exists: (p: string) => boolean = () => false): string | null {
+  if ((FORBIDDEN_IN_BOX as readonly string[]).includes(name.toUpperCase())) return 'no debe estar en la caja'
+  if (SECRET_NAME.test(name) && !isFileRef(name, value, exists)) return 'parece una contraseña o una llave y no debe estar en la caja'
+  if (URL_WITH_PASSWORD.test(value) || PARAM_WITH_PASSWORD.test(value)) return 'lleva una contraseña dentro de una URL o de una cadena de conexión y no debe estar en la caja'
+  if (hasServiceRoleJwt(value)) return 'es un JWT con role=service_role y no debe estar en la caja'
   return null
 }
 
@@ -139,7 +157,7 @@ export function boxEnvProblems(env: Env = process.env, read: Reader = defaultRea
   const problems: string[] = []
   for (const [k, v] of Object.entries(env)) {
     if (!v) continue
-    const why = forbiddenEnv(k, v)
+    const why = forbiddenEnv(k, v, (p) => { try { read(p); return true } catch { return false } })
     if (why) problems.push(`${k} ${why}`)
   }
   const checks: [string, () => unknown][] = [

@@ -14,7 +14,8 @@
 #   3. Un secreto, un lector, montado como fichero: nunca por env_file ni por
 #      environment, porque lo que va en el entorno lo devuelve la API de Docker a
 #      quien inspeccione el contenedor. Ni la service role, ni JWT_SECRET, ni la
-#      credencial de migración: esa la lee solo el paso de migración de deploy.sh.
+#      credencial de migración: esa (migrador.env) la lee solo
+#      `firma-instalacion … resto` de BOb-engine, y ningún contenedor la monta.
 #   4. Redes: bzzz-vecina-bob (internal, la crea el alta de la vecina en Bzzz;
 #      dentro solo están supabase-db, supabase-auth y bzzz-vecinos) y, solo para
 #      la aplicación, bzzz-edge, por donde llega Traefik. bzzz-edge sale a internet

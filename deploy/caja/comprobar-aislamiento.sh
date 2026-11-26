@@ -68,28 +68,42 @@ redes = {n["Name"]: n for n in json.load(open(f"{d}/redes.json"))}
 PERMITIDAS = {"bob-web": {vecina, entrada}, "bob-feeder": {vecina}}
 SALIDA = set() if estricta == "1" else {("bob-web", entrada)}
 
-# SECRET_NAME, FORBIDDEN_IN_BOX y URL_WITH_PASSWORD, copia literal de lib/bob/runtime.ts. lib/bob/caja-compose.test.ts
+# SECRET_NAME, FORBIDDEN_IN_BOX, URL_WITH_PASSWORD y PARAM_WITH_PASSWORD, copia literal de lib/bob/runtime.ts. lib/bob/caja-compose.test.ts
 # falla si se separan.
 # --- FORBIDDEN_IN_BOX ---
-SECRET_NAME = re.compile(r"PASS|_PWD|CLAVE|CONTRASE|SECRET|TOKEN|LLAVE|KEY|CREDENTIAL|CREDENCIAL|SERVICE_ROLE|DATABASE_URL|DSN", re.I)
+SECRET_NAME = re.compile(r"^(?!(?:OLD)?PWD$).*?PWD?(?![A-Za-z])|PASS|CLAVE|CONTRASE|SECRET|TOKEN|LLAVE|KEY|CREDENTIAL|CREDENCIAL|SERVICE_ROLE|DATABASE_URL|DSN|AUTH|PRIVAT[EA](?:_?(?:PEM|KEY|CERT|DER)|$)|SIGNING|SALT", re.I)
 FORBIDDEN_IN_BOX = [
     "TWILIO_ACCOUNT_SID", "SLACK_WEBHOOK_URL",
 ]
-URL_WITH_PASSWORD = re.compile(r"[a-z][a-z0-9+.-]*:\/\/[^\s/:@]*:[^\s/@]+@", re.I)
+URL_WITH_PASSWORD = re.compile(r"[a-z][a-z0-9+.-]*:\/\/[^\s/:@]*:(?!\d+(?:[/?#]|$))[^\s@]+@", re.I)
+PARAM_WITH_PASSWORD = re.compile(r"(?:^|[\s?&;])[\w.-]*(?:pass|pwd|pw|clave|contrase|secret|token|llave|credential|credencial)[\w.-]*\s*=\s*[^\s&;]", re.I)
 MOUNTED_SECRETS = "/run/secrets/bob/"
 # --- fin ---
 # Una variable con nombre de secreto puede llevar la ruta de un fichero: uno montado aquí (BOB_VECINOS_CLAVE del
-# feeder) o cualquier ruta absoluta con un nombre *_FILE (la convención de Docker). La ruta no es el secreto.
-def es_ruta(k, v):
+# feeder) o cualquier ruta absoluta con un nombre *_FILE (la convención de Docker). La ruta no es el secreto, pero
+# tiene que ser el destino de un montaje de ESE contenedor: un valor que solo empieza como una ruta es un valor.
+def es_ruta(k, v, destinos):
     return re.fullmatch(r"/\S*", v) is not None and ".." not in v.split("/") \
-        and (v.startswith(MOUNTED_SECRETS) or k.upper().endswith("_FILE"))
-def secreto(k, v, ruta_ok=True):
-    if k in FORBIDDEN_IN_BOX:
+        and (v.startswith(MOUNTED_SECRETS) or k.upper().endswith("_FILE")) and v in destinos
+def secreto(k, v, destinos=()):
+    if k.upper() in FORBIDDEN_IN_BOX:
         return "trae " + k
-    if SECRET_NAME.search(k) and not (ruta_ok and es_ruta(k, v)):
+    if SECRET_NAME.search(k) and not es_ruta(k, v, destinos):
         return "trae " + k
-    if URL_WITH_PASSWORD.search(v):
-        return k + " lleva una contraseña dentro de una URL"
+    if URL_WITH_PASSWORD.search(v) or PARAM_WITH_PASSWORD.search(v):
+        return k + " lleva una contraseña dentro de una URL o de una cadena de conexión"
+    return None
+# En un fichero montado, una línea sin «=» también se lee: una URL suelta, una línea de pgpass
+# (host:puerto:base:usuario:clave) o una clave de JSON o YAML con nombre de secreto.
+PGPASS = re.compile(r"^[^:\s#]+:(?:\d+|\*):[^:\s]+:[^:\s]+:\S")
+CLAVE_DOS_PUNTOS = re.compile(r"(?:^|[{,\s])[\"']?[\w.-]*(?:pass|pwd|pw|clave|contrase|secret|token|llave|key|credential|credencial|private|signing|salt|auth)[\w.-]*[\"']?\s*:\s*[\"']?[^\s\"',}]", re.I)
+def linea_secreta(linea):
+    if URL_WITH_PASSWORD.search(linea) or PARAM_WITH_PASSWORD.search(linea):
+        return "trae una contraseña dentro de una URL o de una cadena de conexión"
+    if PGPASS.search(linea):
+        return "trae una línea de pgpass"
+    if CLAVE_DOS_PUNTOS.search(linea):
+        return "trae una clave con nombre de secreto"
     return None
 # En un fichero montado de /opt/bob/secrets, el login de ese contenedor (va precisamente ahí). Nada más.
 PROPIA = {"bob-web": {"BOB_APP_CLAVE"}, "bob-feeder": {"BOB_FEEDER_CLAVE"}}
@@ -149,15 +163,18 @@ for c in conts:
         mw = [x.strip() for x in l.get(f"traefik.http.routers.{r}.middlewares", "").split(",") if x.strip()]
         if not mw or mw[0].lower() != "puerta-apps@file":
             f("traefik", f"el router {r} no lleva puerta-apps@file primero ({','.join(mw) or 'sin middlewares'})")
+    destinos = {m.get("Destination", "") for m in c.get("Mounts") or []}
     for e in c["Config"].get("Env") or []:
         k, _, v = e.partition("=")
-        por = secreto(k, v)
+        por = secreto(k, v, destinos)
         if por:
             f("secreto", f"el entorno {por}" if por.startswith("trae") else f"en el entorno, {por}")
         elif jwt_service_role(v):
             f("secreto", f"{k} es un JWT con role=service_role")
     for m in c.get("Mounts") or []:
         src = m.get("Source", "")
+        if "migrador.env" in (os.path.basename(src), os.path.basename(m.get("Destination", ""))):
+            f("montaje", f"monta migrador.env ({src}): la credencial de migración no la monta ningún contenedor"); continue
         if m.get("Type") != "bind":
             f("montaje", f"monta un {m.get('Type')} ({m.get('Name') or src})"); continue
         if not src.startswith(PERMITIDOS):
@@ -176,13 +193,15 @@ for c in conts:
                 no_medible.append(f"{n}: no puedo leer {src} ({ex.strerror})"); continue
             propia = PROPIA.get(n, set()) if src.startswith(PERMITIDOS[1]) else set()
             for linea in texto.splitlines():
-                if "=" not in linea or linea.lstrip().startswith("#"):
+                if not linea.strip() or linea.lstrip().startswith("#"):
                     continue
-                k, _, v = linea.partition("=")
+                # Toda línea se lee entera: una URL suelta, un JSON o un pgpass también pueden llevar «=». Una KEY=VALUE
+                # se mira antes por su nombre (el fallo la nombra). El login propio no se lee: es lo que el fichero trae.
+                k, igual, v = linea.partition("=")
                 k = re.sub(r"^export\s+", "", k.strip()); v = v.strip().strip("'\"")
-                if k in propia:
+                if igual and k in propia:
                     continue
-                por = secreto(k, v, ruta_ok=False)
+                por = (secreto(k, v) if igual else None) or linea_secreta(linea)
                 if por:
                     f("secreto", f"{src} {por}")
             if jwt_service_role(texto):
