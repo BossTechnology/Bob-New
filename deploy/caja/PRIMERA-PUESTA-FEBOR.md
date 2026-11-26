@@ -46,7 +46,8 @@ Se apunta antes de empezar. El resto de la secuencia es igual en las tres.
 | Quién | Henry, con quien ayude | Henry, con quien ayude | **solo Henry** |
 
 **La base vacía** es para una caja sin BOb: no hay commit del que sacar la huella. Henry decidió «Defined empty base»
-el 2026-11-25. **[pendiente: BossTechnology/BOb-engine#54, abierto; esta guía sigue su interfaz en `4f3ba34`]**.
+el 2026-11-25. **[pendiente: BossTechnology/BOb-engine#54, abierto]**. Esta guía sigue su interfaz tal como está en el PR; si cambia
+antes de fusionarse, se revisan A5, B3, B5 y C.
 model-01 y Febor son de esas cajas. Su `<base>` es el sha256 de nada, que ningún árbol tiene
 (`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`; `firma-instalacion.sh vacia`). La aprobación se
 firma desde ella (A5) y `instalacion-firmada` la lleva (B3). Desde la base vacía solo corre `cadena`, y antes de aplicar
@@ -63,10 +64,10 @@ Hasta que entre #54, una caja sin BOb no tiene `<base>`, y desde B3 no se sigue.
 | Bob-New | #55, #37 | el paquete de `/opt/bob`; las pantallas del Slice 3 | en `main` |
 | Bob-New | BossTechnology/Bob-New#56 | `deploy.sh` ya no migra; los chequeos de secretos descubren por patrón | **abierto** |
 | BOb-engine | #48, #52 | O-3 firmado (`cadena` y `resto`); el texto de P5 por D77 | en `main` |
-| BOb-engine | #51 | `verify-required` lo comprueba el guion, no `ssh-keygen` | **abierto** |
+| BOb-engine | #51 | `verify-required` lo comprueba el guion, no `ssh-keygen` | en `main` (`946cb19`) |
 | BOb-engine | #53 | `postgres.env` fuera de `secrets/` (B2), cómo llega root a la base (B3), requisitos de `firma-instalacion` (H5) | en `main` |
-| BOb-engine | #54 | la base vacía (H4), para una caja donde BOb nunca se instaló (model-01 y Febor), y el reintento de un `cadena` a medias | **abierto**; esta guía sigue `4f3ba34` |
-| BOb-engine | por abrir | la llave de Henry en `supabase/provision/firmantes_instalacion` **[llave-fido]** | **pendiente**, después de #51 |
+| BOb-engine | #54 | la base vacía (H4), para una caja donde BOb nunca se instaló (model-01 y Febor), y el reintento de un `cadena` a medias | **abierto**: su interfaz puede cambiar hasta que entre |
+| BOb-engine | por abrir | la llave de Henry en `supabase/provision/firmantes_instalacion` **[llave-fido]** | **pendiente** (#51 ya está en `main`) |
 
 ## A. Una vez, en el portátil
 
@@ -75,7 +76,7 @@ que se firma va en `config/bob/firmantes_imagen` de Bzzz, por PR. Tiene que esta
 B1. Si no, `construir-imagen-bob.sh` acaba en rc 1 (comprueba contra la copia del portátil) y `deploy.sh` no carga la
 imagen (comprueba contra la de la caja).
 
-**A2. La llave de instalación.** **[llave-fido] [pendiente: después de BossTechnology/BOb-engine#51]** La línea
+**A2. La llave de instalación.** **[llave-fido] [pendiente: PR de BOb-engine por abrir]** La línea
 pública de la llave de Henry va en `supabase/provision/firmantes_instalacion` de BOb-engine, por PR. Antes de abrirlo,
 comprobar que la huella es la de la llave:
 
@@ -406,6 +407,9 @@ vez de las dos órdenes de arriba:
 cd ~/bob-engine && scripts/firma-instalacion.sh vacia | sudo tee /opt/bob/instalacion-firmada >/dev/null && sudo chmod 644 /opt/bob/instalacion-firmada
 ```
 
+Si el clon de `~/bob-engine` no tiene la orden `vacia` (un commit sin BossTechnology/BOb-engine#54), el guion sale con
+error y `tee` deja `instalacion-firmada` vacío. La comprobación de abajo lo ve: la primera línea no es la base vacía.
+
 ```bash
 cat /opt/bob/instalacion-firmada; ls /opt/bob/instalacion-en-curso /opt/bob/instalacion-aprobacion 2>&1
 ```
@@ -456,7 +460,7 @@ sudo grep -c '^POSTGRES_PASSWORD=.' /root/bob-install/postgres.env; sudo stat -c
 Lo esperado: `1` y `root 600`. Si da `0` o más de `1`, se para, y no se arregla a mano con un editor. Nada de esta
 secuencia imprime la contraseña.
 
-### B5. `cadena`, como `postgres` **[llave-fido] [pendiente: BOb-engine#51 y la llave de A2]**
+### B5. `cadena`, como `postgres` **[llave-fido] [pendiente: la llave de A2]**
 
 ```bash
 sudo /opt/bob/bin/firma-instalacion caja ~/bob-engine <C_ENG> cadena POSTGRES_ENV=/root/bob-install/postgres.env POSTGRES_HOST=<IP de bzzz-supabase-db>
@@ -473,7 +477,7 @@ Escribir `instalo` cuando lo pida.
   firmado en A5 es un incidente. Una que sí esté contradice lo medido en lab-02 (la cadena entera en `5e5b9be`), y
   hay que entender por qué antes de firmar nada más.
 - **En model-01 y Febor**, desde la base vacía, la salida dice `= the empty base`. Antes de aplicar nada, `cadena`
-  comprueba que la base no tiene rastro de BOb: historia del CLI, roles o esquemas `bob_*`, o nombres que crean sus
+  comprueba que la base no tiene rastro de BOb: historia del CLI, roles `bob` o `bob_*`, esquemas `bob_*`, o nombres que crean sus
   migraciones. Si lo rechaza, la base no está vacía: se para, se vuelve a medir con la sonda de B0 y no se cambia
   `instalacion-firmada` para saltárselo. Si pasa, crea `bob` y aplica la cadena firmada. Si falla a medias, C dice
   cómo reintentar.
@@ -497,7 +501,7 @@ cd /opt/bzzz && scripts/generar-secretos-vecina.sh bob --reiniciar; echo "rc=$?"
 Lo esperado: `rc=0`. El alta deja `/opt/bob/secrets/migrador.env`, de root y 600, en un directorio 700. Lo deja
 incluso cuando sale 3. Lo lee `resto` (B7) y nada más: ningún contenedor lo monta, y `deploy.sh` ya no lo lee.
 
-### B7. `resto`, como `bob_migrador` **[llave-fido] [pendiente: BOb-engine#51 y la llave de A2]**
+### B7. `resto`, como `bob_migrador` **[llave-fido] [pendiente: la llave de A2]**
 
 ```bash
 sudo /opt/bob/bin/firma-instalacion caja ~/bob-engine <C_ENG> resto POSTGRES_ENV=/root/bob-install/postgres.env POSTGRES_HOST=<IP de bzzz-supabase-db>
@@ -767,7 +771,7 @@ sudo /opt/bob/bin/firma-instalacion caja ~/bob-engine <C_ENG> cadena POSTGRES_EN
 Acepta solo lo que deja una cadena a medias y rechaza lo demás:
 - historia del CLI solo dentro de la cadena;
 - ningún `bob.schema_migrations`;
-- ningún rol `bob_*` que pueda entrar.
+- ningún rol `bob` ni `bob_*` que pueda entrar.
 
 Si acaba bien, `caja` borra `instalacion-en-curso` y escribe `instalacion-firmada` e `instalacion-aprobacion`, y se
 sigue por B6. Si el reintento lo rechaza, se para. No se borra `instalacion-en-curso` ni se reescribe
