@@ -9,7 +9,8 @@ repo contra una caja de cliente sin su visto bueno en cada corrida.
 /opt/bob/
   compose.yml              copia de deploy/caja/compose.yml
   .env                     BOB_HOST y las imágenes (las escribe deploy.sh; no lleva secretos)
-  config/caja.env          BOB_ORG_ID, BOB_GOTRUE_URL, BOB_DB_HOST y, si no son los de siempre, BOB_DB_PORT y
+  config/caja.env          BOB_ORG_ID, BOB_GOTRUE_URL, BOB_DB_HOST, BOB_PORTAL_URL (el origen https del portal
+                           de BzzzBX: BOb no tiene login propio) y, si no son los de siempre, BOB_DB_PORT y
                            BOB_DB_NAME (configuración, no secretos)
   secrets/app.env          bob_app            600, del usuario 65534
   secrets/feeder.env       bob_feeder         600, del usuario 65534 (cuando haya feeder)
