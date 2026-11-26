@@ -42,7 +42,7 @@ Se apunta antes de empezar. El resto de la secuencia es igual en las tres.
 | El BOb viejo (`bzzz-bob`) | no corre (medido el 25 nov): B2 no aplica, pero el primer alta sigue necesitando `--reiniciar` (B6) | no corre (medido el 25 nov): B2 no aplica; el primer alta necesita `--reiniciar` (B6) | no hay (medido el 25 nov): `docker ps -a | grep -i bob` vacío y sin `compose/l7-bob.yml`, al contrario de lo que suponía la auditoría (B4). B2 y B14 no aplican; el primer alta necesita `--reiniciar` (B6) |
 | La cadena de BOb en la base | ya está, aplicada en `5e5b9be` | no está (medido el 25 nov): sin esquema `bob` y sin `supabase_migrations.schema_migrations`, así que sin historia del CLI. B5 (`cadena`) la crea | no está (medido el 25 nov): sin esquema `bob` y sin `supabase_migrations.schema_migrations`. B5 (`cadena`) la crea |
 | `<base>` de `instalacion-firmada` | la huella de `5e5b9be` | **la base vacía** (BossTechnology/BOb-engine#54) | **la base vacía** (BossTechnology/BOb-engine#54), la misma que model-01: comparten aprobación (A5) |
-| Dónde está Bzzz | `/opt/bzzz` (`docs/OPERACION_bob.md` de Bzzz) | `/opt/bzzz` (sin medir: `ls /opt/bzzz/compose` en B0) | `/opt/bzzz`, con el compose en `/opt/bzzz/compose` (medido el 25 nov: l1 a l5, y el `working_dir` de `bzzz-supabase-db` es ese) |
+| Dónde está Bzzz | `/opt/bzzz` (`docs/OPERACION_bob.md` de Bzzz) | `/opt/bzzz` (sin medir: la sonda del `working_dir` en B0) | `/opt/bzzz`, con el compose en `/opt/bzzz/compose` (medido el 25 nov: l1 a l5, y el `working_dir` de `bzzz-supabase-db` es ese) |
 | Quién | Henry, con quien ayude | Henry, con quien ayude | **solo Henry** |
 
 **La base vacía** es para una caja sin BOb: no hay commit del que sacar la huella. Henry decidió «Defined empty base»
@@ -170,6 +170,15 @@ ls -l /opt/bzzz/compose/l7-bob.yml
 ```
 
 Si existe y no corre nada de él, B2 no hace falta y el fichero se borra en B14.
+
+Dónde está Bzzz en esta caja. Todo lo que sigue da por hecho `/opt/bzzz`, con el compose en `/opt/bzzz/compose`:
+
+```bash
+docker inspect bzzz-supabase-db --format '{{index .Config.Labels "com.docker.compose.project.working_dir"}}'
+```
+
+Tiene que dar `/opt/bzzz/compose` (así dio Febor el 25 nov). Si da otra ruta, se para y se cambian las rutas de esta
+secuencia antes de seguir.
 
 ```bash
 dig +short <host de BOb>
