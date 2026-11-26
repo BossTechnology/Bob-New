@@ -37,6 +37,7 @@ Se apunta antes de empezar. El resto de la secuencia es igual en las tres.
 | `<dominio base>` (`generar-config-portal.sh`) | `<dominio base de lab-02>` | `<dominio base de model-01>` | `<dominio base de Febor>` |
 | `<uuid de la org>` (`BOB_ORG_ID`) | `<uuid de la org de lab-02>` | `<uuid de la org de model-01>` | `<uuid de la org de Febor>` |
 | Herramientas del servidor (B0) | instaladas el 25 nov: CLI de Supabase 2.120.0 y `postgresql-client-16`; `git`, `setpriv` y `flock` ya estaban | ni CLI ni psql (medido el 25 nov): se instalan como en B0; `git`, `setpriv` y `flock` ya están | sin medir: B0 |
+| Pendiente del servidor (B0b) | apt dejó diferido `systemctl restart docker.service`, y un kernel nuevo sin arrancar (149 → 151) | lo mismo: Docker diferido y kernel 147 → 151 | sin medir: B0 |
 | Almacén de imágenes de Docker | **containerd** (medido el 25 nov: `29.7.2 overlayfs [["driver-type","io.containerd.snapshotter.v1"]]`): B12 y B13 llevan la parte de containerd | **containerd** (medido el 25 nov: Docker 29.6.1, `overlayfs` con `io.containerd.snapshotter.v1`): lo mismo que lab-02 | sin medir: B0 |
 | El BOb viejo (`bzzz-bob`) | no corre (medido el 25 nov): B2 no aplica, pero el primer alta sigue necesitando `--reiniciar` (B6) | no corre (medido el 25 nov): B2 no aplica; el primer alta necesita `--reiniciar` (B6) | corre: B2 es obligatorio |
 | La cadena de BOb en la base | ya está, aplicada en `5e5b9be` | no está (medido el 25 nov): sin esquema `bob` y sin `supabase_migrations.schema_migrations`, así que sin historia del CLI. B5 (`cadena`) la crea | no se sabe: lo dice la sonda de B0 |
@@ -197,6 +198,15 @@ sudo dpkg -i /tmp/supabase_2.120.0_linux_amd64.deb && supabase --version
 Tiene que dar `2.120.0`. **No actualizar a la v3 que sugiere el CLI:** `firma-instalacion` usa la versión que fija el
 CI de BOb-engine (`SUPABASE_CLI_VERSION`), y hoy es 2.120.0.
 
+Justo después, la telemetría del CLI apagada, para el usuario y para root. Sin esto, el CLI manda datos de uso desde
+una caja de cliente, y `firma-instalacion` lo corre como root:
+
+```bash
+supabase telemetry disable; sudo supabase telemetry disable
+```
+
+Las dos tienen que decir «Telemetry is disabled» (medido en model-01 el 25 nov).
+
 En model-01 y en Febor, si ya existe `bob` y qué cadena tiene la base. La sonda lee solo versiones, ninguna fila de
 cliente:
 
@@ -209,6 +219,40 @@ sudo docker exec bzzz-supabase-db psql -X -tA -U supabase_admin -d postgres -c "
 - `f` y ninguna versión de BOb: lo mismo, la base vacía.
 - `t` y una lista: buscar en BOb-engine el commit cuyas migraciones son exactamente esas. Su huella es `<base>`. Si no
   casa con ningún commit, se para aquí y Henry decide.
+
+### B0b. Docker y kernel pendientes: al abrir la ventana, antes de nada más
+
+Al instalar el CLI y psql, apt dejó diferido el reinicio de Docker (`systemctl restart docker.service`) y un kernel nuevo
+sin arrancar: lab-02 de 149 a 151, model-01 de 147 a 151. **Nada de esto se hace fuera de una ventana de
+mantenimiento:** reiniciar Docker para todos los contenedores de la caja, y reiniciar el servidor también. Se hace al
+empezar la ventana de cada ensayo, antes de B1, para que el ensayo corra sobre la caja como quedará.
+
+Mirar qué queda pendiente:
+
+```bash
+uname -r; ls /boot/vmlinuz-* ; [ -f /var/run/reboot-required ] && cat /var/run/reboot-required
+```
+
+Si hay un kernel más nuevo que `uname -r`, reiniciar el servidor (también reinicia Docker):
+
+```bash
+sudo systemctl reboot
+```
+
+Si solo falta Docker:
+
+```bash
+sudo systemctl restart docker.service
+```
+
+Después, volver a entrar (`ssh bzzz-<caja>`) y comprobar que la caja quedó entera antes de seguir:
+
+```bash
+uname -r; cd /opt/bzzz && scripts/verify-deployment.sh
+```
+
+Lo esperado: el kernel nuevo y 0 fallos. Si `verify-deployment.sh` falla, se arregla la caja antes de B1: el ensayo
+no empieza sobre una caja rota.
 
 ### B1. Bzzz a `main`, con `generar-secretos.sh` primero (H2)
 
