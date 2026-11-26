@@ -15,10 +15,10 @@ concurrency:
 
 env:
   # The BOb-engine commit whose schema `bob` and fixture the live tests read.
-  # Bump it by hand when the contract moves. The head of BOb-engine #59
-  # (bob.claim_viewer_seat, «Alta sola, como viewer»), on top of main; move it
-  # to #59's merge commit once Henry merges it.
-  BOB_ENGINE_REF: 44256e3b41deb9f7652b345e661e1481c08e0c6a
+  # Bump it by hand when the contract moves. The head of BOb-engine #60
+  # (claim_viewer_seat stores the email in lower case), on top of main with #59
+  # merged; move it to #60's merge commit once Henry merges it.
+  BOB_ENGINE_REF: 30bfb841fb4f92a017c42fdffb4939da53de6274
   # Same CLI version as BOb-engine's own CI.
   SUPABASE_CLI_VERSION: 2.120.0
 
