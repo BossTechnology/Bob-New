@@ -33,8 +33,8 @@ Se apunta antes de empezar. El resto de la secuencia es igual en las tres.
 
 | | lab-02 | model-01 | Febor |
 |---|---|---|---|
-| `<host de BOb>` (`BOB_HOST` y `BZZZ_HOST_BOB`) | `bob.laboratorio.bzzzbx.com` (Henry, 26 nov) | `bob.model.bzzzbx.com` (Henry, 26 nov) | `bob.febor.bzzzbx.com` (ya resuelve, 26 nov) |
-| `<dominio base>` (`generar-config-portal.sh`) | `laboratorio.bzzzbx.com` (el portal está en la raíz) | `model.bzzzbx.com` (el portal es `app.model.bzzzbx.com`) | `<dominio base de Febor>`: se lee del `config.js` del portal antes de B10 |
+| `<host de BOb>` (`BOB_HOST` y `BZZZ_HOST_BOB`) | `<host de BOb de lab-02>` (confirmado por Henry el 26 nov) | `<host de BOb de model-01>` (confirmado por Henry el 26 nov) | `<host de BOb de Febor>` (ya resuelve, 26 nov) |
+| `<dominio base>` (`generar-config-portal.sh`) | `<dominio base de lab-02>` (el portal está en la raíz del dominio) | `<dominio base de model-01>` (el portal está en `app.` del dominio) | `<dominio base de Febor>` |
 | `<uuid de la org>` (`BOB_ORG_ID`) | creada el 26 nov (slug `laboratorio`); el uuid lo da el `select` de B8b | creada el 26 nov (slug `modelo`, la demo); el uuid lo da el `select` de B8b | sale de B8b en la ventana (slug `febor`) |
 | Herramientas del servidor (B0) | instaladas el 25 nov: CLI de Supabase 2.120.0 y `postgresql-client-16`; `git`, `setpriv` y `flock` ya estaban | ni CLI ni psql (medido el 25 nov): se instalan como en B0; `git`, `setpriv` y `flock` ya están | ni CLI ni psql (medido el 25 nov); `git`, `setpriv` y `flock` ya están. **Se instalan dentro de la ventana (B0b), no antes:** apt y needrestart pueden reiniciar servicios |
 | Pendiente del servidor (B0b) | apt dejó diferido `systemctl restart docker.service`; el kernel **ya está en `6.8.0-151`** (medido el 26 nov): en B0b solo se comprueba | lo mismo: Docker diferido y kernel 147 → 151, aún sin reiniciar | kernel `7.0.0-1014-gcp` corriendo con `7.0.0-1018-gcp` instalado y `/var/run/reboot-required` presente (medido el 26 nov; no es 147 → 151); además «System restart required», swap al 27 % y 2 procesos zombi (25 nov): el reinicio de B0b |
@@ -44,6 +44,10 @@ Se apunta antes de empezar. El resto de la secuencia es igual en las tres.
 | `<base>` de `instalacion-firmada` | la huella de `5e5b9be` | **la base vacía** (BossTechnology/BOb-engine#54) | **la base vacía** (BossTechnology/BOb-engine#54), la misma que model-01: comparten aprobación (A5) |
 | Dónde está Bzzz | `/opt/bzzz` (`docs/OPERACION_bob.md` de Bzzz) | `/opt/bzzz` (sin medir: la sonda del `working_dir` en B0) | `/opt/bzzz`, con el compose en `/opt/bzzz/compose` (medido el 25 nov: l1 a l5, y el `working_dir` de `bzzz-supabase-db` es ese) |
 | Quién | Henry, con quien ayude | Henry, con quien ayude | **solo Henry** |
+
+Los hosts y dominios reales no van en este repo: se apuntan aparte antes de la ventana. El dominio base sale de las URL
+de `/data/bzzz/supabase/portal/config.js` de la caja (`grep -oE 'https?://[a-z0-9.-]+' …`), y `BZZZ_HOST_PORTAL` de
+`compose/.env` dice dónde está el portal.
 
 **La base vacía** es para una caja sin BOb: no hay commit del que sacar la huella. Henry decidió «Defined empty base»
 el 2026-11-25, y está en `main` de BOb-engine (BossTechnology/BOb-engine#54 y #56).
