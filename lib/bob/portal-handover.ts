@@ -7,7 +7,7 @@ const HOME = '/bob/performance'
 // handover itself or /login (each would go straight back to the portal).
 export function safeNext(ir: unknown): string {
   if (typeof ir !== 'string' || !/^\/(?![/\\])[\x21-\x7e]*$/.test(ir) || /%0[ad]/i.test(ir)) return HOME
-  const path = ir.split(/[?#]/)[0]
+  const path = ir.split(/[?#]/)[0].replace(/\/+$/, '')
   if (path === '/entrar' || path === '/login') return HOME
   return ir
 }

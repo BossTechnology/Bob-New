@@ -91,6 +91,12 @@ try {
       statuses['503 identity down'] = (statuses['503 identity down'] ?? 0) + 1
     }
   }
+  // The portal's token rides in /entrar's fragment, and a browser carries the
+  // fragment over a 3xx: /entrar is a 200 itself, session cookie or not.
+  for (const headers of [{}, SESSION_COOKIE, { cookie: '__Host-bob-portal=1' }]) {
+    const res = await fetch(`${BASE}/entrar`, { redirect: 'manual', headers })
+    if (res.status !== 200) problems.push(`/entrar ${JSON.stringify(headers)}: answered ${res.status}, not 200`)
+  }
   console.log('answers by status:', JSON.stringify(statuses))
 } catch (e) {
   problems.push(e instanceof Error ? e.message : String(e))

@@ -121,6 +121,10 @@ export async function boxProxy(request: NextRequest, deps: BoxProxyDeps = DEFAUL
 
 async function decide(request: NextRequest, deps: BoxProxyDeps): Promise<NextResponse> {
   const path = request.nextUrl.pathname
+  // The portal's token is in /entrar's fragment, and a browser carries the
+  // fragment over any 3xx it follows: /entrar is answered before anything
+  // that could send it elsewhere (session, identity, role, the portal).
+  if (path === '/entrar' && (request.method === 'GET' || request.method === 'HEAD')) return NextResponse.next({ request })
   const access = boxAccess(path)
   if (access === 'off') return plain(404, 'Not found')
   const refused = refuseWrite(request.method, request.headers, request.headers.get('host') ?? request.nextUrl.host)

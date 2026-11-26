@@ -42,7 +42,10 @@ test('after the handover BOb only opens one of its own paths', () => {
   assert.equal(safeNext('/bob/quality?range=today'), '/bob/quality?range=today')
   assert.equal(safeNext('/'), '/')
   for (const bad of [null, '', 'https://evil.example/', '//evil.example', '/\\evil.example', 'bob/quality',
-    '/entrar', '/entrar?x', '/login', '\t/x', '/%0d%0aSet-Cookie:x']) {
+    '/entrar', '/entrar?x', '/login', '\t/x', '/%0d%0aSet-Cookie:x',
+    // Review of #63: a path that a browser reads as another origin.
+    '\\evil.example', '\\\\evil.example', '\\/evil.example', '//', '///evil.example', '/\\', ' /x', '/x y',
+    'https:/evil.example', 'javascript:alert(1)', '/entrar/', '/login/']) {
     assert.equal(safeNext(bad), '/bob/performance', String(bad))
   }
 })
@@ -161,7 +164,10 @@ test('without a token, or with one refused, the page says so and does not send t
 })
 
 test('a destination that is not one of BOb\'s own paths opens the screens instead', async () => {
-  const p = page('#bob_at=a.b.c&ir=https%3A%2F%2Fevil.example', { status: 200 })
-  await p.run()
-  assert.deepEqual(p.steps.at(-1), 'replace /bob/performance')
+  for (const ir of ['https%3A%2F%2Fevil.example', '%2F%2Fevil.example', '%5C%5Cevil.example', '%2F%5Cevil.example',
+    '%5C%2Fevil.example', 'evil.example']) {
+    const p = page(`#bob_at=a.b.c&ir=${ir}`, { status: 200 })
+    await p.run()
+    assert.deepEqual(p.steps.at(-1), 'replace /bob/performance', ir)
+  }
 })

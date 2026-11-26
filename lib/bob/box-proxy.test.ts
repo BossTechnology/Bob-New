@@ -107,6 +107,29 @@ test('the handover page and its POST need no session; the page sends no referrer
   assert.ok(passes(await boxProxy(write('/auth/portal', JSON_TYPE), d)))
 })
 
+// Review of #63: the portal's token is in /entrar's fragment, and a browser
+// carries the fragment over any 3xx it follows. /entrar is answered before
+// anything that could send it elsewhere: no session, identity or role is
+// looked at, whatever cookies or query it comes with.
+test('/entrar passes straight through: never a 3xx, never a session, identity or role lookup', async () => {
+  const never = () => { throw new Error('must not be called') }
+  const d: BoxProxyDeps = {
+    gotrueUrl: never, portalUrl: never, resolveSession: async () => never(), role: async () => never(),
+  }
+  const cookies = ['', `${ACCESS_COOKIE}=expired.token.x`, `${PORTAL_COOKIE}=1`,
+    `${ACCESS_COOKIE}=expired.token.x; ${PORTAL_COOKIE}=1`]
+  for (const path of ['/entrar', '/entrar?ir=%2Fbob', '/entrar?volver=https%3A%2F%2Fevil.example']) {
+    for (const cookie of cookies) {
+      for (const method of ['GET', 'HEAD']) {
+        const r = await boxProxy(new NextRequest(`http://box.test${path}`, { method, headers: cookie ? { cookie } : {} }), d)
+        assert.ok(passes(r), `${method} ${path} [${cookie}]: ${r.status}`)
+        assert.equal(r.headers.get('location'), null)
+        assert.equal(r.headers.get('referrer-policy'), 'no-referrer')
+      }
+    }
+  }
+})
+
 test('without BOB_PORTAL_URL a page without a session is a 503, not a loop to nowhere', async () => {
   const r = await boxProxy(req('/bob/quality'), noSession({ portalUrl: () => { throw new Error('unset') } }))
   assert.equal(r.status, 503)
