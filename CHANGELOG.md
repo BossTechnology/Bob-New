@@ -3,6 +3,7 @@
 Una línea por cambio entregado, en lenguaje de usuario.
 
 ## Sin publicar
+- Modo caja: la pantalla de carga de BOb es la de Hivemonic: fondo negro, logotipo de Boss Technology y barra ámbar. La ven `/entrar` mientras recibe la sesión del portal (y su aviso si falla, con el enlace al portal en ámbar) y las pantallas `/bob` mientras cargan. Sin marca de cliente y sin nada de otro origen.
 - BOb al lado de la caja: el certificado de vecina que deja `cert-vecina.sh` de Bzzz en `/opt/bob/secrets/vecinos/` ya no impide desplegar bob-web. `deploy.sh` acepta ese directorio solo con `cliente.key` a 600 y `cliente.crt` y `ca.crt`, del usuario de los contenedores, y se niega con cualquier otro nombre, enlace o permiso. El feeder monta esos tres ficheros. El feeder sigue fuera de v1: BOb arranca vacío.
 - Modo caja: queda escrito en `docs/adr/0001-entrar-sin-nonce-en-v1.md`, como propuesta para la firma de Henry, que en v1 `/entrar` acepta el token del portal sin nonce. Un enlace armado por otra cuenta de la misma caja puede dejar a alguien dentro de BOb con esa cuenta; el nonce entre BOb y el portal queda para v1.1. La vuelta al portal usa el `Host` de la petición, no `X-Forwarded-Host`.
 - Modo caja: BOb ya no tiene login propio. Sin sesión lleva al portal de BzzzBX y vuelve a la misma página; «Cerrar sesión» cierra también la del portal. Hace falta `BOB_PORTAL_URL` en `caja.env` y el portal de Bzzz #470.
