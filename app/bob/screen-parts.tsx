@@ -2,9 +2,13 @@
 import Link from 'next/link'
 import type { Cell, Channel } from '@/lib/bob/matrix.ts'
 import type { NotProjection } from '@/lib/bob/screens.ts'
-import { STATE_LABEL, reasonSummary, stateTitle, type StateInfo } from '@/lib/bob/cell-state.ts'
+import {
+  paintCell, paintNoProjection, screenTitle, technicalMeta,
+  type Audience, type LegendItem, type Note, type Paint, type Screen, type Tone,
+} from '@/lib/bob/screen-copy.ts'
 import styles from './performance/matrix.module.css'
 import { SignOut } from './sign-out'
+import { LocalWindow } from './local-window'
 
 const SCREENS = [
   ['performance', 'Rendimiento'], ['interactions', 'Interacciones'], ['quality', 'Calidad'],
@@ -48,63 +52,71 @@ export function ReadError({ label, message }: { label: string; message: string }
   )
 }
 
-export function SliceThreeNote({ present }: { present: boolean }) {
+const TONE: Record<Tone, string | undefined> = {
+  value: undefined, zero: styles.zero, noRow: styles.noRow, notConfigured: styles.notConfigured, empty: styles.noRow,
+}
+
+// One painted cell (screen-copy.ts decides the words for the audience).
+export function PaintView({ p }: { p: Paint }) {
   return (
-    <p className={styles.legend}>
-      {present
-        ? <>Estados del Slice 3 (bob.bob_cell_rollup): <span className={styles.noRow}>No aplica</span> vacío ·{' '}
-          <span className={styles.notConfigured}>No configurado</span>: falta una declaración ·{' '}
-          <span className={styles.noRow}>Pendiente</span>: el bucket aún no sella · <b>—</b>: no observado ·
-          una cifra (también 0): observado · <sup>*</sup> provisional. Pasa el cursor para ver el motivo.</>
-        : 'Estados del Slice 3 pendientes (bob.bob_cell_rollup no existe en esta base): se pinta lo que se leyó, sin inventar estados.'}
-    </p>
-  )
-}
-
-// A cell whose state is not observed: painted by state, never as a figure
-// (Slice 3 §2). The title carries every reason and the coverage.
-export function StatePaint({ info }: { info: StateInfo }) {
-  const title = stateTitle(info)
-  switch (info.state) {
-    case 'not_applicable':
-      return <span className={styles.noRow} title={title} aria-label={STATE_LABEL.not_applicable} />
-    case 'not_configured':
-      return <span className={styles.notConfigured} title={title}>{reasonSummary(info.reasons) || STATE_LABEL.not_configured}</span>
-    case 'pending':
-      return <span className={styles.noRow} title={title}>{STATE_LABEL.pending}</span>
-    default:
-      return <span className={styles.noRow} title={title} aria-label={STATE_LABEL[info.state]}>—</span>
-  }
-}
-
-export function NoProjection({ np }: { np: NotProjection }) {
-  return <span className={styles.noRow} title={np.note}>sin proyección</span>
-}
-
-// One cell: a value, a written zero, or no row. Never a 0 for no row.
-export function CellText({ cell, format = (v) => String(v), pct = false }: {
-  cell: Cell; format?: (v: number) => string; pct?: boolean
-}) {
-  const st = cell.state
-  if (st && st.state !== 'observed') return <StatePaint info={st} />
-  // Observed with no row: a declared-absent actor, a zero by declaration (F-32).
-  // Not formatted: for durations the rollup's value is the sample count, not a time.
-  if (st && cell.kind === 'no_row') return <span className={styles.zero} title={stateTitle(st)}>{st.value ?? 0}</span>
-  if (cell.kind === 'no_row') return <span className={styles.noRow} title="sin fila de proyección">sin fila</span>
-  const open = cell.open > 0 ? <sup title={`${cell.open} de ${cell.rows} filas sin sellar`}>*</sup> : null
-  if (cell.kind === 'zero') return <span className={styles.zero} title={`${cell.rows} filas, en cero`}>0{open}</span>
-  return (
-    <span title={`${cell.rows} filas`}>
-      {format(cell.value)}{open}
-      {pct && cell.pct !== null ? <span className={styles.share}> {Math.round(cell.pct * 100)}%</span> : null}
+    <span className={TONE[p.tone]} title={p.title} aria-label={p.label}>
+      {p.text}{p.open ? <sup title={p.open}>*</sup> : null}
+      {p.share ? <span className={styles.share}>{p.share}</span> : null}
     </span>
   )
 }
 
-export function Declared({ what, by }: { what: string; by: string[] }) {
-  return by.length
-    ? <span className={styles.source}>{what}: {by.join(', ')}</span>
-    : <span className={styles.source + ' ' + styles.notConfigured}>{what}: no configurado en la selección</span>
+// One cell: a value, a written zero, or no row. Never a 0 for no row.
+export function CellText({ cell, a, format, unit, pct = false }: {
+  cell: Cell; a: Audience; format?: (v: number) => string; unit?: string; pct?: boolean
+}) {
+  return <PaintView p={paintCell(cell, a, { format, unit, pct })} />
+}
+
+export function NoProjection({ np, a }: { np: NotProjection; a: Audience }) {
+  return <PaintView p={paintNoProjection(np, a)} />
+}
+
+// The line under a metric's name, or nothing.
+export function NoteLine({ note }: { note: Note | null }) {
+  if (!note) return null
+  return <span className={styles.source + (note.tone === 'notConfigured' ? ' ' + styles.notConfigured : '')}>{note.text}</span>
+}
+
+export function LegendView({ items }: { items: LegendItem[] | null }) {
+  if (!items) return null
+  return (
+    <p className={styles.legend}>
+      {items.map((it, i) => (
+        <span key={i}>
+          {i > 0 ? ' · ' : null}
+          {it.sample
+            ? <>{it.sample.tone === 'sup' ? <sup>{it.sample.text}</sup> : <span className={TONE[it.sample.tone]}>{it.sample.text}</span>}: </>
+            : null}
+          {it.text}
+        </span>
+      ))}
+    </p>
+  )
+}
+
+// The title and the window. The viewer reads the window in the browser's own
+// time zone; the technical audience reads ISO instants, as before.
+export function ScreenHeader({ screen, a, from, to, orgId, watermark }: {
+  screen: Screen; a: Audience; from: Date; to: Date; orgId?: string; watermark?: Date | null | false
+}) {
+  return (
+    <>
+      <div className={styles.sectionLabel}>{screenTitle(screen, a)}</div>
+      <p className={styles.meta}>
+        {a === 'viewer'
+          ? <LocalWindow from={from.toISOString()} to={to.toISOString()} />
+          : technicalMeta({ from, to }, { orgId, watermark }).map((m, i) => (
+            <span key={m.label}>{i > 0 ? ' · ' : null}{m.label} <code>{m.value}</code></span>
+          ))}
+      </p>
+    </>
+  )
 }
 
 export function ChannelPicker({ channels, current, qs }: {
