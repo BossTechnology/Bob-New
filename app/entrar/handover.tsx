@@ -4,6 +4,7 @@
 // never sends the person back by itself (no loop).
 import { useEffect, useState } from 'react'
 import { handover } from '@/lib/bob/portal-handover.ts'
+import { PantallaCarga } from '../_carga/pantalla'
 
 export default function Handover({ portal }: { portal: string }) {
   const [message, setMessage] = useState('')
@@ -16,14 +17,7 @@ export default function Handover({ portal }: { portal: string }) {
       show: setMessage,
     })
   }, [])
-  return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 420, margin: '15vh auto', padding: 16 }}>
-      {message
-        ? <>
-            <p>{message}</p>
-            <p><a href={portal}>Entrar por el portal de BzzzBX</a></p>
-          </>
-        : <p>Entrando en BOb…</p>}
-    </main>
-  )
+  return message
+    ? <PantallaCarga mensaje={message} enlace={{ href: portal, texto: 'Entrar por el portal de BzzzBX' }} />
+    : <PantallaCarga lema="Entrando en BOb…" />
 }
