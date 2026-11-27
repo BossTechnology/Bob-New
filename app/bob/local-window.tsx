@@ -6,7 +6,9 @@ import { formatWindow } from '@/lib/bob/screen-copy.ts'
 
 const subscribe = () => () => {}
 
-export function LocalWindow({ from, to }: { from: string; to: string }) {
+// Epoch milliseconds, not ISO strings: the viewer's payload carries no ISO
+// instant (review of PR #66).
+export function LocalWindow({ from, to }: { from: number; to: number }) {
   const text = useSyncExternalStore(
     subscribe,
     () => formatWindow(new Date(from), new Date(to)),

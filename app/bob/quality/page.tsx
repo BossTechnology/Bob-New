@@ -10,10 +10,11 @@ import {
   BobConfigError, UnknownChannelError, boxOrgId, readQuality, type QualityRead,
 } from '@/lib/bob/projection-reader.ts'
 import {
-  CellText, ChannelPicker, LegendView, NoProjection, NoteLine, ReadError, ScreenHeader, ScreenNav, Unavailable, Forbidden, windowQs,
+  CellText, ChannelPicker, LegendView, NoProjection, NoteLine, PaintView, ReadError, ScreenHeader, ScreenNav, Unavailable, Forbidden, windowQs,
 } from '../screen-parts'
 import {
-  audienceFor, declared, labelFailuresTitle, qualityLegend, readError, sentimentTitle, sliceThreeNote, techNote,
+  audienceFor, declared, labelFailuresTitle, paintNotApplicable, qualityLegend, readError, sentimentLabel, sentimentTitle,
+  sliceThreeNote, techNote,
   type Audience,
 } from '@/lib/bob/screen-copy.ts'
 import styles from '../performance/matrix.module.css'
@@ -65,7 +66,7 @@ export default async function QualityPage({ searchParams }: { searchParams: Sear
           ))}
         </tbody>
       </table>
-      <LegendView items={qualityLegend(a)} />
+      <LegendView items={qualityLegend(a, read.cells !== null)} />
       <LegendView items={sliceThreeNote(a, read.cells !== null)} />
     </main>
   )
@@ -75,7 +76,7 @@ function SentimentTable({ panels, a, n }: { panels: SentimentPanel[]; a: Audienc
   return (
     <table className={styles.table}>
       <thead>
-        <tr><th>Fuente</th>{SENTIMENT_STATES.map((st) => <th key={st}>{st}</th>)}<th>Lecturas</th><th>Cierres</th></tr>
+        <tr><th>Fuente</th>{SENTIMENT_STATES.map((st) => <th key={st}>{sentimentLabel(st, a)}</th>)}<th>Lecturas</th><th>Cierres</th></tr>
       </thead>
       <tbody>
         {panels.map((p) => {
@@ -88,7 +89,7 @@ function SentimentTable({ panels, a, n }: { panels: SentimentPanel[]; a: Audienc
               </td>
               {SENTIMENT_STATES.map((st) => <td key={st}><CellText cell={p.states[st]} a={a} pct /></td>)}
               <td><CellText cell={p.total} a={a} /></td>
-              <td>{p.source === 'orga' ? <CellText cell={p.closings} a={a} /> : <span className={styles.noRow}>no aplica</span>}</td>
+              <td>{p.source === 'orga' ? <CellText cell={p.closings} a={a} /> : <PaintView p={paintNotApplicable(a)} />}</td>
             </tr>
           )
         })}

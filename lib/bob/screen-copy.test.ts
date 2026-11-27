@@ -63,7 +63,7 @@ function screenText(screen: Screen, a: Audience, channels: Channel[]): string[] 
   if (screen === 'performance') {
     const m = buildMatrix([], [], channels)
     for (const r of [...m.rows, ...m.labelFailures]) out.push(...noteText(rowSource(r, a, n)))
-    out.push(...paintText(paintNoTable(a)), labelFailuresTitle(a), ...legendText(performanceLegend(a)))
+    out.push(...paintText(paintNoTable(a)), labelFailuresTitle(a), ...legendText(performanceLegend(a, true)))
     if (showsTechnicalTables(a)) out.push('Canales seleccionados', 'lag_seconds', 'idle_bound_seconds', 'Capacidades', 'proj_durations')
   }
   if (screen === 'interactions') {
@@ -71,12 +71,12 @@ function screenText(screen: Screen, a: Audience, channels: Channel[]): string[] 
     out.push(...noteText(techNote(s.sessions.note, a)), ...paintText(paintNoProjection(s.sessions, a)))
     out.push(...noteText(techNote('proj_durations · interaction_duration (sum_ms / n)', a)))
     out.push(...noteText(declared('capacidad resolution', s.durationDeclaredBy, a, n)))
-    out.push(...noteText(techNote('n de interaction_duration', a)), ...legendText(interactionsLegend(a)))
+    out.push(...noteText(techNote('n de interaction_duration', a)), ...legendText(interactionsLegend(a, true)))
   }
   if (screen === 'quality') {
     const s = buildQuality([], [], channels)
     out.push(...noteText(techNote(s.nps.note, a)), ...paintText(paintNoProjection(s.nps, a)))
-    out.push(sentimentTitle(a), labelFailuresTitle(a), ...legendText(qualityLegend(a)))
+    out.push(sentimentTitle(a), labelFailuresTitle(a), ...legendText(qualityLegend(a, true)))
     for (const p of [s.orga, s.meca]) {
       out.push(...noteText(declared(p.source === 'orga' ? 'orga_conversation' : 'meca_rum', p.declaredBy, a, n)))
     }
@@ -124,11 +124,11 @@ test('only admin and analyst are technical; viewer, no role and unknown roles re
   assert.equal(showsTechnicalTables('viewer'), false)
 })
 
-test('the viewer red warning is short and says whether one channel or several', () => {
+test('the viewer warning is short and says whether one channel or several', () => {
   const m = buildMatrix([], [], [ch('a', [])])
   const resolved = m.rows.find((r) => r.spec.id === 'resolved')!
-  assert.deepEqual(rowSource(resolved, 'viewer', 1), { tone: 'notConfigured', text: 'Sin datos para este canal' })
-  assert.deepEqual(rowSource(resolved, 'viewer', 3), { tone: 'notConfigured', text: 'Sin datos para estos canales' })
+  assert.deepEqual(rowSource(resolved, 'viewer', 1), { tone: 'notConfigured', text: 'No activo en este canal' })
+  assert.deepEqual(rowSource(resolved, 'viewer', 3), { tone: 'notConfigured', text: 'No activo en estos canales' })
   assert.equal(rowSource(m.rows.find((r) => r.spec.id === 'escalations')!, 'viewer', 1), null)
 })
 
@@ -150,4 +150,22 @@ test('the window reads as a date and time, not as ISO instants', () => {
   assert.match(s, /10:00/)
   assert.match(s, /11:00/)
   assert.match(formatWindow(FROM, TO, 'America/Bogota'), /5:00/)
+})
+
+test('each viewer word has one meaning', () => {
+  const v = (c: Cell) => paintCell(c, 'viewer').text
+  assert.equal(v({ kind: 'no_row' }), '—')
+  assert.equal(v({ kind: 'no_row', state: info('not_observed', ['no_liveness']) }), '—')
+  assert.equal(v({ kind: 'no_row', state: info('not_configured', ['source_key_unset']) }), 'No activo')
+  assert.equal(v({ kind: 'no_row', state: info('pending', ['not_sealed']) }), 'Pendiente')
+  assert.equal(paintNoProjection({ kind: 'not_projection', note: 'x' }, 'viewer').text, 'No disponible')
+  // «Pendiente» is named only where Slice 3 states are read.
+  const has = (items: LegendItem[] | null, w: string) => (items ?? []).some((i) => i.sample?.text === w)
+  assert.equal(has(interactionsLegend('viewer', false), 'Pendiente'), false)
+  assert.equal(has(interactionsLegend('viewer', true), 'Pendiente'), true)
+  for (const legend of [performanceLegend('viewer', true), qualityLegend('viewer', true), interactionsLegend('viewer', true)]) {
+    const words = legend!.flatMap((i) => (i.sample ? [i.sample.text] : []))
+    assert.equal(new Set(words).size, words.length)
+    assert.doesNotMatch(legend!.map((i) => i.text).join(' '), /sin datos/i)
+  }
 })

@@ -81,7 +81,7 @@ export default async function InteractionsPage({ searchParams }: { searchParams:
           ))}
         </tbody>
       </table>
-      <LegendView items={interactionsLegend(a)} />
+      <LegendView items={interactionsLegend(a, read.cells !== null)} />
       <LegendView items={sliceThreeNote(a, read.cells !== null)} />
     </main>
   )

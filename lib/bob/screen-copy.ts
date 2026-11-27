@@ -11,7 +11,7 @@
 // viewer, so an unknown role never sees the technical text.
 import type { Cell, MatrixRow } from './matrix.ts'
 import { STATE_LABEL, reasonSummary, stateTitle } from './cell-state.ts'
-import type { NotProjection } from './screens.ts'
+import type { NotProjection, SentimentState } from './screens.ts'
 
 export type Audience = 'viewer' | 'technical'
 
@@ -35,7 +35,18 @@ export type Paint = {
 
 export type CellFormat = { format?: (v: number) => string; unit?: string; pct?: boolean }
 
-const VIEWER_NO_DATA = 'Sin datos en este periodo.'
+// One word, one meaning, for the viewer (review of PR #66):
+//   «—»             nothing was recorded in the period;
+//   «No activo»     the measurement is not switched on for the chosen channels;
+//   «No disponible» BOb does not measure this figure yet;
+//   «Pendiente»     the period is still closing.
+export const VIEWER_WORD = {
+  none: '—',
+  inactive: 'No activo',
+  unavailable: 'No disponible',
+  pending: 'Pendiente',
+} as const
+const VIEWER_NONE = 'No hay registros en este periodo.'
 const VIEWER_PROVISIONAL = 'Cifra provisional: el periodo aún no cierra.'
 
 export function paintCell(cell: Cell, a: Audience, f: CellFormat = {}): Paint {
@@ -47,15 +58,17 @@ export function paintCell(cell: Cell, a: Audience, f: CellFormat = {}): Paint {
     const title = tech ? stateTitle(st) : undefined
     switch (st.state) {
       case 'not_applicable':
-        return { tone: 'empty', text: '', title, label: STATE_LABEL.not_applicable }
+        return { tone: 'empty', text: '', title, label: tech ? STATE_LABEL.not_applicable : undefined }
       case 'not_configured':
         return tech
           ? { tone: 'notConfigured', text: reasonSummary(st.reasons) || STATE_LABEL.not_configured, title }
-          : { tone: 'notConfigured', text: 'Sin datos' }
+          : { tone: 'notConfigured', text: VIEWER_WORD.inactive }
       case 'pending':
-        return { tone: 'noRow', text: STATE_LABEL.pending, title: tech ? title : 'Los datos de este periodo aún se están cerrando.' }
+        return { tone: 'noRow', text: STATE_LABEL.pending, title: tech ? title : 'El periodo aún se está cerrando.' }
       default:
-        return { tone: 'noRow', text: '—', title: tech ? title : VIEWER_NO_DATA, label: STATE_LABEL[st.state] }
+        return tech
+          ? { tone: 'noRow', text: '—', title, label: STATE_LABEL[st.state] }
+          : { tone: 'noRow', text: VIEWER_WORD.none, title: VIEWER_NONE }
     }
   }
   // Observed with no row: a declared-absent actor, a zero by declaration (F-32).
@@ -66,7 +79,7 @@ export function paintCell(cell: Cell, a: Audience, f: CellFormat = {}): Paint {
   if (cell.kind === 'no_row') {
     return tech
       ? { tone: 'noRow', text: 'sin fila', title: 'sin fila de proyección' }
-      : { tone: 'noRow', text: '—', title: VIEWER_NO_DATA }
+      : { tone: 'noRow', text: VIEWER_WORD.none, title: VIEWER_NONE }
   }
   const open = cell.open > 0 ? (tech ? `${cell.open} de ${cell.rows} filas sin sellar` : VIEWER_PROVISIONAL) : undefined
   if (cell.kind === 'zero') {
@@ -85,7 +98,12 @@ export function paintCell(cell: Cell, a: Audience, f: CellFormat = {}): Paint {
 export function paintNoProjection(np: NotProjection, a: Audience): Paint {
   return a === 'technical'
     ? { tone: 'noRow', text: 'sin proyección', title: np.note }
-    : { tone: 'noRow', text: 'No disponible' }
+    : { tone: 'noRow', text: VIEWER_WORD.unavailable }
+}
+
+// A cell that has no meaning for its row (MECA has no conversation close).
+export function paintNotApplicable(a: Audience): Paint {
+  return a === 'technical' ? { tone: 'noRow', text: 'no aplica' } : { tone: 'empty', text: '' }
 }
 
 // ── Lines under a metric's name ──────────────────────────────────────────────
@@ -95,7 +113,7 @@ export type Note = { tone: 'source' | 'notConfigured'; text: string }
 
 // What a viewer reads when no selected channel can produce the figure.
 export function viewerNoData(selectedCount: number): string {
-  return selectedCount === 1 ? 'Sin datos para este canal' : 'Sin datos para estos canales'
+  return `${VIEWER_WORD.inactive} ${selectedCount === 1 ? 'en este canal' : 'en estos canales'}`
 }
 
 // Under a Performance row: where the figure comes from (technical), or only
@@ -183,16 +201,25 @@ export function sentimentTitle(a: Audience): string {
 // One legend item: a sample painted in a tone, then its meaning.
 export type LegendItem = { sample?: { tone: Tone | 'sup'; text: string }; text: string }
 
-const VIEWER_LEGEND: LegendItem[] = [
-  { sample: { tone: 'noRow', text: '—' }, text: 'sin datos en este periodo' },
-  { sample: { tone: 'zero', text: '0' }, text: 'hubo actividad y suma cero' },
-  { sample: { tone: 'notConfigured', text: 'Sin datos' }, text: 'esta medición no está activa en los canales elegidos' },
-  { sample: { tone: 'noRow', text: 'Pendiente' }, text: 'el periodo aún se está cerrando' },
-  { sample: { tone: 'sup', text: '*' }, text: 'cifra provisional' },
-]
+// The viewer's legend names only what the screen can paint: «Pendiente» only
+// where Slice 3 states are read, «No disponible» only where a figure has no
+// measurement behind it, the share only where there are shares.
+export function viewerLegend(o: { pending: boolean; unavailable: boolean; share?: string; extra?: string }): LegendItem[] {
+  const items: LegendItem[] = [
+    { sample: { tone: 'noRow', text: VIEWER_WORD.none }, text: 'no hay registros en este periodo' },
+    { sample: { tone: 'zero', text: '0' }, text: 'hubo actividad y suma cero' },
+    { sample: { tone: 'notConfigured', text: VIEWER_WORD.inactive }, text: 'la medición no está activada en los canales elegidos' },
+  ]
+  if (o.unavailable) items.push({ sample: { tone: 'noRow', text: VIEWER_WORD.unavailable }, text: 'BOb todavía no mide esta cifra' })
+  if (o.pending) items.push({ sample: { tone: 'noRow', text: VIEWER_WORD.pending }, text: 'el periodo aún se está cerrando' })
+  items.push({ sample: { tone: 'sup', text: '*' }, text: 'cifra provisional' })
+  if (o.share) items.push({ text: o.share })
+  if (o.extra) items.push({ text: o.extra })
+  return items
+}
 
-export function performanceLegend(a: Audience): LegendItem[] {
-  if (a === 'viewer') return [...VIEWER_LEGEND, { text: '% = parte del total de la fila' }]
+export function performanceLegend(a: Audience, slice3: boolean): LegendItem[] {
+  if (a === 'viewer') return viewerLegend({ pending: slice3, unavailable: true, share: '% = parte del total de la fila' })
   return [
     { sample: { tone: 'noRow', text: 'sin fila' }, text: 'ninguna fila de proyección en la ventana' },
     { sample: { tone: 'noRow', text: 'sin proyección' }, text: 'la fila de la demo no tiene tabla detrás' },
@@ -203,24 +230,33 @@ export function performanceLegend(a: Audience): LegendItem[] {
   ]
 }
 
-export function qualityLegend(a: Audience): LegendItem[] {
-  const mix = 'ORGA y MECA no se mezclan: la mezcla depende del peso mecánico configurado y se calcula al leer.'
+export function qualityLegend(a: Audience, slice3: boolean): LegendItem[] {
   if (a === 'viewer') {
-    return [...VIEWER_LEGEND, { text: '% = parte de las lecturas de esa fuente' }, { text: 'ORGA y MECA se muestran por separado.' }]
+    return viewerLegend({
+      pending: slice3, unavailable: true,
+      share: '% = parte de las lecturas de esa fuente', extra: 'ORGA y MECA se muestran por separado.',
+    })
   }
   return [
     { sample: { tone: 'noRow', text: 'sin fila' }, text: 'ninguna fila en la ventana' },
     { sample: { tone: 'zero', text: '0' }, text: 'hay filas y suman cero' },
     { text: '% = parte de las lecturas de esa fuente' },
     { sample: { tone: 'sup', text: '*' }, text: 'incluye buckets sin sellar' },
-    { text: mix },
+    { text: 'ORGA y MECA no se mezclan: la mezcla depende del peso mecánico configurado y se calcula al leer.' },
   ]
 }
 
-// Interactions has no legend of its own; the viewer gets the shared one.
-export function interactionsLegend(a: Audience): LegendItem[] | null {
-  return a === 'viewer' ? VIEWER_LEGEND : null
+// Interactions has no legend of its own; the viewer gets one.
+export function interactionsLegend(a: Audience, slice3: boolean): LegendItem[] | null {
+  return a === 'viewer' ? viewerLegend({ pending: slice3, unavailable: true }) : null
 }
+
+// The five sentiment states are ordinal (contract §6.2). The viewer reads
+// them with the simulator's own names (public/dashboard.html, T.es.sent).
+const SENTIMENT_LABEL: Record<SentimentState, string> = {
+  s0: 'Enojado', s1: 'Insatisfecho', s2: 'Satisfecho', s3: 'Contento', s4: 'Feliz',
+}
+export const sentimentLabel = (st: SentimentState, a: Audience) => (a === 'technical' ? st : SENTIMENT_LABEL[st])
 
 // Slice 3's note: technical only. The viewer's legend already says what each
 // state means.

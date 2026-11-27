@@ -110,7 +110,7 @@ export function ScreenHeader({ screen, a, from, to, orgId, watermark }: {
       <div className={styles.sectionLabel}>{screenTitle(screen, a)}</div>
       <p className={styles.meta}>
         {a === 'viewer'
-          ? <LocalWindow from={from.toISOString()} to={to.toISOString()} />
+          ? <LocalWindow from={from.getTime()} to={to.getTime()} />
           : technicalMeta({ from, to }, { orgId, watermark }).map((m, i) => (
             <span key={m.label}>{i > 0 ? ' · ' : null}{m.label} <code>{m.value}</code></span>
           ))}

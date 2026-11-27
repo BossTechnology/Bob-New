@@ -69,7 +69,7 @@ export default async function PerformanceMatrixPage({ searchParams }: { searchPa
         {matrix.labelFailures.map((r) => <Row key={r.spec.id} row={r} actors={matrix.actors} a={a} n={n} />)}
       </div>
 
-      <LegendView items={performanceLegend(a)} />
+      <LegendView items={performanceLegend(a, read.cells !== null)} />
       <LegendView items={sliceThreeNote(a, read.cells !== null)} />
 
       {showsTechnicalTables(a) ? <>
