@@ -54,7 +54,7 @@ Resuelto el 23-11 (respuestas oficiales de Federico en Relevo):
 - **Antes de instalarlo en una caja:**
   - el alta de la vecina y `generar-secretos-vecina.sh` (sesión de Bzzz);
   - sacar `compose/l7-bob.yml` (77.4);
-  - los ficheros del feeder (`cert-vecina.sh` deja un directorio `vecinos/`; el compose monta ficheros sueltos). `migrador.env` ya no es de este paquete: lo lee `firma-instalacion … resto` de BOb-engine.
+  - ~~los ficheros del feeder~~: hecho (2026-11-26). `deploy.sh` acepta el `secrets/vecinos/` que deja `cert-vecina.sh` (solo `cliente.key` 600 y `cliente.crt`/`ca.crt`, de 65534) y el compose monta esos tres. El feeder sigue fuera de v1 (3.7, P-F1 y P-H8 sin hacer): BOb arranca vacío. `migrador.env` ya no es de este paquete: lo lee `firma-instalacion … resto` de BOb-engine.
   - **la imagen del feeder no la construye ni la firma nadie**: `construir-imagen-bob.sh` de Bzzz solo hace bob-web, y por P-H8 el guion del feeder va en Bzzz. `deploy.sh --feeder` ya exige tar de una imagen `bob-feeder:<12 hex>` y atestación que case.
 - **Riesgos de v1 aceptados, anotados en el runbook:**
   - cualquiera en `bzzz-edge` llega a `bob-web:3000` sin la puerta y puede falsear `X-Forwarded-For` (ligado a D59);

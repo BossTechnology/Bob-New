@@ -92,8 +92,9 @@ services:
   # EL FEEDER (D77 77.3). Al lado de la app, solo en la red de la vecina: escribe
   # en `bob` como bob_feeder y lee de BzzzBX por bzzz-vecinos con mTLS. Sin
   # etiquetas de Traefik y sin bzzz-edge.
-  # NO ARRANCA TODAVÍA: el adaptador (tarea 3.7 de BOb-engine) y las vistas de
-  # bzzz-vecinos para BOb (P-F1) no existen. Por eso va en el perfil `feeder`.
+  # NO ARRANCA TODAVÍA (va después de v1): el adaptador (tarea 3.7 de BOb-engine),
+  # las vistas de bzzz-vecinos para BOb (P-F1) y el guion que construye y firma su
+  # imagen (P-H8) no existen. Por eso va en el perfil `feeder`.
   # Los nombres de las variables los fija el adaptador.
   bob-feeder:
     <<: *endurecido
@@ -111,9 +112,11 @@ services:
       BOB_VECINOS_CA: /run/secrets/bob/vecinos-ca.crt
     volumes:
       - ${BOB_RAIZ:-/opt/bob}/secrets/feeder.env:/run/secrets/bob/feeder.env:ro
-      - ${BOB_RAIZ:-/opt/bob}/secrets/vecinos.crt:/run/secrets/bob/vecinos.crt:ro
-      - ${BOB_RAIZ:-/opt/bob}/secrets/vecinos.key:/run/secrets/bob/vecinos.key:ro
-      - ${BOB_RAIZ:-/opt/bob}/secrets/vecinos-ca.crt:/run/secrets/bob/vecinos-ca.crt:ro
+      # Los tres que deja `cert-vecina.sh --emitir bob` de Bzzz en secrets/vecinos/, sueltos: el directorio no se
+      # monta (comprobar-aislamiento.sh falla con un directorio montado). deploy.sh los mira en comprobar_vecinos.
+      - ${BOB_RAIZ:-/opt/bob}/secrets/vecinos/cliente.crt:/run/secrets/bob/vecinos.crt:ro
+      - ${BOB_RAIZ:-/opt/bob}/secrets/vecinos/cliente.key:/run/secrets/bob/vecinos.key:ro
+      - ${BOB_RAIZ:-/opt/bob}/secrets/vecinos/ca.crt:/run/secrets/bob/vecinos-ca.crt:ro
     deploy:
       resources:
         limits: { cpus: "${BOB_FEEDER_CPUS:-0.5}", memory: "${BOB_FEEDER_MEMORIA:-512m}", pids: 128 }
