@@ -637,11 +637,24 @@ Lo esperado:
 - `/opt/bob/secrets` de `0`, 700;
 - en `secrets/`, solo `migrador.env` `0 600` y `app.env` `65534 600`.
 
-Ni `postgres.env` (B4), ni `vecinos/`, ni enlaces. Si algún día va el feeder, también `feeder.env` `65534 600`.
+Ni `postgres.env` (B4), ni enlaces. En v1 tampoco `vecinos/` ni `feeder.env`.
 
-**No correr `cert-vecina.sh` para `bob` antes de v1 (M2).** Deja un directorio `secrets/vecinos/`, y `deploy.sh` no
-empieza con un directorio en `secrets/`. Eso tumba también el deploy de bob-web. El feeder, y con él su certificado, va
-después de v1.
+**El feeder va después de v1, y BOb arranca vacío, también en Febor.** En v1 no hay nada que llene el esquema `bob`:
+la tarea 3.7 de BOb-engine (el adaptador del feeder contra `bzzz-vecinos`), las vistas de BOb en `bzzz-vecinos` (P-F1;
+hoy solo sirve `v1/bob/ping`) y el guion que construye y firma la imagen del feeder (P-H8) no existen. Después de B13
+las tablas de datos de `bob` están a 0 (solo `cell_catalog`, la organización de B8b y las cuentas que entren): el
+simulador muestra «sin fila» y «sin proyección», que es lo esperado. Por eso, en v1, ni `cert-vecina.sh` para `bob`
+ni `deploy.sh --feeder`.
+
+Si el certificado de `bob` se emite antes de tiempo (o después de v1, cuando vaya el feeder), ya no tumba el deploy de
+bob-web (M2, cerrado). `cert-vecina.sh --emitir bob` deja el directorio `secrets/vecinos/`, y `deploy.sh` lo acepta
+solo así, después del `chown -R 65534` que imprime ese guion:
+- `secrets/vecinos` un directorio de verdad (no un enlace), `65534 700` (o 500), y el único directorio de `secrets/`;
+- dentro, solo `cliente.key` `65534 600` (o 400), `cliente.crt` y `ca.crt` `65534 644` (o 444, 600, 400), cada uno un
+  fichero normal con un solo enlace. Cualquier otro nombre, enlace o subdirectorio y `deploy.sh` no empieza.
+
+Con `--feeder`, `deploy.sh` exige además `feeder.env` y los tres ficheros. El feeder los monta sueltos; el directorio no
+se monta.
 
 ### B8b. La organización de la caja
 
@@ -765,6 +778,9 @@ de lo que hay que mirar es `bob-web-real-box-checklist`:
 - el simulador sin cifras inventadas;
 - y ahora también las celdas del Slice 3 con su estado, no «Estados del Slice 3 pendientes».
 
+Sin datos todavía: en v1 no hay feeder (B8), así que las cifras salen vacías («sin fila», «sin proyección», «—»).
+Una cifra inventada sí es un fallo.
+
 ```bash
 cd /opt/bzzz && scripts/verify-deployment.sh
 ```
@@ -772,8 +788,8 @@ cd /opt/bzzz && scripts/verify-deployment.sh
 Lo esperado: 0 fallos. Mira la puerta de BOb, su vecina y la redirección puerta → portal → BOb (por eso B10).
 
 **§15 pide `bzzz-vecinos` en marcha** en cuanto existe la vecina `bob`, aunque en v1 no vaya el feeder. En lab-02 y model-01
-no existía (26 nov). Henry: «Encenderlo sin cert de bob». La CA y el certificado del SERVIDOR, sí; el de `bob`, no
-(`cert-vecina.sh` para `bob` deja `secrets/vecinos/` y tumba `deploy.sh`, B8). Como `bzzzops`:
+no existía (26 nov). Henry: «Encenderlo sin cert de bob». La CA y el certificado del SERVIDOR, sí; el de `bob`, no: en v1 no va el
+feeder (B8). Como `bzzzops`:
 
 ```bash
 cd /opt/bzzz && scripts/cert-vecina.sh --crear-ca && scripts/cert-vecina.sh --servidor

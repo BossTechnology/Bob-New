@@ -47,9 +47,7 @@ for c in docker python3 curl; do command -v "$c" >/dev/null || no_empieza "falta
 [ -f "$BOB_ENV" ] || no_empieza "no está $BOB_ENV (BOB_HOST y, después del primer deploy, las imágenes)"
 CAJA_ENV=$BOB_RAIZ/config/caja.env
 [ -f "$CAJA_ENV" ] || no_empieza "no está $CAJA_ENV"
-for s in app.env $( [ "$COMP" = feeder ] && echo feeder.env ); do
-  [ -f "$BOB_RAIZ/secrets/$s" ] || no_empieza "falta $BOB_RAIZ/secrets/$s (generar-secretos-bob.sh, de Bzzz)"
-done
+exigir_secretos
 comprobar_raiz_y_secretos
 [ "$COMP" = web ] && fijar_url_salud
 
