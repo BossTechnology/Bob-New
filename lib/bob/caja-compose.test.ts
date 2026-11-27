@@ -68,6 +68,26 @@ test('secrets only as read-only files from /opt/bob, never in the environment', 
   }
 })
 
+test('the feeder mounts the three files cert-vecina.sh leaves in secrets/vecinos/, one by one', { skip }, () => {
+  const f = full().services['bob-feeder']
+  const mounts = Object.fromEntries((f.volumes ?? []).map((v) => [v.target, v.source]))
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(mounts).filter(([t]) => t.startsWith('/run/secrets/bob/vecinos'))),
+    {
+      '/run/secrets/bob/vecinos.crt': '/opt/bob/secrets/vecinos/cliente.crt',
+      '/run/secrets/bob/vecinos.key': '/opt/bob/secrets/vecinos/cliente.key',
+      '/run/secrets/bob/vecinos-ca.crt': '/opt/bob/secrets/vecinos/ca.crt',
+    },
+  )
+  for (const k of ['BOB_VECINOS_CERT', 'BOB_VECINOS_CLAVE', 'BOB_VECINOS_CA']) {
+    const v = f.environment?.[k]
+    assert.ok(v && mounts[v], `${k} (${v}) is not the target of one of the feeder's mounts`)
+  }
+  for (const s of Object.values(f.volumes ?? [])) {
+    assert.notEqual(s.source.replace(/\/$/, ''), '/opt/bob/secrets/vecinos', 'the feeder mounts the whole directory')
+  }
+})
+
 test('networks: the neighbour network for both, the edge only for the app', { skip }, () => {
   const c = full()
   const names = (s: Service) => Object.keys(s.networks ?? {}).map((k) => c.networks[k].name).sort()

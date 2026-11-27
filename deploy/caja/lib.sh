@@ -28,6 +28,19 @@ componente() {
   esac
 }
 
+# Los secretos que el componente necesita. Que no sobre nada y que cada uno esté bien lo mira comprobar_raiz_y_secretos.
+exigir_secretos() {
+  local s
+  for s in app.env $( [ "$SERVICIO" = bob-feeder ] && echo feeder.env ); do
+    [ -f "$BOB_RAIZ/secrets/$s" ] || no_empieza "falta $BOB_RAIZ/secrets/$s (generar-secretos-bob.sh, de Bzzz)"
+  done
+  [ "$SERVICIO" = bob-feeder ] || return 0
+  for s in $VECINOS_FICHEROS; do
+    [ -f "$BOB_RAIZ/secrets/vecinos/$s" ] \
+      || no_empieza "falta $BOB_RAIZ/secrets/vecinos/$s (cert-vecina.sh de Bzzz, y el chown -R 65534 que imprime)"
+  done
+}
+
 compose() { docker compose -p "$BOB_PROYECTO" -f "$BOB_COMPOSE" --env-file "$BOB_ENV" "${PERFIL[@]}" "$@"; }
 
 # Lee una clave de un fichero KEY=VALUE (la última gana). Sin eval: no son guiones.
@@ -278,13 +291,50 @@ fallo_y_parar() {
 }
 
 # /opt/bob y secrets/: de root y sin escritura para otros; en secrets/, cada entrada un fichero normal (sin enlaces
-# ni directorios), 600 o 400, y del usuario que lo lee: migrador.env de root y el resto de 65534 (bob-web y el feeder
+# ni directorios, salvo vecinos/, que mira comprobar_vecinos), 600 o 400, y del usuario que lo lee: migrador.env de root y el resto de 65534 (bob-web y el feeder
 # corren con ese usuario: un 600 de root no lo podrían leer). En el banco, del que lo corre.
 # migrador.env no lo lee nada de este paquete: lo escribe el alta de Bzzz (generar-secretos-vecina.sh bob) y lo lee
 # `firma-instalacion … resto` de BOb-engine (MIGRADOR_ENV, por defecto aquí). Ningún contenedor lo monta, y el
 # chequeo de aislamiento falla si alguno lo hiciera (monta secretos de otro y MIGRADOR_CLAVE cae por el patrón).
 modo_de() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }
 dueno_de() { stat -c %u "$1" 2>/dev/null || stat -f %u "$1"; }
+enlaces_de() { stat -c %h "$1" 2>/dev/null || stat -f %l "$1"; }
+
+# secrets/vecinos/: el certificado de vecina del feeder para bzzz-vecinos, tal como lo deja `cert-vecina.sh --emitir
+# bob` (o --desde-csr) de Bzzz, después del `chown -R 65534` que ese guion imprime. Es el ÚNICO directorio que se
+# acepta en secrets/, y solo con este nombre. Dentro, solo estos tres nombres, cada uno un fichero normal (ni enlace,
+# ni directorio, ni un segundo nombre de otro fichero), del usuario de los contenedores:
+#   cliente.key  600 o 400
+#   cliente.crt  644, 444, 600 o 400 (cert-vecina.sh los deja a 644: son públicos; el directorio, a 700, los guarda)
+#   ca.crt       lo mismo
+# El directorio, del usuario de los contenedores y a 700 o 500. Puede faltar alguno (con --desde-csr la llave no la
+# deja el guion): eso lo pide exigir_secretos solo para el feeder. El feeder monta los tres ficheros sueltos, nunca el
+# directorio (comprobar-aislamiento.sh falla con un directorio montado).
+VECINOS_FICHEROS="cliente.crt cliente.key ca.crt"
+comprobar_vecinos() {
+  local d=$1 app=$2 f n m u e
+  u=$(dueno_de "$d"); [ "$u" = "$app" ] \
+    || no_empieza "secrets/vecinos es del uid $u: tiene que ser del $app (el chown -R que imprime cert-vecina.sh)"
+  m=$(modo_de "$d"); [ "$m" = 700 ] || [ "$m" = 500 ] || no_empieza "secrets/vecinos tiene permisos $m: tiene que ser 700"
+  while IFS= read -r -d '' f; do
+    n=$(basename "$f")
+    case " $VECINOS_FICHEROS " in
+      *" $n "*) ;;
+      *) no_empieza "secrets/vecinos/$n no se espera: ahí solo van $VECINOS_FICHEROS (cert-vecina.sh)" ;;
+    esac
+    [ -f "$f" ] && [ ! -L "$f" ] || no_empieza "secrets/vecinos/$n no es un fichero normal (enlace o directorio)"
+    e=$(enlaces_de "$f"); [ "$e" = 1 ] || no_empieza "secrets/vecinos/$n tiene $e enlaces: es otro fichero con otro nombre"
+    u=$(dueno_de "$f"); [ "$u" = "$app" ] \
+      || no_empieza "secrets/vecinos/$n es del uid $u: tiene que ser del $app (el usuario de los contenedores)"
+    m=$(modo_de "$f")
+    case "$n:$m" in
+      cliente.key:600|cliente.key:400) ;;
+      cliente.key:*) no_empieza "secrets/vecinos/$n tiene permisos $m: tiene que ser 600" ;;
+      *:644|*:444|*:600|*:400) ;;
+      *) no_empieza "secrets/vecinos/$n tiene permisos $m: tiene que ser 644 o 600" ;;
+    esac
+  done < <(find "$d" -mindepth 1 -maxdepth 1 -print0)
+}
 # comprobar_padres <dir> <tope> <uid>: cada directorio desde el padre de <dir> hasta <tope> (incluido) es de <uid>,
 # no es un enlace y nadie más puede escribir en él. Quien pudiera escribir en /opt o en / podría cambiar /opt/bob.
 # Imprime el primero que falla y devuelve 1.
@@ -311,6 +361,7 @@ comprobar_raiz_y_secretos() {
   # Se descubre con find, no con un glob: «*» y «.[!.]*» no ven, por ejemplo, «..x».
   while IFS= read -r -d '' f; do
     n=$(basename "$f")
+    if [ "$n" = vecinos ] && [ -d "$f" ] && [ ! -L "$f" ]; then comprobar_vecinos "$f" "$app"; continue; fi
     [ -f "$f" ] && [ ! -L "$f" ] || no_empieza "secrets/$n no es un fichero normal (enlace o directorio)"
     m=$(modo_de "$f"); [ "$m" = 600 ] || [ "$m" = 400 ] || no_empieza "secrets/$n tiene permisos $m: tiene que ser 600"
     u=$(dueno_de "$f")
