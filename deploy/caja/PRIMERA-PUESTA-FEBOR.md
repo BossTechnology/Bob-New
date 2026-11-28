@@ -623,21 +623,26 @@ es v1.
 MAINTAIN sobre las tablas de `bob` (F-58): un usuario con sesión podría colgar un trigger en `bob.alert_log`. La cadena
 firmada y el bundle de A no se tocan. Este paso lo corrige en la caja con dos guiones de BOb-engine,
 `scripts/f58/revocar.sh` y `scripts/f58/revocar.sql`, en `d15ac7ef76a7be733908c05a5ff4a964be31b2c5`
-(BossTechnology/BOb-engine#67). No es una migración y no cambia la huella de lo instalado. Solo se copian esos ficheros,
-como `scripts/demo/` en lab-02.
+(BossTechnology/BOb-engine#67). No es una migración y no cambia la huella de lo instalado. Solo se copian esos dos
+ficheros, como `scripts/demo/` en lab-02.
 
-En el portátil, desde un clon de BOb-engine que tenga ese commit:
+Las sumas esperadas, en ese commit:
+- `revocar.sh`: `b9621ca3c29a407800350559b107ad241c819f126b28d5382610202ff21d1db5`;
+- `revocar.sql`: `0de98c36440bf639f13e005a6a0a5116651d87a9b4557cc5db8411dd2562328c`.
+
+En el portátil, desde un clon de BOb-engine que tenga ese commit. Se comprueban las sumas antes de copiar; si el commit
+falta o algo no cuadra, se para sin copiar nada:
 
 ```bash
-C=d15ac7ef76a7be733908c05a5ff4a964be31b2c5; d=$(mktemp -d); for f in revocar.sh revocar.sql README.md; do git -C <checkout de BOb-engine> show "$C:scripts/f58/$f" > "$d/$f"; done; (cd "$d" && shasum -a 256 revocar.sh revocar.sql README.md); ssh bzzz-<caja> 'mkdir -p entrega-bob/f58' && scp "$d"/* bzzz-<caja>:entrega-bob/f58/
+C=d15ac7ef76a7be733908c05a5ff4a964be31b2c5; d=$(mktemp -d); for f in revocar.sh revocar.sql; do git -C <checkout de BOb-engine> show "${C}:scripts/f58/${f}" > "$d/$f" || exit 1; done; (cd "$d" && printf '%s  revocar.sh\n%s  revocar.sql\n' b9621ca3c29a407800350559b107ad241c819f126b28d5382610202ff21d1db5 0de98c36440bf639f13e005a6a0a5116651d87a9b4557cc5db8411dd2562328c | shasum -a 256 -c -) && ssh bzzz-<caja> 'mkdir -p entrega-bob/f58' && scp "$d"/revocar.sh "$d"/revocar.sql bzzz-<caja>:entrega-bob/f58/
 ```
 
-Apuntar las tres sumas. Son las de `f58/SHA256SUMS-f58` del paquete de la puesta.
+El README de `scripts/f58/` no se copia: su sección «Cómo correrlo» usa `~/bob-engine` y no aplica a esta puesta.
 
-En la caja, comprobar las sumas, instalar como root y correr:
+En la caja, comprobar otra vez las sumas, instalar como root y correr:
 
 ```bash
-cd ~/entrega-bob/f58 && sha256sum -c <(printf '%s  revocar.sh\n%s  revocar.sql\n' <sha256 de revocar.sh> <sha256 de revocar.sql>) && sudo install -d -o root -g root -m 700 /root/f58 && sudo install -o root -g root -m 755 revocar.sh revocar.sql /root/f58/ && sudo bash /root/f58/revocar.sh; echo "rc=$?"
+cd ~/entrega-bob/f58 && sha256sum -c <(printf '%s  revocar.sh\n%s  revocar.sql\n' b9621ca3c29a407800350559b107ad241c819f126b28d5382610202ff21d1db5 0de98c36440bf639f13e005a6a0a5116651d87a9b4557cc5db8411dd2562328c) && sudo install -d -o root -g root -m 700 /root/f58 && sudo install -o root -g root -m 755 revocar.sh revocar.sql /root/f58/ && sudo bash /root/f58/revocar.sh; echo "rc=$?"
 ```
 
 Si `sha256sum -c` no da `OK` en los dos, no se corre nada: parar y avisar. Root solo ejecuta sus copias de `/root/f58`,
