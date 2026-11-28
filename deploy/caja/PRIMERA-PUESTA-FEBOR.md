@@ -75,7 +75,7 @@ nada comprueba en la base de datos que de verdad no hay BOb. Si `cadena` falla a
 | BOb-engine | BossTechnology/BOb-engine#56 | una aprobación `d → d` nombra su caja (`--caja <machine-id>`); la marca de un `cadena` a medias nombra su base de datos | en `main` (`731a405`) |
 | BOb-engine | — | la llave de Henry en `supabase/provision/firmantes_instalacion` **[llave-fido]** | en `main` (`8af7da7`, retocada en `8378591`); medido en las cajas el 26 nov: la firma se valida |
 | BOb-engine | BossTechnology/BOb-engine#58 | `cadena` hace el `db push` con `sslmode=disable` (sin esto B5 falla con «server does not support SSL») | en `main` (`0b2e9bc`) |
-| BOb-engine | BossTechnology/BOb-engine#67 | el paso REVOKE de F-58 (B7b), fuera de la cadena firmada | en `main` (`ed00dd2`) |
+| BOb-engine | BossTechnology/BOb-engine#67 | el paso REVOKE de F-58 (B7b): se copia solo `scripts/f58/`, fuera de la cadena firmada y del bundle | en `main` (`ed00dd2`) |
 
 ## A. Una vez, en el portátil
 
@@ -619,28 +619,41 @@ es v1.
 
 ### B7b. El paso REVOKE de F-58, justo después de B7 y antes de abrir el acceso (lo corre Henry)
 
-`<C_ENG>` (`00f79b7`) deja a `authenticated` con TRIGGER, REFERENCES y MAINTAIN sobre las tablas de `bob` (F-58): un
-usuario con sesión podría colgar un trigger en `bob.alert_log`. La cadena firmada no se toca; este paso lo corrige en la
-caja. No es una migración y no cambia la huella de lo instalado. Está en BOb-engine (BossTechnology/BOb-engine#67, en
-`main`), en `scripts/f58/`; su README trae el comando. `C` es el SHA completo, de 40 caracteres, de `scripts/f58` en
-`main` (`d15ac7ef76a7be733908c05a5ff4a964be31b2c5`). `~/bob-engine` lo saca de su bundle (A, `bundle create … main`; B3), así que el bundle tiene que
-traer ese commit:
+`<C_ENG>` de esta puesta es `00f79b7` (la aprobación `544fe970`). Deja a `authenticated` con TRIGGER, REFERENCES y
+MAINTAIN sobre las tablas de `bob` (F-58): un usuario con sesión podría colgar un trigger en `bob.alert_log`. La cadena
+firmada y el bundle de A no se tocan. Este paso lo corrige en la caja con dos guiones de BOb-engine,
+`scripts/f58/revocar.sh` y `scripts/f58/revocar.sql`, en `d15ac7ef76a7be733908c05a5ff4a964be31b2c5`
+(BossTechnology/BOb-engine#67). No es una migración y no cambia la huella de lo instalado. Solo se copian esos ficheros,
+como `scripts/demo/` en lab-02.
+
+En el portátil, desde un clon de BOb-engine que tenga ese commit:
 
 ```bash
-git -C ~/bob-engine fetch -q origin d15ac7ef76a7be733908c05a5ff4a964be31b2c5 && echo "el bundle trae F-58"
+C=d15ac7ef76a7be733908c05a5ff4a964be31b2c5; d=$(mktemp -d); for f in revocar.sh revocar.sql README.md; do git -C <checkout de BOb-engine> show "$C:scripts/f58/$f" > "$d/$f"; done; (cd "$d" && shasum -a 256 revocar.sh revocar.sql README.md); ssh bzzz-<caja> 'mkdir -p entrega-bob/f58' && scp "$d"/* bzzz-<caja>:entrega-bob/f58/
 ```
 
-Después, el comando de `scripts/f58/README.md`, tal cual, con `C=d15ac7ef76a7be733908c05a5ff4a964be31b2c5`. Comprueba que
-`HEAD` es `C`, copia el guion a `/root/f58` (de root) y deja `~/bob-engine` donde estaba.
+Apuntar las tres sumas. Son las de `f58/SHA256SUMS-f58` del paquete de la puesta.
 
-Lo esperado, y `rc=0`:
+En la caja, comprobar las sumas, instalar como root y correr:
+
+```bash
+cd ~/entrega-bob/f58 && sha256sum -c <(printf '%s  revocar.sh\n%s  revocar.sql\n' <sha256 de revocar.sh> <sha256 de revocar.sql>) && sudo install -d -o root -g root -m 700 /root/f58 && sudo install -o root -g root -m 755 revocar.sh revocar.sql /root/f58/ && sudo bash /root/f58/revocar.sh; echo "rc=$?"
+```
+
+Si `sha256sum -c` no da `OK` en los dos, no se corre nada: parar y avisar. Root solo ejecuta sus copias de `/root/f58`,
+que nadie más puede escribir.
+
+Lo esperado, entre otras líneas, y `rc=0`:
 - `F-58 before: N grants beyond SELECT, INSERT, UPDATE and DELETE held by application roles`. En lab-02, el 27 nov: 84.
 - `F-58 after: 0 grants left on M relations of bob; SELECT, INSERT, UPDATE and DELETE unchanged. OK`. En lab-02: 65.
 - `F-58 default privileges: none beyond SELECT, INSERT, UPDATE and DELETE for new tables in bob`.
 - `F-58: done`.
 
-Apuntar `N` y `M` en el registro de la puesta. Correrlo otra vez tiene que dar `before: 0` y `rc=0`. Cualquier otra salida,
-o `rc` distinto de 0: no abrir el acceso (B10) y avisar. El guion no cambia nada si falla: todo va en una transacción.
+Apuntar `N` y `M` en el registro de la puesta. Correr otra vez la última orden tiene que dar `before: 0` y `rc=0`.
+
+Si sale `WARNING: F-58 default privileges: …` con `rc=0`, no es un fallo: el REVOKE se hizo, pero las tablas nuevas que se
+creen después volverían a tener esos permisos. Se sigue con la puesta, se apunta y se avisa. Cualquier otro `rc` distinto
+de 0: no abrir el acceso (B10) y avisar. El guion no cambia nada si falla: todo va en una transacción.
 
 ### B8. El login de bob-web
 
