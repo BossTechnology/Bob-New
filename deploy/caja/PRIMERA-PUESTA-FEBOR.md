@@ -461,10 +461,12 @@ Un clon de BOb-engine en `<C_ENG>`, legible por `bzzzops`. Lo que se instala sal
 Henry revisó:
 
 ```bash
-git clone -q bob-engine.bundle bob-engine && git -C bob-engine checkout -q <C_ENG> && git -C bob-engine rev-parse HEAD
+git clone -q bob-engine.bundle bob-engine; git -C bob-engine fetch -q origin '+refs/*:refs/remotes/bundle/*' && git -C bob-engine checkout -q <C_ENG> && git -C bob-engine rev-parse HEAD
 ```
 
-Tiene que imprimir `<C_ENG>` entero. Luego, desde `~/bob-engine`:
+Tiene que imprimir `<C_ENG>` entero. El `fetch` va porque un bundle cuya única ref es `refs/remotes/origin/main` (el del
+paquete de Febor del 27 nov) se clona vacío («You appear to have cloned an empty repository») y el `checkout` solo no
+encuentra `<C_ENG>`; con un bundle de `refs/heads/main` (A6) no cambia nada. Medido en model-01 el 27 nov. Luego, desde `~/bob-engine`:
 
 ```bash
 cd ~/bob-engine && sudo install -d -o root -g root -m 755 /opt/bob /opt/bob/bin /opt/bob/aprobaciones
@@ -609,10 +611,13 @@ sudo /opt/bob/bin/firma-instalacion caja ~/bob-engine <C_ENG> resto POSTGRES_ENV
 y `docker inspect` enseña las dos.
 
 Escribir `instalo`. Lo esperado: aplica, como `bob_migrador`, las migraciones de `<C_ENG>` que no están en la cadena.
-Hoy son tres: las dos del Slice 3 y la de `organizations`:
+Con `00f79b7` son cinco (medido en model-01 el 27 nov: «5 applied, 0 already recorded»): las dos del Slice 3, la de
+`organizations` y las dos del alta sola como viewer:
 - `20261121200000_slice3_catalog_and_feeder_map.sql`;
 - `20261121200100_slice3_cell_state.sql`;
-- `20261121200200_organizations_read_only_for_bob_app.sql`.
+- `20261121200200_organizations_read_only_for_bob_app.sql`;
+- `20261126100000_claim_viewer_seat.sql`;
+- `20261126110000_claim_viewer_seat_lower_email.sql`.
 
 Quedan apuntadas en `bob.schema_migrations`. Sin ellas, bob-web arranca y pinta «Estados del Slice 3 pendientes», que no
 es v1.
@@ -673,8 +678,11 @@ cd /opt/bzzz && DIR_SECRETOS=/opt/bob/secrets RED=bzzz-vecina-bob scripts/genera
 Sin `--feeder`: el feeder no va en v1.
 
 ```bash
-sudo stat -c '%u %a %n' /opt/bob /opt/bob/secrets /opt/bob/secrets/*
+sudo sh -c 'stat -c "%u %a %n" /opt/bob /opt/bob/secrets /opt/bob/secrets/*'
 ```
+
+El `sh -c` va porque el `*` lo expande la shell: como `bzzzops`, que no lee un directorio 700 de root, no sale nada y
+`stat` falla con «cannot statx '/opt/bob/secrets/*'».
 
 Lo esperado:
 - `/opt/bob` de `0` y sin escritura para otros;
