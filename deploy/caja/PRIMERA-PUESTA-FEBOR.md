@@ -75,6 +75,7 @@ nada comprueba en la base de datos que de verdad no hay BOb. Si `cadena` falla a
 | BOb-engine | BossTechnology/BOb-engine#56 | una aprobación `d → d` nombra su caja (`--caja <machine-id>`); la marca de un `cadena` a medias nombra su base de datos | en `main` (`731a405`) |
 | BOb-engine | — | la llave de Henry en `supabase/provision/firmantes_instalacion` **[llave-fido]** | en `main` (`8af7da7`, retocada en `8378591`); medido en las cajas el 26 nov: la firma se valida |
 | BOb-engine | BossTechnology/BOb-engine#58 | `cadena` hace el `db push` con `sslmode=disable` (sin esto B5 falla con «server does not support SSL») | en `main` (`0b2e9bc`) |
+| BOb-engine | BossTechnology/BOb-engine#67 | el paso REVOKE de F-58 (B7b): se copia solo `scripts/f58/`, fuera de la cadena firmada y del bundle | en `main` (`ed00dd2`) |
 
 ## A. Una vez, en el portátil
 
@@ -615,6 +616,49 @@ Hoy son tres: las dos del Slice 3 y la de `organizations`:
 
 Quedan apuntadas en `bob.schema_migrations`. Sin ellas, bob-web arranca y pinta «Estados del Slice 3 pendientes», que no
 es v1.
+
+### B7b. El paso REVOKE de F-58, justo después de B7 y antes de abrir el acceso (lo corre Henry)
+
+`<C_ENG>` de esta puesta es `00f79b7` (la aprobación `544fe970`). Deja a `authenticated` con TRIGGER, REFERENCES y
+MAINTAIN sobre las tablas de `bob` (F-58): un usuario con sesión podría colgar un trigger en `bob.alert_log`. La cadena
+firmada y el bundle de A no se tocan. Este paso lo corrige en la caja con dos guiones de BOb-engine,
+`scripts/f58/revocar.sh` y `scripts/f58/revocar.sql`, en `d15ac7ef76a7be733908c05a5ff4a964be31b2c5`
+(BossTechnology/BOb-engine#67). No es una migración y no cambia la huella de lo instalado. Solo se copian esos dos
+ficheros, como `scripts/demo/` en lab-02.
+
+Las sumas esperadas, en ese commit:
+- `revocar.sh`: `b9621ca3c29a407800350559b107ad241c819f126b28d5382610202ff21d1db5`;
+- `revocar.sql`: `0de98c36440bf639f13e005a6a0a5116651d87a9b4557cc5db8411dd2562328c`.
+
+En el portátil, desde un clon de BOb-engine que tenga ese commit. Se comprueban las sumas antes de copiar; si el commit
+falta o algo no cuadra, se para sin copiar nada:
+
+```bash
+C=d15ac7ef76a7be733908c05a5ff4a964be31b2c5; d=$(mktemp -d); for f in revocar.sh revocar.sql; do git -C <checkout de BOb-engine> show "${C}:scripts/f58/${f}" > "$d/$f" || exit 1; done; (cd "$d" && printf '%s  revocar.sh\n%s  revocar.sql\n' b9621ca3c29a407800350559b107ad241c819f126b28d5382610202ff21d1db5 0de98c36440bf639f13e005a6a0a5116651d87a9b4557cc5db8411dd2562328c | shasum -a 256 -c -) && ssh bzzz-<caja> 'mkdir -p entrega-bob/f58' && scp "$d"/revocar.sh "$d"/revocar.sql bzzz-<caja>:entrega-bob/f58/
+```
+
+El README de `scripts/f58/` no se copia: su sección «Cómo correrlo» usa `~/bob-engine` y no aplica a esta puesta.
+
+En la caja, comprobar otra vez las sumas, instalar como root y correr:
+
+```bash
+cd ~/entrega-bob/f58 && sha256sum -c <(printf '%s  revocar.sh\n%s  revocar.sql\n' b9621ca3c29a407800350559b107ad241c819f126b28d5382610202ff21d1db5 0de98c36440bf639f13e005a6a0a5116651d87a9b4557cc5db8411dd2562328c) && sudo install -d -o root -g root -m 700 /root/f58 && sudo install -o root -g root -m 755 revocar.sh revocar.sql /root/f58/ && sudo bash /root/f58/revocar.sh; echo "rc=$?"
+```
+
+Si `sha256sum -c` no da `OK` en los dos, no se corre nada: parar y avisar. Root solo ejecuta sus copias de `/root/f58`,
+que nadie más puede escribir.
+
+Lo esperado, entre otras líneas, y `rc=0`:
+- `F-58 before: N grants beyond SELECT, INSERT, UPDATE and DELETE held by application roles`. En lab-02, el 27 nov: 84.
+- `F-58 after: 0 grants left on M relations of bob; SELECT, INSERT, UPDATE and DELETE unchanged. OK`. En lab-02: 65.
+- `F-58 default privileges: none beyond SELECT, INSERT, UPDATE and DELETE for new tables in bob`.
+- `F-58: done`.
+
+Apuntar `N` y `M` en el registro de la puesta. Correr otra vez la última orden tiene que dar `before: 0` y `rc=0`.
+
+Si sale `WARNING: F-58 default privileges: …` con `rc=0`, no es un fallo: el REVOKE se hizo, pero las tablas nuevas que se
+creen después volverían a tener esos permisos. Se sigue con la puesta, se apunta y se avisa. Cualquier otro `rc` distinto
+de 0: no abrir el acceso (B10) y avisar. El guion no cambia nada si falla: todo va en una transacción.
 
 ### B8. El login de bob-web
 
